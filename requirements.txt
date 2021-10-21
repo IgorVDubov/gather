@@ -1,0 +1,5 @@
+pymodbus==2.5.2
+tornado==6.1
+requests==2.25.1
+loguru==0.5.3
+mysql_connector_repackaged==0.3.1
