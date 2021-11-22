@@ -12,8 +12,10 @@ else:
 import pymodbus.exceptions as ModbusExceptions
 import time
 
+import consts
 from log_module import logger
 from modbus_emulator import TestAsyncModbusClient
+from bpacker import unpackCDABToFloat
 
 
 class AsyncModbusConnection(object):
@@ -40,11 +42,17 @@ class AsyncModbusClient(AsyncModbusConnection):
     inits AsyncModbusConnection
     metod: readInputs fuction 3 and 4
     """
+    AI=1
+    DI=2
+    
     def __init__(self,ip,port,unit,address,count,format,function=None):
         self.address=address
         self.regCount=count
         self.unit=unit
-        self.format=format
+        if format==consts.AI:
+            self.format=self.AI
+        elif format==consts.DI:
+            self.format=self.DI
         self.function=function
 
         self.error=None
@@ -60,7 +68,10 @@ class AsyncModbusClient(AsyncModbusConnection):
         if self.function==4:
             readResult = await connection.read_input_registers(self.address, self.regCount, unit=self.unit)
             if not(readResult.isError()):
-                result=[reg for reg in readResult.registers]
+                if self.format==self.DI:
+                    result=[reg for reg in readResult.registers]
+                elif self.format==self.AI:
+                    result=[unpackCDABToFloat (readResult.registers,2)]
             else:
                 print ('*'*20,f'raise error:{readResult}')
                 raise ModbusExceptions.ModbusException(result)

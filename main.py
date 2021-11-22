@@ -4,7 +4,7 @@ import log_module
 
 from main_pool import MainPool
 import node_class
-
+import globals
 
 def getModules():
     from globals import ModuleList
@@ -23,7 +23,7 @@ def getMBServParams():
     return MBServerParams
 
 def init():
-    mainPool=MainPool(getModules(),[node_class.Node(**_) for _ in getNodes()], getMBServAddrMap(),getMBServParams() )
+    mainPool=MainPool(getModules(),[node_class.Node(**_) for _ in getNodes()], getMBServAddrMap(),getMBServParams(),HTTPServer=globals.HTTPServer )
     print ('Sources')
     print (mainPool.sourcePool)
     print ('Nodes')

@@ -48,34 +48,46 @@ class RequestHtmlHandler(tornado.web.RequestHandler):
 
 
 
+def TornadoHTTPServerInit():
+    settings = {'debug': True}
+    handlers=[
+        (r"/AJAX", RequestHtmlHandler),
+        (r"/", MainHtmlHandler)
+        ]
+    
+    http_server=tornado.httpserver.HTTPServer(tornado.web.Application(handlers,**settings))
+    http_server.listen(8880)
+    return http_server
+        
+        
+        # http_server = tornado.httpserver.HTTPServer(application,ssl_options={"certfile": ".\ssl\device.crt","keyfile":".\ssl\device.key"})
+        #self.server=tornado.httpserver.HTTPServer(application)
+        # http_server = tornado.httpserver.HTTPServer(application,ssl_options={"certfile": "utrack_test_1.p12","keyfile":"root_cert.crt"})
 
-settings = {'debug': True}
-handlers=[
-    (r"/AJAX", RequestHtmlHandler),
-    (r"/", MainHtmlHandler)
-    ]
-application = tornado.web.Application(handlers,**settings)
-# http_server = tornado.httpserver.HTTPServer(application,ssl_options={"certfile": ".\ssl\device.crt","keyfile":".\ssl\device.key"})
-http_server = tornado.httpserver.HTTPServer(application)
-# http_server = tornado.httpserver.HTTPServer(application,ssl_options={"certfile": "utrack_test_1.p12","keyfile":"root_cert.crt"})
-http_server.listen(8880)
-main_loop = tornado.ioloop.IOLoop.current()
-main_loop.make_current()
-a_loop=main_loop.asyncio_loop
-import asyncio
+# def start(self):    
+#     print ('torando server starts')
+#     self.main_loop = tornado.ioloop.IOLoop.current()
+#     self.main_loop.make_current()
+#     self.main_loop.start()
 
-loop=asyncio.get_event_loop()
-print(a_loop==loop)
 
-from source_pool import SourcePool
-from globals import ModuleList
+#a_loop=main_loop.asyncio_loop
 
-pool=SourcePool(ModuleList,a_loop)
-pool.start()
 
-try:
-    print('server satrt')
-    main_loop.start()
-except: #KeyboardInterrupt:
-    main_loop.stop ()
+# import asyncio
+
+# loop=asyncio.get_event_loop()
+# print(a_loop==loop)
+
+# from source_pool import SourcePool
+# from globals import ModuleList
+
+# pool=SourcePool(ModuleList,a_loop)
+# pool.start()
+
+# try:
+#     print('server satrt')
+#     main_loop.start()
+# except: #KeyboardInterrupt:
+#     main_loop.stop ()
     

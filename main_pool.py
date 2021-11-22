@@ -11,7 +11,7 @@ NODDE_READER_PAUSE=1
 
 
 class MainPool():
-    def __init__(self,sources,nodes,exAddrMap,exchServerParams):
+    def __init__(self,sources,nodes,exAddrMap,exchServerParams, HTTPServer=None):
         '''
         sources: source Moduke to read
             [{'id':'module_id(str)','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},...]
@@ -36,10 +36,19 @@ class MainPool():
         #self.cancelEvent=asyncio.Event()
         self.exchServer=ExchangeServer(Consts.MODBUS,exAddrMap,exchServerParams)
         self.setTasks()
+        self.webApp=None
+        if HTTPServer:
+            # from async_HTTP_server import asyncHTTPserver
+            # self.webApp=asyncHTTPserver()
+            from tornado_serv import TornadoHTTPServerInit
+            self.webApp=TornadoHTTPServerInit()
     
     def start(self):   
         self.exchServer.start() 
+        # if self.webApp:
+        #     self.webApp.start()
         self.sourcePool.start()
+
         logger.info ('start source reader pool')
 
 

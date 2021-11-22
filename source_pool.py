@@ -69,9 +69,9 @@ class SourcePool(object):
         while True:
             try:
                 try:
-                    #print(f'run read def {client.id}')
+                    # print(f'run read def {client.id}')
                     self.result=await client.read()
-                    #print(f'after read def result:{self.result}')
+                    print(f'after read {client.id} def result:{self.result}')
 
                 except asyncio.exceptions.TimeoutError as ex:
                     print(f"!!!!!!!!!!!!!!!!!!! asyncio.exceptions.TimeoutError for {client.id}:",ex)
