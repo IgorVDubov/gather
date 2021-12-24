@@ -41,6 +41,7 @@ class AsyncModbusClient(AsyncModbusConnection):
     AsyncModbusClient 
     inits AsyncModbusConnection
     metod: readInputs fuction 3 and 4
+    format: AI=1 return float / DI=2 return [bitsArr]
     """
     AI=1
     DI=2

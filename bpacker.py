@@ -64,7 +64,7 @@ def tests():
 
 if __name__ == "__main__":
     a=unpackABCDToFloat([0,0],2)
-    print (a)
+    print (getBit(655,0))
 
     # tests()
     # r=packFloatToCDAB(29.01)
