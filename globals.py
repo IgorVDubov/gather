@@ -8,8 +8,8 @@ HTTPServer=True
 ModuleList=[ #{'id':'e41e0a011adc','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},
             #{'id':'000de065a65f','type':'ModbusTcp','ip':'192.168.1.98','port':'502','unit':0x1, 'address':0, 'regNumber':16, 'function':2, 'period':0.5}
             #{'id':'Test1','type':'ModbudRS','ip':'','port':'2','unit':0x1, 'address':0, 'regNumber':16, 'function':2, 'period':0.5},
-            {'id':'ModuleA','type':'ModbusTcp','ip':'192.168.1.200','port':5020,'unit':0x1, 'address':0, 'count':16, 'function':2, 'format':consts.DI, 'period':0.5,'preprocess':''},
-            {'id':'ModuleB','type':'ModbusTcp','ip':'192.168.1.200','port':5020,'unit':0x1, 'address':0, 'count':2, 'function':4, 'format':consts.AI,'period':0.5}
+            {'id':'ModuleA','type':'ModbusTcp','ip':'192.168.1.200','port':502,'unit':0x1, 'address':1, 'count':2, 'function':3, 'format':consts.DI, 'period':0.5,'preprocess':''},
+            # {'id':'ModuleB','type':'ModbusTcp','ip':'192.168.1.200','port':520,'unit':0x1, 'address':0, 'count':2, 'function':4, 'format':consts.AI,'period':0.5}
             ]    
 '''
 Список опрашиваемых модулей
@@ -30,7 +30,7 @@ machinesList=[
             #{'id':4205,'moduleId':'e41e0a011adc','type':'DI','bits':[0,1]},
             #{'id':4206,'moduleId':'e41e0a011adc','type':'DI','bits':[3]},
             {'id':4207,'moduleId':'ModuleA','type':'DI','sourceIndexList':[0,1],'handler':'func_1'},
-            {'id':4208,'moduleId':'ModuleB','type':'AI','sourceIndexList':[0]},
+            # {'id':4208,'moduleId':'ModuleB','type':'AI','sourceIndexList':[0]},
             #{'id':4208,'moduleId':'Test2','type':'DI','result':[2]},
             #{'id':4209,'moduleId':'Test2','type':'AI','result':[0]}
             ]
