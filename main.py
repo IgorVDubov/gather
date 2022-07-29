@@ -1,14 +1,17 @@
 from log_module import logger
 import log_module
-#import asyncio
+import asyncio
 
 from main_pool import MainPool
-import node_class
+import classes
 import globals
+import sources
 
-def getModules():
-    from globals import ModuleList
-    return ModuleList
+
+def sourcePoolInit(loop):
+    from sources import ModuleList
+    from source_pool import SourcePool
+    return SourcePool(ModuleList,loop)
 
 def getNodes():
     from globals import machinesList
@@ -23,7 +26,11 @@ def getMBServParams():
     return MBServerParams
 
 def init():
-    mainPool=MainPool(getModules(),[node_class.Node(**_) for _ in getNodes()], getMBServAddrMap(),getMBServParams(),HTTPServer=globals.HTTPServer )
+    loop=asyncio.get_event_loop()
+    sourcePool=sourcePoolInit(loop)
+    channels=[classes.Node(**machine) for machine in getNodes()]
+    ModbusServer
+    mainPool=MainPool(loop, sourcePool, channels, getMBServAddrMap(), getMBServParams(), globals.HTTPServer)
     print ('Sources')
     print (mainPool.sourcePool)
     print ('Nodes')

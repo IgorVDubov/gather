@@ -47,7 +47,7 @@ class SourcePool(object):
 
     def setTasks(self):
         for source in self.sources:
-            self.loop.create_task(self.loopClientReader(source), name='task_'+source.id)
+            self.loop.create_task(self.loopSourceReader(source), name='task_'+source.id)
         #self.loop.create_task(self.startQueueReder())
 
     def startLoop(self):
@@ -64,21 +64,21 @@ class SourcePool(object):
             print ('************* loop close *******************')
             self.loop.stop()
 
-    async def loopClientReader(self,client):
-        logger.debug (f'start loopReader client:{client.id}, period:{client.period}')
+    async def loopSourceReader(self,source):
+        logger.debug (f'start loopReader client:{source.id}, period:{source.period}')
         while True:
             try:
                 try:
                     # print(f'run read def {client.id}')
-                    self.result=await client.read()
-                    print(f'after read {client.id} def result:{self.result}')
+                    self.result=await source.read()
+                    print(f'after read {source.id} def result:{self.result}')
 
                 except asyncio.exceptions.TimeoutError as ex:
-                    print(f"!!!!!!!!!!!!!!!!!!! asyncio.exceptions.TimeoutError for {client.id}:",ex)
+                    print(f"!!!!!!!!!!!!!!!!!!! asyncio.exceptions.TimeoutError for {source.id}:",ex)
                 # except ModbusExceptions.ModbusException as ex:                                            #TODO взять exception от клиента
                 #     print(f"!!!!!!!!!!!!!!!!!!! ModbusException in looper for {client.id} :",ex)
 
-                await asyncio.sleep(client.period)
+                await asyncio.sleep(source.period)                                                          # TODO вычесть время на чтение??
             except asyncio.CancelledError:
                 print("Got CancelledError")
                 break

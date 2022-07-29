@@ -97,6 +97,7 @@ class AsyncModbusClient(AsyncModbusConnection):
             self.result=result
         return result
 
+
 # if __name__ == '__main__':
 #    startModbusLoop(diModules)
    
