@@ -1,8 +1,7 @@
 import asyncio
 from typing import List
 from log_module import logger
-from datetime import datetime
-
+import classes
 from consts import Consts
 from exchange_server import ExchangeServer
 from source_pool import SourcePool
@@ -15,8 +14,7 @@ class MainPool():
     def __init__(self,  loop:asyncio.AbstractEventLoop, 
                         sourcePool:SourcePool, 
                         channels:List,
-                        exAddrMap,
-                        exchServerParams, 
+                        exchangeServer:ExchangeServer, 
                         HTTPServer=None):
         '''
         sources: source Moduke to read
@@ -29,38 +27,47 @@ class MainPool():
                         'hr':[{'id':4209,'addr':0,'type':'int'},{'id':4210,'addr':1,'type':'float'},..........] }  }]
         '''
         self.loop = loop
+        self.cancelEvent=asyncio.Event()
         self.sourcePool=sourcePool
         self.sourcePool.readAllOneTime()                    #TODO  проверить как работает если нет доступа к source
                                                             #       или заполнять Null чтобы первый раз сработало по изменению
-        self.nodes=nodes
-        for node in self.nodes:
+        self.channels=channels
+       
+        for node in (chanel for chanel in self.channels if isinstance(chanel,classes.Node)):
             for source in self.sourcePool.sources:
                 if source.id==node.sourceId:
                     node.source=source
                     break
-        for node in self.nodes:
+        for node in (chanel for chanel in self.channels if isinstance(chanel,classes.Node)):
             if not node.source:
                 print(f'!!!!!!!!!!Cant find source {node.sourceId} for node {node.id}, remove from pool')
                 self.nodes.pop(self.nodes.index(node))
 
         #self.cancelEvent=asyncio.Event()
-        self.exchServer=ExchangeServer(Consts.MODBUS,exAddrMap,exchServerParams)
+        self.exchServer=exchangeServer
         self.setTasks()
-        self.webApp=None
-        if HTTPServer:
-            # from async_HTTP_server import asyncHTTPserver
-            # self.webApp=asyncHTTPserver()
-            from tornado_serv import TornadoHTTPServerInit
-            self.webApp=TornadoHTTPServerInit()
+        self.webApp= HTTPServer
+            
     
     def start(self):   
-        self.exchServer.start() 
-        # if self.webApp:
-        #     self.webApp.start()
-        self.sourcePool.start()
-
+        if self.exchServer:
+            self.exchServer.start() 
         logger.info ('start source reader pool')
+        self.startLoop()
 
+    def startLoop(self):
+        try:
+            print ('start source read loop')
+            self.loop.run_forever()
+            print ('afetr run_forever')
+        except KeyboardInterrupt:
+            logger.info ('************* KeyboardInterrupt *******************')
+            self.cancelEvent.set()
+            for task in asyncio.all_tasks(loop=self.loop):
+                task.cancel()
+        finally:
+            print ('************* loop close *******************')
+            self.loop.stop()
 
     def setTasks(self):
             self.loop.create_task(self.startReader())

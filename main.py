@@ -1,41 +1,32 @@
 from log_module import logger
 import log_module
 import asyncio
-
 from main_pool import MainPool
 import classes
 import globals
 import sources
-
+from exchange_server import ModbusExchangeServer
 
 def sourcePoolInit(loop):
     from sources import ModuleList
     from source_pool import SourcePool
     return SourcePool(ModuleList,loop)
 
-def getNodes():
-    from globals import machinesList
-    return machinesList
-
-def getMBServAddrMap():
-    from globals import MBServerAdrMap
-    return MBServerAdrMap
-
-def getMBServParams():
-    from globals import MBServerParams
-    return MBServerParams
-
 def init():
     loop=asyncio.get_event_loop()
-    sourcePool=sourcePoolInit(loop)
-    channels=[classes.Node(**machine) for machine in getNodes()]
-    ModbusServer
-    mainPool=MainPool(loop, sourcePool, channels, getMBServAddrMap(), getMBServParams(), globals.HTTPServer)
+    sourcePool=sourcePoolInit(sources.ModuleList,loop)
+    channels=[classes.Node(**machine) for machine in globals.machinesList]
+    ModbusExchServer=ModbusExchangeServer(globals.MBServerAdrMap,globals.MBServerParams['host'],globals.MBServerParams['port'])
+    HTTPServer=None
+    if globals.HTTPServer:
+        from tornado_serv import TornadoHTTPServerInit
+        HTTPServer=TornadoHTTPServerInit(globals.HTTPServerParams['port'])
+    mainPool=MainPool(loop, sourcePool, channels, ModbusExchServer, HTTPServer)
     print ('Sources')
     print (mainPool.sourcePool)
-    print ('Nodes')
-    for node in mainPool.nodes:
-        print(node)
+    print ('Channels:')
+    for channel in mainPool.channels:
+        print(channel)
     logger.info ('init ok')
     return mainPool
 
