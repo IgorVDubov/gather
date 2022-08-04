@@ -3,7 +3,8 @@
 # consts.MODBUS='ModBus'
 import consts
 
-HTTPServer=True
+HTTPServer='Tornado'
+HTTPServerParams={'host':'192.168.1.200','port':8888}
 
 
 machinesList=[  

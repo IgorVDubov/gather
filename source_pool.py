@@ -34,7 +34,7 @@ class SourcePool(object):
             self.loop = asyncio.get_event_loop()
         else:
             self.loop=loop
-        self.cancelEvent=asyncio.Event()
+        self.setTasks()
     
     def __str__(self):
         s=''
@@ -42,28 +42,11 @@ class SourcePool(object):
             s+=source.__str__()+'\n'
         return s[:-1]
     
-    def start(self):
-        self.setTasks()
-        self.startLoop()
-
     def setTasks(self):
         for source in self.sources:
             self.loop.create_task(self.loopSourceReader(source), name='task_'+source.id)
         #self.loop.create_task(self.startQueueReder())
 
-    def startLoop(self):
-        try:
-            print ('start source read loop')
-            self.loop.run_forever()
-            print ('afetr run_forever')
-        except KeyboardInterrupt:
-            logger.info ('************* KeyboardInterrupt *******************')
-            self.cancelEvent.set()
-            for task in asyncio.all_tasks(loop=self.loop):
-                task.cancel()
-        finally:
-            print ('************* loop close *******************')
-            self.loop.stop()
 
     async def loopSourceReader(self,source):
         logger.debug (f'start loopReader client:{source.id}, period:{source.period}')
