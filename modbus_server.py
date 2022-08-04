@@ -36,10 +36,11 @@ def packFloatTo2WordsCDAB(f):
 
 
 class MBServer():
-    def __init__(self,addrMap,serverParams):
+    def __init__(self,addrMap,host,port):
         #self.context=[slave for slave in self.addrMapInit(addrMap)]
         self.addrMap=addrMap
-        self.serverParams=serverParams
+        self.host=host
+        self.port=port
         self.context=self.addrContextInit(addrMap)
         self.idMap=self.idAddrMapDictInit(addrMap)
         pass
@@ -154,7 +155,7 @@ class MBServer():
         return context
 
     def start(self):
-        StartTcpServer(self.context, address=(self.serverParams['host'],self.serverParams['port']))
+        StartTcpServer(self.context, address=(self.host,self.port))
     
 
     def startInThread(self):

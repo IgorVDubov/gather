@@ -48,7 +48,7 @@ class RequestHtmlHandler(tornado.web.RequestHandler):
 
 
 
-def TornadoHTTPServerInit():
+def TornadoHTTPServerInit(port):
     settings = {'debug': True}
     handlers=[
         (r"/AJAX", RequestHtmlHandler),
@@ -56,7 +56,7 @@ def TornadoHTTPServerInit():
         ]
     
     http_server=tornado.httpserver.HTTPServer(tornado.web.Application(handlers,**settings))
-    http_server.listen(8880)
+    http_server.listen(port)
     return http_server
         
         
