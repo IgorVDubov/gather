@@ -2,6 +2,7 @@ import asyncio
 
 import modbus_connector
 from log_module import logger
+from datetime import datetime
 
 class Source(object):
     def __init__(self,module):
@@ -69,6 +70,7 @@ class SourcePool(object):
         while True:
             try:
                 try:
+                    beginTime=datetime.now()
                     # print(f'run read def {client.id}')
                     self.result=await source.read()
                     print(f'after read {source.id} def result:{self.result}')
@@ -77,8 +79,10 @@ class SourcePool(object):
                     print(f"!!!!!!!!!!!!!!!!!!! asyncio.exceptions.TimeoutError for {source.id}:",ex)
                 # except ModbusExceptions.ModbusException as ex:                                            #TODO взять exception от клиента
                 #     print(f"!!!!!!!!!!!!!!!!!!! ModbusException in looper for {client.id} :",ex)
-
-                await asyncio.sleep(source.period)                                                          # TODO вычесть время на чтение??
+                delay=source.period-(datetime.now()-beginTime)
+                if delay<=0:
+                    logger.warning(f'Not enof time for read source {source.name} id:{source.id} ')
+                await asyncio.sleep(delay)                                                          # TODO вычесть время на чтение??
             except asyncio.CancelledError:
                 print("Got CancelledError")
                 break

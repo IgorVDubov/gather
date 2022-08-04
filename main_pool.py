@@ -14,7 +14,7 @@ NODDE_READER_PAUSE=1
 class MainPool():
     def __init__(self,  loop:asyncio.AbstractEventLoop, 
                         sourcePool:SourcePool, 
-                        channels:List,
+                        nodes:List,
                         exAddrMap,
                         exchServerParams, 
                         HTTPServer=None):
@@ -63,7 +63,7 @@ class MainPool():
 
 
     def setTasks(self):
-            self.loop.create_task(self.startReader())
+            self.loop.create_task(self.calcChannelsLoop())
     
     def nodeHandler(self,node):
         if node.handler:
@@ -85,24 +85,28 @@ class MainPool():
     #         node.funcParams.event=False
 
 
-    async def startReader(self):
-        print ('start results Reader')
+    async def calcChannelsLoop(self):
+        print ('start calcChannelsLoop')
         try:
             while True:
-                for node in self.nodes:
-                    node.getResult()
-                    if node.resultIN:
-                        self.nodeHandler(node)
+                beginTime=datetime.now()
+                for channel in self.channels:
+                    channel.getResult()
+                    if channel.resultIN:
+                        self.nodeHandler(channel)
                     else:
                         print('No result')
-                await asyncio.sleep(NODDE_READER_PAUSE)
+                delay=NODDE_READER_PAUSE-(datetime.now()-beginTime)
+                if delay<=0:
+                    logger.warning(f'Not enof time for calcChannelsLoop, loop capacity:{len(self.channels)} channels')
+                await asyncio.sleep(delay)
 
         except asyncio.CancelledError:
             print('CancelledError')
         except Exception as e:
             logger.error(e)
         finally:
-            print('startReader finally')
+            print('calcChannelsLoop finally')
             return
 
         
