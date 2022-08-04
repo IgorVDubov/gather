@@ -1,14 +1,7 @@
-from pymodbus.compat import IS_PYTHON3, PYTHON_VERSION
-if IS_PYTHON3 and PYTHON_VERSION >= (3, 4):
-    from pymodbus.client.asynchronous import async_io
-    import asyncio
-    from asyncio.tasks import gather
-    from pymodbus.client.asynchronous.tcp import AsyncModbusTCPClient as ModbusClient
-    from pymodbus.client.asynchronous import schedulers
-else:
-    import sys
-    sys.stderr("This example needs to be run only on python 3.4 and above")
-    sys.exit(1)
+import asyncio
+from typing import Any
+from pymodbus.client.asynchronous.tcp import AsyncModbusTCPClient as ModbusClient
+from pymodbus.client.asynchronous import schedulers
 import pymodbus.exceptions as ModbusExceptions
 import time
 
@@ -16,9 +9,25 @@ import consts
 from log_module import logger
 from modbus_emulator import TestAsyncModbusClient
 from bpacker import unpackCDABToFloat
+from abc import ABC, abstractmethod
+
+class asyncBaseMBConnection(ABC):
+    ip = None
+    port = None
+    connection = None
+
+    def start():...
+    @property
+    def connected(self):...
+    async def readInputRegisters_F4(address:int, regCount:int, unit:int):...
+    async def readHoldingRegisters_F3(address:int, regCount:int, unit:int):...
+    async def readDiscreteInputs_F2(address:int, regCount:int, unit:int):...
+    async def writeCoil_F5(address:int, value:bool, unit:int):...
+    async def writeWord_F6(address:int, value:int, unit:int):...
 
 
-class AsyncModbusConnection(object):
+
+class AsyncModbusConnection(asyncBaseMBConnection):
     def __init__(self,ip,port):
         self.ip=ip
         self.port=port
@@ -35,6 +44,16 @@ class AsyncModbusConnection(object):
         else:
             loop, self.connection = ModbusClient(schedulers.ASYNC_IO, host=self.ip, port=self.port,loop=self.loop)
         print(f"Client ip:{ self.ip}, connection:{self.connection.connected} ")
+
+    @property
+    def connected(self):
+        return self.connection.connected
+    async def readInputRegisters_F4(self, address:int, regCount:int, unit:int):
+        return await self.connection.read_input_registers(address, regCount, unit=self.unit)
+    async def readHoldingRegisters_F3(address:int, regCount:int, unit:int):...
+    async def readDiscreteInputs_F2(address:int, regCount:int, unit:int):...
+    async def writeCoil_F5(address:int, value:bool, unit:int):...
+    async def writeWord_F6(address:int, value:int, unit:int):...
     
 class AsyncModbusClient(AsyncModbusConnection):
     """
@@ -97,6 +116,8 @@ class AsyncModbusClient(AsyncModbusConnection):
             self.result=result
         return result
 
+    async def writeRegister(self,reg:int,value):
+        ...
 
 # if __name__ == '__main__':
 #    startModbusLoop(diModules)
