@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from typing import List
 from log_module import logger
 import classes
@@ -96,13 +97,17 @@ class MainPool():
         print ('start results Reader')
         try:
             while True:
-                for node in self.nodes:
-                    node.getResult()
-                    if node.resultIN:
-                        self.nodeHandler(node)
+                before=datetime.now()
+                for channel in self.channels:
+                    channel.getResult()
+                    if channel.resultIN:
+                        self.nodeHandler(channel)
                     else:
                         print('No result')
-                await asyncio.sleep(NODDE_READER_PAUSE)
+                delay=NODDE_READER_PAUSE-(datetime.now()-before)
+                if delay<=0:
+                    logger.warning(f'Not enough time for channels calc loop, {len(self.channels)} channels ')
+                await asyncio.sleep(delay)
 
         except asyncio.CancelledError:
             print('CancelledError')
