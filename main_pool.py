@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from typing import List
 from log_module import logger
 from datetime import datetime
@@ -89,16 +90,16 @@ class MainPool():
         print ('start calcChannelsLoop')
         try:
             while True:
-                beginTime=datetime.now()
+                before=datetime.now()
                 for channel in self.channels:
                     channel.getResult()
                     if channel.resultIN:
                         self.nodeHandler(channel)
                     else:
                         print('No result')
-                delay=NODDE_READER_PAUSE-(datetime.now()-beginTime)
+                delay=NODDE_READER_PAUSE-(datetime.now()-before)
                 if delay<=0:
-                    logger.warning(f'Not enof time for calcChannelsLoop, loop capacity:{len(self.channels)} channels')
+                    logger.warning(f'Not enough time for channels calc loop, {len(self.channels)} channels ')
                 await asyncio.sleep(delay)
 
         except asyncio.CancelledError:
