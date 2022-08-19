@@ -3,32 +3,38 @@
 реализация : ModBus
 '''
 import modbus_server
-from consts import Consts 
+from abc import ABC, abstractmethod
 
-class ExchangeServer(object):
-    def __init__(self,serverType,addrMapP,serverParams):
-        if serverType==Consts.MODBUS:
-            self.server=modbus_server.MBServer(addrMapP,serverParams)
-            self.start=self.mbStart
-            self.stop=self.mbStop
-            self.SetValue=self.mbSetIdValue
+class ExchangeServer(ABC):
     
-    def start():pass
-    def stop():pass
-    def SetValue():pass
+    
+    def start():...
+    def stop():...
+    def setValue():...
 
-    def mbStart(self):
+    
+
+
+class ModbusExchangeServer(ExchangeServer):
+    def __init__(self,addrMapP:list,serverHost, serverPort):
+        
+            self.server=modbus_server.MBServer(addrMapP,{'host':serverHost, 'port':serverPort})
+    
+    def start(self):
+        self._mbStart()
+    def stop(self):
+        self._mbStop()
+    def setValue(self,id,value):
+        self._mbSetIdValue(id,value)
+
+    def _mbStart(self):
         self.server.startInThread()
     
-    def mbStop(self):
+    def _mbStop(self):
         self.server.stop()
     
-    def mbSetIdValue(self,id,value):
+    def _mbSetIdValue(self,id,value):
         self.server.setValue(id,value)
-
-
-
-
 
 if __name__ == '__main__':
     pass

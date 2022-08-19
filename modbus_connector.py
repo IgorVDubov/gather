@@ -5,7 +5,7 @@ from pymodbus.client.asynchronous import schedulers
 import pymodbus.exceptions as ModbusExceptions
 import time
 
-import consts
+from consts import AI,DI
 from log_module import logger
 from modbus_emulator import TestAsyncModbusClient
 from bpacker import unpackCDABToFloat
@@ -28,17 +28,18 @@ class asyncBaseMBConnection(ABC):
 
 
 class AsyncModbusConnection(asyncBaseMBConnection):
-    def __init__(self,ip,port):
+    def __init__(self,ip,port,loop=None):
         self.ip=ip
         self.port=port
-        self.loop=None
+        self.loop=loop
         self.start()
     
     
 
     def start(self):
-        self.loop = asyncio.get_event_loop()
-        asyncio.set_event_loop(self.loop)
+        if not self.loop:
+            self.loop = asyncio.get_event_loop()
+            asyncio.set_event_loop(self.loop)
         if self.ip[:4].lower()=='test':
             loop, self.connection = TestAsyncModbusClient(schedulers.ASYNC_IO, host=self.ip, port=self.port,loop=self.loop)
         else:
@@ -65,13 +66,13 @@ class AsyncModbusClient(AsyncModbusConnection):
     AI=1
     DI=2
     
-    def __init__(self,ip,port,unit,address,count,format,function=None):
+    def __init__(self,ip,port,unit,address,count,format,function=None,loop=None):
         self.address=address
         self.regCount=count
         self.unit=unit
-        if format==consts.AI:
+        if format==AI:
             self.format=self.AI
-        elif format==consts.DI:
+        elif format==DI:
             self.format=self.DI
         self.function=function
 

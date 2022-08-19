@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from time import time
 from typing import List
 from log_module import logger
 import classes
@@ -34,12 +34,12 @@ class MainPool():
                                                             #       или заполнять Null чтобы первый раз сработало по изменению
         self.channels=channels
        
-        for node in (chanel for chanel in self.channels if isinstance(chanel,classes.Node)):
+        for node in (Channel for Channel in self.channels if isinstance(Channel,classes.Node)):
             for source in self.sourcePool.sources:
                 if source.id==node.sourceId:
                     node.source=source
                     break
-        for node in (chanel for chanel in self.channels if isinstance(chanel,classes.Node)):
+        for node in (Channel for Channel in self.channels if isinstance(Channel,classes.Node)):
             if not node.source:
                 print(f'!!!!!!!!!!Cant find source {node.sourceId} for node {node.id}, remove from pool')
                 self.nodes.pop(self.nodes.index(node))
@@ -97,14 +97,11 @@ class MainPool():
         print ('start results Reader')
         try:
             while True:
-                before=datetime.now()
+                before=time()
                 for channel in self.channels:
-                    channel.getResult()
-                    if channel.resultIN:
-                        self.nodeHandler(channel)
-                    else:
-                        print('No result')
-                delay=NODDE_READER_PAUSE-(datetime.now()-before)
+                    channel()
+                    print(f'chanel {channel.id} = {channel.result}')
+                delay=NODDE_READER_PAUSE-(time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channels)} channels ')
                 await asyncio.sleep(delay)
