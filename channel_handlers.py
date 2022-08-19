@@ -21,3 +21,6 @@ def func_2(param,globalParams):
 
 def func_3():
     print('Change TADAAAAAAAAAAAAmmmmmm')
+
+def programm_1(args,stored_args):
+    print('                                     running programm 1')

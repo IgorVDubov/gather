@@ -1,19 +1,20 @@
 import asyncio
-from datetime import datetime
+from time import time
 import modbus_connector
 from log_module import logger
 from datetime import datetime
 
 class Source(object):
-    def __init__(self,module):
+    def __init__(self,module,loop):
         self.id=module['id']
         self.period=module['period']
         self.result=None
-        self.moduleType=module['type']
+        self.format=module['format']
         if module['type']=='ModbusTcp':
             self.connection = modbus_connector.AsyncModbusClient(module['ip'],module['port'],module['unit'],
-                                                                module['address'],module['count'],module['format'],
-                                                                None if module.get('function')==(None or '') else module.get('function'))
+                                                                module['address'],module['regCount'],module['format'],
+                                                                None if module.get('function')==(None or '') else module.get('function'),
+                                                                loop=loop)
         else:
             raise ValueError (f'No class for type {module["type"]}')
     
@@ -22,14 +23,14 @@ class Source(object):
         return self.result
     
     def __str__(self):
-        return f' {id(self)}    id:{self.id}, moduleType:{self.moduleType}, period:{self.period}s, {self.connection.__str__()}'
+        return f' {id(self)}    id:{self.id}, data format:{self.format}, period:{self.period}s, {self.connection.__str__()}'
 
 class SourcePool(object):
     def __init__(self,modules,loop=None):
         self.sources=[]
         #self.results=[]
         for module in modules:
-            self.sources.append(Source(module))             #TODO помещать сюда только если успешный инит клиента и тест чтения по адресу
+            self.sources.append(Source(module,loop))             #TODO помещать сюда только если успешный инит клиента и тест чтения по адресу
         if loop ==None:
             self.loop = asyncio.get_event_loop()
         else:
@@ -53,10 +54,10 @@ class SourcePool(object):
         while True:
             try:
                 try:
-                    before=datetime.now()
+                    before=time()
                     # print(f'run read def {client.id}')
                     self.result=await source.read()
-                    print(f'after read {source.id} def result:{self.result}')
+                    # print(f'after read {source.id} def result:{self.result}')
 
                 except asyncio.exceptions.TimeoutError as ex:
                     print(f"!!!!!!!!!!!!!!!!!!! asyncio.exceptions.TimeoutError for {source.id}:",ex)
@@ -64,7 +65,7 @@ class SourcePool(object):
                 #     print(f"!!!!!!!!!!!!!!!!!!! ModbusException in looper for {client.id} :",ex)
 
                 
-                delay=source.period-(datetime.now()-before)
+                delay=source.period-(time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for source read, source {source.name}, id:{source.id}')
                 await asyncio.sleep(delay)

@@ -3,7 +3,6 @@
 реализация : ModBus
 '''
 import modbus_server
-from consts import Consts 
 from abc import ABC, abstractmethod
 
 class ExchangeServer(ABC):
@@ -17,9 +16,9 @@ class ExchangeServer(ABC):
 
 
 class ModbusExchangeServer(ExchangeServer):
-    def __init__(self,addrMapP:list,serverParams:dict):
+    def __init__(self,addrMapP:list,serverHost, serverPort):
         
-            self.server=modbus_server.MBServer(addrMapP,serverParams)
+            self.server=modbus_server.MBServer(addrMapP,{'host':serverHost, 'port':serverPort})
     
     def start(self):
         self._mbStart()

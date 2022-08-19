@@ -4,19 +4,20 @@ import asyncio
 from main_pool import MainPool
 import classes
 import globals
-import sources
 from exchange_server import ModbusExchangeServer
+from source_pool import SourcePool
 
-def sourcePoolInit(loop):
-    from sources import ModuleList
-    from source_pool import SourcePool
-    return SourcePool(ModuleList,loop)
+# def makeChannelBase():
+
 
 def init():
     loop=asyncio.get_event_loop()
-    sourcePool=sourcePoolInit(sources.ModuleList,loop)
-    channels=[classes.Node(**machine) for machine in globals.machinesList]
-    ModbusExchServer=ModbusExchangeServer(globals.MBServerAdrMap,globals.MBServerParams['host'],globals.MBServerParams['port'])
+    sourcePool=SourcePool(globals.ModuleList,loop)
+    channels=[classes.Node(**node) for node in globals.nodes]
+    channels.extend([classes.Programm(**prg) for prg in globals.programms])
+
+    # ModbusExchServer=ModbusExchangeServer(globals.MBServerAdrMap,globals.MBServerParams['host'],globals.MBServerParams['port'])
+    ModbusExchServer=None
     HTTPServer=None
     if globals.HTTPServer:
         from tornado_serv import TornadoHTTPServerInit

@@ -2,15 +2,10 @@ from cgitb import handler
 from time import time
 from unicodedata import name
 from unittest import result
-from handler_funcs import *
 from typing import *
 from abc import ABC, abstractmethod
 import consts
 
-__all__='''
-        Node,
-        Programm
-'''
 
 def auto_str(cls):
     def __str__(self):
@@ -31,44 +26,48 @@ class Params():
         self.event=False
         self.changeEvent=False
 
-class Chanel(ABC):
+class Channel(ABC):
+    id=None
+    result=None
+
     @abstractmethod
     def __call__(self) -> Any:
         ...
 
 
-class Node(Chanel):
-    def __init__(self,id:int,moduleId:str,sourceIndexList:List,handler:callable=None) -> None:
-        super().__init__()
+class Node(Channel):
+    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List,handler:callable=None) -> None:
         self.id=id
         self.sourceId=moduleId
+        self.type=type
         self.sourceIndexList=sourceIndexList
         self.source=None
         self.resultIN=None
-        
-        #self.resultIN=None #входящие данные
-        self.resultOUT=None # данные после обработки handler
-        if handler==None:
-            self.handler=None
-        else:
-            self.handler=handler
-            self.handlerStoredVars=None
+        self.result=None # данные после обработки handler
+        self.handler=handler
+        self.handlerStoredVars=None
     
+    def __str__(self):
+        return f' Node: id:{self.id}, source:{self.source.id}, source Id:{id(self.source)}, handler:{self.handler}'
+
     def __call__(self):
         if self.source:
             if self.source.result:
-                if self.source.type==consts.DI:
+                if self.source.format==consts.DI:
                     self.resultIN=[self.source.result[i] for i in self.sourceIndexList]
-                elif self.source.type==consts.AI:
+                elif self.source.format==consts.AI:
                     self.resultIN=self.source.result[0]                                 # только 1-й элемент....  уточнить!!!!!!!!!!!!!!!!!!!!!!
-            if self.handler:
-                self.resultOUT,self.handlerStoredVars=handler(self.resultIN,self.handlerStoredVars)
             else:
-                self.resultOUT=self.resultIN
+                print(f'No result in channel {self.id} source {self.source}')
+            # print(f'result in channel {self.id} = {self.source.result}')
+            if self.handler:
+                self.result,self.handlerStoredVars=handler(self.resultIN,self.handlerStoredVars)
+            else:
+                self.result=self.resultIN
         else:
             print (f'no source init for node id:{self.id}')
             
-class Node_OLD(Chanel):
+class Node_OLD(Channel):
     def __init__(self,id:int,moduleId:str,type:str,sourceIndexList:List,handler:callable=None) -> None:
         super().__init__()
         self.id=id
@@ -110,15 +109,23 @@ class Node_OLD(Chanel):
            
 
     
-class Programm(Chanel):
-    def __init__(self,handler:callable,args:any) -> None:
+class Programm(Channel):
+    def __init__(self,id:int,handler:callable,args=None) -> None:
+        self.id=id
         self.stored:any=None
         self.args=args
         self.handler=handler
     
     def __call__(self) -> Any:
         self.stored=self.handler(self.args,self.stored)
+    def __str__(self):
+        return f'Programm id:{self.id}, handler:{self.handler}'
 
+
+__all__=[
+        Node,
+        Programm
+]
 
 ########## test def  ##########
 def f1(obj1,stored):
