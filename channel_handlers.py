@@ -22,5 +22,8 @@ def func_2(param,globalParams):
 def func_3():
     print('Change TADAAAAAAAAAAAAmmmmmm')
 
-def programm_1(args,stored_args):
-    print('                                     running programm 1')
+def programm_1(result,stored1):
+    print('running programm 1')
+    stored1+=1
+    print(f'VAR {result=}, {stored1=}')
+    return{'stored1':stored1}

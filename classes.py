@@ -48,7 +48,7 @@ class Node(Channel):
         self.handlerStoredVars=None
     
     def __str__(self):
-        return f' Node: id:{self.id}, source:{self.source.id}, source Id:{id(self.source)}, handler:{self.handler}'
+        return f' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}'
 
     def __call__(self):
         if self.source:
@@ -110,14 +110,14 @@ class Node_OLD(Channel):
 
     
 class Programm(Channel):
-    def __init__(self,id:int,handler:callable,args=None) -> None:
+    def __init__(self,id:int,handler:callable,args:dict=None) -> None:
         self.id=id
         self.stored:any=None
         self.args=args
         self.handler=handler
     
     def __call__(self) -> Any:
-        self.stored=self.handler(self.args,self.stored)
+        self.stored=self.handler(**self.args,**self.stored)
     def __str__(self):
         return f'Programm id:{self.id}, handler:{self.handler}'
 
