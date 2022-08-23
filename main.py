@@ -45,17 +45,16 @@ class Attr(object):
         self._obj=obj
         self._attr=attr
 
-    # @property
-    # def self(self):
-    #     return self.getattr(self._obj, self._attr)
-    # @self.setter
-    # def self(self, value):
-    #     setattr(self._obj,self._attr,value)
-
-    def __get__(self, __name):
+    @property
+    def get(self):
         return getattr(self._obj, self._attr)
-    def __set__(self,value) -> None:
+    def set(self, value):
         setattr(self._obj,self._attr,value)
+
+    # def __get__(self, __name):
+    #     return getattr(self._obj, self._attr)
+    # def __set__(self,value) -> None:
+    #     setattr(self._obj,self._attr,value)
 
 
 
@@ -78,12 +77,11 @@ if __name__=='__main__':
         r1=Attr(n,var)
     # for prg in programms:
         # programm=
-    r2=n.result
-
-    print(r2)
-    r2=3
-    print(n)
+    rr=r1.get
+    print(f'{rr=}')
+    r1.set(4)
     print(r1)
+    print(n)
     print(f'node {nodes[0].id} n={nodes[0].result}')
     # prg=classes.Programm(**programm)
     # print(prg)
