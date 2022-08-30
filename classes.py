@@ -5,6 +5,7 @@ from unittest import result
 from typing import *
 from abc import ABC, abstractmethod
 import consts
+import inspect
 
 
 def auto_str(cls):
@@ -26,13 +27,105 @@ class Params():
         self.event=False
         self.changeEvent=False
 
+
+class BindVars:
+    '''
+    Binds dynamic added self instsnce attribute to another instance attribute
+    '''
+    class Var:
+        def __init__(self,name:str, obj:type, objAttrName:str) -> None:
+        # def __init__(self,name:str, obj:type, objAttrName:str, readonly:bool=False) -> None:
+            self.name=name
+            self.obj=obj
+            self.objAttrName=objAttrName
+            # self.readonly=readonly
+
+    vars=[]
+
+    def add(self, name:str, obj:type, objAttrName:str):
+    # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
+        '''
+        adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
+        '''
+        if not ((inspect.isclass(type(obj)) and not type(obj) == type )
+                and isinstance( objAttrName, str) 
+                and isinstance( name, str)):
+            raise Exception(f'Wrong argument type adding binding, args: {name=}, {obj=}, {objAttrName=}')
+        if not hasattr(obj, objAttrName):
+            raise Exception(f'Instance {obj} has no attribute {objAttrName}')
+
+        fget = lambda self: self._getProperty( name )
+        fset = lambda self, value: self._setProperty( name, value )
+        
+        #setattr( self, '_' + name, None )
+        setattr( self.__class__, name, property( fget = fget, fset = fset ) )
+        self.vars.append(self.Var(name, obj, objAttrName))
+    
+    def _getBinding(self, attrName):
+        try:
+            if found:=next(filter(lambda var: var.name == attrName, self.vars)):
+                # return found.obj, found.objAttrName, found.readonly
+                return found.obj, found.objAttrName
+        except StopIteration:
+            found=None
+        return None, None
+        # return None, None, None
+        
+
+    def _setProperty( self, name, value ):
+        setattr( self, '_' + name, value )
+        obj, objAttrName= self._getBinding(name)
+        setattr( obj, objAttrName, value )
+        # obj, objAttrName, readonly= self._getBinding(name)
+        # if not readonly:
+        #     setattr( obj, objAttrName, value )
+
+    def _getProperty( self, name ):
+        obj, objAttrName= self._getBinding(name)
+        # return getattr( self, '_' + name )
+        return getattr( obj, objAttrName )
+
+class Vars:
+    '''
+    dynamic added attribute with setters and getters
+    '''
+    
+    def add(self, name:str, defaultValue=None):
+    # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
+        '''
+        adds attribute to instance
+        name:str  attribute name
+        [defaultValue]:Any   default Value
+        '''
+        if not isinstance( name, str):
+            raise Exception(f'Wrong argument type adding arg: {name=}')
+
+        fget = lambda self: self._getProperty( name )
+        fset = lambda self, value: self._setProperty( name, value )
+        
+        setattr( self, '_' + name, None )
+        setattr( self.__class__, name, property( fget = fget, fset = fset ) )
+    
+            
+
+    def _setProperty( self, name, value ):
+        setattr( self, '_' + name, value )
+    
+    def _getProperty( self, name ):
+        return getattr( self, '_' + name )
+
+
 class Channel(ABC):
     id=None
     result=None
+    dost=None
+    error=None
 
     @abstractmethod
-    def __call__(self) -> Any:
-        ...
+    def __call__(self) -> Any: ...
+    
+    def __str__(self):
+        return f' Channel: id:{self.id}'
 
 
 class Node(Channel):
@@ -66,61 +159,47 @@ class Node(Channel):
                 self.result=self.resultIN
         else:
             print (f'no source init for node id:{self.id}')
-            
-class Node_OLD(Channel):
-    def __init__(self,id:int,moduleId:str,type:str,sourceIndexList:List,handler:callable=None) -> None:
-        super().__init__()
-        self.id=id
-        self.sourceId=moduleId
-        self.type=type.lower()
-        self.sourceIndexList=sourceIndexList
-        self.source=None
-        self.resultIN=None
-        
-        #self.resultIN=None #входящие данные
-        self.resultOUT=None # данные после обработки handler
-        if handler==None:
-            self.handler=None
-        
-
-        if type(handler)==str:
-            possibleFuncs = globals().copy()
-            possibleFuncs.update(locals())
-            self.funcParams=Params()
-            func = possibleFuncs.get(handler)
-            if func:
-                self.handler=func
-                # self.funcParams={}
-                self.funcParams=Params()
-            else:
-                raise NotImplementedError(f"Method {func} not implemented")
-        else:
-            self.handler=None
-    
-    def __str__(self):
-        return f'id= {self.id} type={self.type} handler:{self.handler} sourceId={self.source.id}, sourceIndexList:{self.sourceIndexList} source^:{id(self.source)}'
-
-    def getResult(self):
-        if self.source.result:
-            if self.type=='di':
-                self.resultIN=[self.source.result[i] for i in self.sourceIndexList]
-            elif self.type=='ai':
-                self.resultIN=self.source.result[0]             # только 1 элемент!!!!!!!!!!!!!!!!!!!!!!
            
 
     
 class Programm(Channel):
-    def __init__(self,id:int,handler:callable,args:dict=None) -> None:
+    def __init__(self,id:int,handler:callable,args:BindVars=None,stored:Vars=None) -> None:
         self.id=id
-        self.stored:any=None
-        self.args=args
+        self.stored=stored
+        self.argss=args
         self.handler=handler
     
-    def __call__(self) -> Any:
-        self.stored=self.handler(**self.args,**self.stored)
+    def __call__(self):
+        self.stored=self.handler(self.args,self.stored)
+    
+    def exec(self):
+        return self.__call__()
+
     def __str__(self):
         return f'Programm id:{self.id}, handler:{self.handler}'
 
+class ChannelsBase():
+    channels=[]
+    
+    def add(self,channel:Channel):
+        try:
+            found=next(filter(lambda _channel: _channel.id == channel.id, self.channels))
+        except StopIteration:
+            found=None
+        if not found:
+            self.channels.append(channel)
+        else:
+            raise Exception(f'duplicate id in channel base adding {channel} ')
+    
+    def getId(self, id:int)->Channel:
+        try:
+            found=next(filter(lambda _channel: _channel.id == id, self.channels))
+        except StopIteration:
+            found=None
+        return found
+
+    def __str__(self) -> str:
+        return ''.join(channel.__str__()+'\n' for channel in self.channels )
 
 __all__=[
         Node,

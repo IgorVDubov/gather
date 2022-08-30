@@ -2,23 +2,41 @@ import asyncio
 from time import time
 import modbus_connector
 from log_module import logger
+from abc import ABC, abstractmethod
+import myexceptions
 
-class Source(object):
+class BaseSource(ABC):
+    id=None
+    format=None
+    result=None
+    period=None
+    dost=None
+    error=None
+
+    @abstractmethod
+    def read(self):...
+
+class Source(BaseSource):
     def __init__(self,module,loop):
         self.id=module['id']
         self.period=module['period']
         self.result=None
         self.format=module['format']
         if module['type']=='ModbusTcp':
-            self.connection = modbus_connector.AsyncModbusClient(module['ip'],module['port'],module['unit'],
+            self.connection = modbus_connector.AsyncModbusConnection(module['ip'],module['port'],module['unit'],
                                                                 module['address'],module['regCount'],module['format'],
                                                                 None if module.get('function')==(None or '') else module.get('function'),
                                                                 loop=loop)
         else:
             raise ValueError (f'No class for type {module["type"]}')
+        self.dost=self.connection.connected
     
     async def read(self):
-        self.result= await self.connection.readInputs()
+        self.dost=self.connection.connected
+        try:
+            self.result= await self.connection.read()
+        except SourceException as e:
+            self.error=e
         return self.result
     
     def __str__(self):

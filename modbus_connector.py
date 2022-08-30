@@ -11,7 +11,7 @@ from modbus_emulator import TestAsyncModbusClient
 from bpacker import unpackCDABToFloat
 from abc import ABC, abstractmethod
 
-class asyncBaseMBConnection(ABC):
+class AsyncBaseModbusClient(ABC):
     ip = None
     port = None
     connection = None
@@ -27,7 +27,7 @@ class asyncBaseMBConnection(ABC):
 
 
 
-class AsyncModbusConnection(asyncBaseMBConnection):
+class AsyncModbusClient(AsyncBaseModbusClient):
     def __init__(self,ip,port,loop=None):
         self.ip=ip
         self.port=port
@@ -56,7 +56,7 @@ class AsyncModbusConnection(asyncBaseMBConnection):
     async def writeCoil_F5(address:int, value:bool, unit:int):...
     async def writeWord_F6(address:int, value:int, unit:int):...
     
-class AsyncModbusClient(AsyncModbusConnection):
+class AsyncModbusConnection(AsyncModbusClient):
     """
     AsyncModbusClient 
     inits AsyncModbusConnection
@@ -82,7 +82,7 @@ class AsyncModbusClient(AsyncModbusConnection):
     def __str__(self):
         return f'ip:{self.ip}, port:{self.port}, unit:{self.unit}, address:{self.address}, regCount:{self.regCount}, function:{self.function}'
 
-    async def readInputs(self):
+    async def read(self):
         connection=self.connection.protocol
         result=[]
         
