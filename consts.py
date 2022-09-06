@@ -4,3 +4,5 @@ DI='di'
 class Consts(Singleton):
     MODBUS='ModBus'
     MYSQL='MySql'
+
+
