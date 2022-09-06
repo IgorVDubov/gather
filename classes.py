@@ -135,13 +135,13 @@ class Node(Channel):
         self.type=type
         self.sourceIndexList=sourceIndexList
         self.source=None
-        self.resultIN=None
+        self.resultIn=None
         self.result=None # данные после обработки handler
         self.handler=handler
         self.handlerStoredVars=None
     
     def __str__(self):
-        return f' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}'
+        return f''' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}, {self.resultIn=}'''
 
     def __call__(self):
         if self.source:
@@ -166,7 +166,7 @@ class Programm(Channel):
     def __init__(self,id:int,handler:callable,args:BindVars=None,stored:Vars=None) -> None:
         self.id=id
         self.stored=stored
-        self.argss=args
+        self.args=args
         self.handler=handler
     
     def __call__(self):
@@ -178,28 +178,7 @@ class Programm(Channel):
     def __str__(self):
         return f'Programm id:{self.id}, handler:{self.handler}'
 
-class ChannelsBase():
-    channels=[]
-    
-    def add(self,channel:Channel):
-        try:
-            found=next(filter(lambda _channel: _channel.id == channel.id, self.channels))
-        except StopIteration:
-            found=None
-        if not found:
-            self.channels.append(channel)
-        else:
-            raise Exception(f'duplicate id in channel base adding {channel} ')
-    
-    def getId(self, id:int)->Channel:
-        try:
-            found=next(filter(lambda _channel: _channel.id == id, self.channels))
-        except StopIteration:
-            found=None
-        return found
 
-    def __str__(self) -> str:
-        return ''.join(channel.__str__()+'\n' for channel in self.channels )
 
 __all__=[
         Node,
