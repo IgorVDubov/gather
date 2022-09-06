@@ -4,7 +4,8 @@
 import channel_handlers
 from consts import AI, DI
 
-HTTPServer='Tornado'
+# HTTPServer='Tornado'
+HTTPServer=None
 HTTPServerParams={'host':'192.168.1.200','port':8888}
 
 ModuleList=[ #{'id':'e41e0a011adc','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},
@@ -45,9 +46,8 @@ sourceIndexList->list: позиции (индексы с 0) данных мас�
 handler->str: имя функции обработчика результата (в модуле handler_funcs)
 '''            
 programms=[
-    {'id':10001,'handler':channel_handlers.programm_1},
-]
-
+    {'id':10001, 'handler':channel_handlers.programm_1, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}}
+,]
 
 #
 MBServerAdrMap=[

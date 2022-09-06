@@ -1,9 +1,9 @@
-from channel_handlers import programm_1
 from log_module import logger
 import log_module
 import asyncio
 from main_pool import MainPool
 import classes
+import channelbase
 import globals
 from exchange_server import ModbusExchangeServer
 from source_pool import SourcePool
@@ -14,8 +14,7 @@ from source_pool import SourcePool
 def init():
     loop=asyncio.get_event_loop()
     sourcePool=SourcePool(globals.ModuleList,loop)
-    channels=[classes.Node(**node) for node in globals.nodes]
-    channels.extend([classes.Programm(**prg) for prg in globals.programms])
+    channelBase=channelbase.ChannelBaseInit(globals.nodes, globals.programms)
 
     # ModbusExchServer=ModbusExchangeServer(globals.MBServerAdrMap,globals.MBServerParams['host'],globals.MBServerParams['port'])
     ModbusExchServer=None
@@ -23,12 +22,11 @@ def init():
     if globals.HTTPServer:
         from tornado_serv import TornadoHTTPServerInit
         HTTPServer=TornadoHTTPServerInit(globals.HTTPServerParams['port'])
-    mainPool=MainPool(loop, sourcePool, channels, ModbusExchServer, HTTPServer)
+    mainPool=MainPool(loop, sourcePool, channelBase, ModbusExchServer, HTTPServer)
     print ('Sources')
     print (mainPool.sourcePool)
     print ('Channels:')
-    for channel in mainPool.channels:
-        print(channel)
+    print(mainPool.channelBase)
     logger.info ('init ok')
     return mainPool
 
@@ -61,27 +59,5 @@ class Attr(object):
 
 
 if __name__=='__main__':
-    # main()
-    import channel_handlers
-    nodes=[classes.Node(**{'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]})]
-    nodes[0].result=1
-    print(nodes[0])
-    print(f'node {nodes[0].id} n={nodes[0].result}')
-    # programms=[{'id':10001,'handler':channel_handlers.programm_1,'args':{'result':(4208,'result')},'stored':{'stored1':0}}]
-    prg={'id':10001,'handler':channel_handlers.programm_1,'args':{'result':(4208,'result')},'stored':{'stored1':0}}
-    for name, var_params  in prg['args'].items():
-        id, var = var_params
-        n=next(filter(lambda node: node.id == id, nodes))
-
-        r=getattr(n,var)
-        r1=Attr(n,var)
-    # for prg in programms:
-        # programm=
-    rr=r1.get
-    print(f'{rr=}')
-    r1.set(4)
-    print(r1)
-    print(n)
-    print(f'node {nodes[0].id} n={nodes[0].result}')
-    # prg=classes.Programm(**programm)
-    # print(prg)
+    main()
+    
