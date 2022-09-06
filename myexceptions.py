@@ -14,9 +14,8 @@ class BaseException(Exception):
         """Error"""
         return True
 
-
-class ModbusException(BaseException):
-    """ Error resulting from data i/o """
+class SourceException(BaseException):
+    """ Error resulting from data source """
 
     def __init__(self, string="", function_code=None):
         """ Initialize the exception
@@ -24,4 +23,16 @@ class ModbusException(BaseException):
         """
         self.fcode = function_code
         self.message = "[Input/Output] %s" % string
-        ModbusException.__init__(self, self.message)
+        BaseException.__init__(self, self.message)
+
+
+class ModbusException(SourceException):
+    """ Error resulting from Modbus data i/o """
+
+    def __init__(self, string="", function_code=None):
+        """ Initialize the exception
+        :param string: The message to append to the error
+        """
+        self.fcode = function_code
+        self.message = "[Input/Output] %s" % string
+        SourceException.__init__(self, self.message)

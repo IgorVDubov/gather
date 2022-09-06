@@ -32,11 +32,12 @@ class Source(BaseSource):
         self.dost=self.connection.connected
     
     async def read(self):
-        self.dost=self.connection.connected
         try:
+            self.dost=self.connection.connected
             self.result= await self.connection.read()
-        except SourceException as e:
+        except myexceptions.SourceException as e:
             self.error=e
+            self.result=None
         return self.result
     
     def __str__(self):
