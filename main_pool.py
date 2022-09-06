@@ -6,6 +6,7 @@ import classes
 from consts import Consts
 from exchange_server import ExchangeServer
 from source_pool import SourcePool
+from channelbase import ChannelsBase
 
 NODDE_READER_PAUSE=1
 
@@ -14,14 +15,13 @@ NODDE_READER_PAUSE=1
 class MainPool():
     def __init__(self,  loop:asyncio.AbstractEventLoop, 
                         sourcePool:SourcePool, 
-                        channels:List,
+                        channeBase:ChannelsBase,
                         exchangeServer:ExchangeServer, 
                         HTTPServer=None):
         '''
         sources: source Moduke to read
             [{'id':'module_id(str)','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},...]
-        nodes: single Node params in suorce + handler function
-            Node(id,moduleId,type,sourceIndexList,handler)
+        channeBlase: channe Blase
         MBServAddrMap: ModBus server address map for requesting node data
             [{'unit':0x1, 'map':{
                         'di':[{'id':4207,'addr':1,'len':2},{'id':4208,'addr':3,'len':5},.......],
@@ -32,17 +32,17 @@ class MainPool():
         self.sourcePool=sourcePool
         self.sourcePool.readAllOneTime()                    #TODO  проверить как работает если нет доступа к source
                                                             #       или заполнять Null чтобы первый раз сработало по изменению
-        self.channels=channels
+        self.channelBase=channeBase
        
-        for node in (Channel for Channel in self.channels if isinstance(Channel,classes.Node)):
+        for node in (Channel for Channel in self.channelBase.channels if isinstance(Channel,classes.Node)):
             for source in self.sourcePool.sources:
                 if source.id==node.sourceId:
                     node.source=source
                     break
-        for node in (Channel for Channel in self.channels if isinstance(Channel,classes.Node)):
+        for node in (Channel for Channel in self.channelBase.channels if isinstance(Channel,classes.Node)):
             if not node.source:
                 print(f'!!!!!!!!!!Cant find source {node.sourceId} for node {node.id}, remove from pool')
-                self.nodes.pop(self.nodes.index(node))
+                self.channelBase.channels.pop(self.channelBase.channels.index(node))
 
         #self.cancelEvent=asyncio.Event()
         self.exchServer=exchangeServer
@@ -98,9 +98,7 @@ class MainPool():
         try:
             while True:
                 before=time()
-                for channel in self.channels:
-                    channel()
-                    print(f'chanel {channel.id} = {channel.result}')
+                self.channelBase.executeAll()
                 delay=NODDE_READER_PAUSE-(time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channels)} channels ')
