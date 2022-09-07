@@ -19,13 +19,13 @@ class ChannelsBase():
                 try:
                     for ch in self.channels:
                         if CHANNELS_EXEC_ORDER.index(type(ch))>CHANNELS_EXEC_ORDER.index(type(channel)):
-                            print (f'insert channel {channel.id} ' )
+                            # print (f'insert channel {channel.id} ' )
                             self.channels.insert(self.channels.index(ch),channel)
                             return
                 except ValueError:
                     logger.warn(f'cant find order on CHANNELS_EXEC_ORDER for channel {channel.id}, move to end')
             self.channels.append(channel)
-            print (f'append channel {channel.id} ' )
+            # print (f'append channel {channel.id} ' )
         else:
             raise Exception(f'duplicate id in channel base adding {channel} ')
     

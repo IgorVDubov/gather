@@ -52,36 +52,39 @@ def getSubObjectAttr(obj:type, attr:str):
         s+=attr[i]
     return obj,s
 
-@auto_str
+class Var:
+    def __init__(self,name:str, obj:type, objAttrName:str) -> None:
+    # def __init__(self,name:str, obj:type, objAttrName:str, readonly:bool=False) -> None:
+        self.name=name
+        self.obj,self.objAttrName=getSubObjectAttr(obj,objAttrName)
+        self.objAttrName=objAttrName
+        # self.readonly=readonly
+
 class BindVars:
     '''
     Binds dynamic added self instsnce attribute to another instance attribute
     can bins subobject attr in format 'instance_attr.a'
     '''
-    class Var:
-        def __init__(self,name:str, obj:type, objAttrName:str) -> None:
-        # def __init__(self,name:str, obj:type, objAttrName:str, readonly:bool=False) -> None:
-            self.name=name
-            self.obj,self.objAttrName=getSubObjectAttr(obj,objAttrName)
-            self.objAttrName=objAttrName
-            # self.readonly=readonly
+    # vars=[]
 
-    vars=[]
-
-    def __new__(cls):
-        return deepcopy(cls)
+    def __init__(self):
+        self.vars=[]
 
     def __str__(self):
         s=''
         for v in self.vars:
-            s+=f'{v.name}<-{v.objAttrName} '
+            s+=f'{v.name}<-{v.obj.id if hasattr(v.obj,"id") else v.obj}.{v.objAttrName} '
         return s
     
     def __repr__(self):
-        s=''
-        for v in self.vars:
-            s+=f'{v.name}<-{v.obj.id}.{v.objAttrName} '
-        return s
+        # s=''
+        # for v in self.vars:
+        #     s+=f'{v.name}<-{v.obj.id if hasattr(v.obj,"id") else v.obj}.{v.objAttrName} '
+        # return s
+        return self.__str__()
+
+    # def add(self,name:str, obj:type, objAttrName:str):
+    #     return self._add(name, obj, objAttrName)
 
     def add(self, name:str, obj:type, objAttrName:str):
     # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
@@ -98,9 +101,9 @@ class BindVars:
         fget = lambda self: self._getProperty( name )
         fset = lambda self, value: self._setProperty( name, value )
         
-        #setattr( self, '_' + name, None )
+        setattr( self, '_' + name, None )
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
-        self.vars.append(self.Var(name, obj, objAttrName))
+        self.vars.append(Var(name, obj, objAttrName))
     
     def _getBinding(self, attrName):
         try:
@@ -193,7 +196,7 @@ class Node(Channel):
                 print(f'No result in channel {self.id} source {self.source}')
             # print(f'result in channel {self.id} = {self.source.result}')
             if self.handler:
-                self.result,self.handlerStoredVars=handler(self.resultIN,self.handlerStoredVars)
+                self.result,self.handlerStoredVars=handler(self.resultIN,self.handlerStoredVars)    #TODO поменять на VARS(), возможно BINDVARS()
             else:
                 self.result=self.resultIN
         else:
@@ -217,20 +220,6 @@ class Programm(Channel):
 
 
 
-__all__=[
-        Node,
-        Programm
-]
-
-########## test def  ##########
-def f1(obj1,stored):
-    obj1.resultIN+=10
-########## test def  ##########
-
 
 if __name__ == '__main__':
-    n1=Node(1,1,'AI',None,handler=None)
-    n1.resultIN=50
-    p=Programm(f1,n1)
-    p()
-    print(n1.resultIN)
+    pass

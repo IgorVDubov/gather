@@ -1,14 +1,33 @@
-from dataclasses import dataclass
+import classes
+class A:
+    pass
 
-@dataclass
-class A():
-    i:int
-    s:str
+a=A()
+a.a=1
+a.id=155
+b=A()
+b.a=5
+b.id=156
 
-@dataclass    
-class B(A):
-    c:int
+v=classes.BindVars()
+v1=classes.BindVars()
 
+v.add('v1',a,'a')
+v1.add('v2',b,'a')
 
-a=B(s='xsd',i=1,c=44)
-print(a)
+print(a.a)
+print(v)
+print(v.v1)
+print(v1)
+print(v1.v2)
+print('-----')
+
+v3=classes.Vars()
+v4=classes.Vars()
+
+v3.add('v1',1)
+v4.add('v2',2)
+
+print(v3.v1)
+print(v4.v2)
+print(v3)
