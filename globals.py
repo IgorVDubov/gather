@@ -52,10 +52,10 @@ programms=[
 #
 MBServerAdrMap=[
     {'unit':0x1, 'map':{
-            'di':[{'id':4207,'addr':0,'len':16}
+            'di':[{'id':4208, 'attr':'result', 'addr':0, 'len':16}
                   #,{'id':4208,'addr':3,'len':5}
                 ],
-            'ir':[{'id':4208,'addr':0,'type':'float'}
+            'ir':[{'id':4209, 'attr':'result', 'addr':0, 'type':'float'}
                   #,{'id':4210,'addr':1,'type':'float'}
                 ]
             }

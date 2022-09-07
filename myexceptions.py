@@ -47,3 +47,25 @@ class ModbusException(SourceException):
         self.fcode = function_code
         self.message = "[Input/Output] %s" % string
         SourceException.__init__(self, self.message)
+
+class ExchangeServerException(BaseException):
+    """ Error resulting from data source """
+
+    def __init__(self, string="", function_code=None):
+        """ Initialize the exception
+        :param string: The message to append to the error
+        """
+        self.fcode = function_code
+        self.message = "[Input/Output] %s" % string
+        BaseException.__init__(self, self.message)
+
+class ModbusExchangeServerException(ExchangeServerException):
+    """ Error resulting from Modbus data i/o """
+
+    def __init__(self, string="", function_code=None):
+        """ Initialize the exception
+        :param string: The message to append to the error
+        """
+        self.fcode = function_code
+        self.message = "[Input/Output] %s" % string
+        SourceException.__init__(self, self.message)

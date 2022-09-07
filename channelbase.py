@@ -78,6 +78,17 @@ def ChannelBaseInit(nodes=None, programms=None):
 
     return chBase
 
+def bindChannelAttr(channelBase, id:int,attrNmae:str)->classes.BindVars:
+    '''
+    id- channel id
+    attrname:str - channel attribute mane 
+    '''
+    if channel:=channelBase.get(id):
+        bindVar=classes.BindVars()
+        bindVar.add('value',channel,attrNmae)
+        return bindVar
+    else:
+        raise Exception(f'Cant find channel {id} in channelBase')
 
 if __name__ == '__main__':
     nodes=[  

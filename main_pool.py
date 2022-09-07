@@ -17,6 +17,7 @@ class MainPool():
                         sourcePool:SourcePool, 
                         channeBase:ChannelsBase,
                         exchangeServer:ExchangeServer, 
+                        exchangeBindings:dict,
                         HTTPServer=None):
         '''
         sources: source Moduke to read
@@ -46,6 +47,7 @@ class MainPool():
 
         #self.cancelEvent=asyncio.Event()
         self.exchServer=exchangeServer
+        self.exchangeBindings=exchangeBindings
         self.setTasks()
         self.webApp= HTTPServer
             
@@ -98,10 +100,13 @@ class MainPool():
         try:
             while True:
                 before=time()
-                self.channelBase.executeAll()
+                for channel in self.channelBase.channels:
+                    channel()
+                    if self.exchServer:
+                        self.exchServer.SetValue(channel.id,channel.result)
                 delay=NODDE_READER_PAUSE-(time()-before)
                 if delay<=0:
-                    logger.warning(f'Not enough time for channels calc loop, {len(self.channels)} channels ')
+                    logger.warning(f'Not enough time for channels calc loop, {len(self.channelBase.channels)} channels ')
                 await asyncio.sleep(delay)
 
         except asyncio.CancelledError:

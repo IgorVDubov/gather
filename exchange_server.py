@@ -11,6 +11,7 @@ class ExchangeServer(ABC):
     def start():...
     def stop():...
     def setValue():...
+    def getValue():...
 
     
 
@@ -26,6 +27,8 @@ class ModbusExchangeServer(ExchangeServer):
         self._mbStop()
     def setValue(self,id,value):
         self._mbSetIdValue(id,value)
+    def getValue(self, id): 
+        return self._mbGetIdValue(id)
 
     def _mbStart(self):
         self.server.startInThread()
@@ -35,6 +38,8 @@ class ModbusExchangeServer(ExchangeServer):
     
     def _mbSetIdValue(self,id,value):
         self.server.setValue(id,value)
+    def _mbGetIdValue(self,id):
+        return self.server.getValue(id)
 
 if __name__ == '__main__':
     pass

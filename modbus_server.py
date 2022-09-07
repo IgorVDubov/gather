@@ -7,6 +7,7 @@ Modbus server class based on Pymodbus Synchronous Server
 # --------------------------------------------------------------------------- #
 # import the various server implementations
 # --------------------------------------------------------------------------- #
+from typing import Any
 from pymodbus.version import version
 from pymodbus.server.sync import StartTcpServer
 
@@ -26,13 +27,13 @@ from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
 # log.setLevel(logging.DEBUG)
 
 from threading import Thread
-
+from myexceptions import ModbusExchangeServerException
+import classes
 
 import struct 
 def packFloatTo2WordsCDAB(f):
     b=[i for i in struct.pack('<f',f)]
     return [b[i+1]*256+b[i] for i in range(0,len(b),2)]
-
 
 
 class MBServer():
@@ -42,7 +43,6 @@ class MBServer():
         self.serverParams=serverParams
         self.context=self.addrContextInit(addrMap)
         self.idMap=self.idAddrMapDictInit(addrMap)
-        pass
         
     def idAddrMapDictInit(self,addrMap):
         '''
@@ -166,6 +166,10 @@ class MBServer():
     def stopInThread(self):
         self.serverThread.stop()        #TODO передать signal на shutdown TcpServer
 
+    def setCI(self,unit,addr,val):
+        # print('setDI')
+        self.context[unit].setValues(1,addr,val)
+    
     def setDI(self,unit,addr,val):
         # print('setDI')
         self.context[unit].setValues(2,addr,val)
@@ -188,7 +192,7 @@ class MBServer():
         '''
         unit,addr,length,valType=self.idMap.get(id,None)
         if addr==None:
-            raise ValueError('modbusServer setValue no such ID in map')
+            # raise ModbusExchangeServerException('modbusServer setValue no such ID in map')
             return
         else:
             if valType=='bits':
@@ -196,17 +200,22 @@ class MBServer():
                     val=val[:length]            #обрезаем результат в соответствии с заданной длиной записи
                     self.setDI(unit,addr,val)
                 else:
-                    raise ValueError(f'modbusServer setValue value ({val}) for id:{id} is not list type')
+                    raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not list type')
+            elif valType=='coil':
+                if type(val)==bool:
+                    self.setCI(unit,addr,val)
+                else:
+                    raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not bool type')
             elif valType=='int':
                 if type(val)==int:
                     self.setInt(unit,addr,val)
                 else:
-                    raise ValueError(f'modbusServer setValue value ({val}) for id:{id} is not int type')
+                    raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not int type')
             elif valType=='float':
                 if type(val) in (int,float):
                     self.setFloat(unit,addr,val)
                 else:
-                    raise ValueError(f'modbusServer setValue value ({val}) for id:{id} is not int or float type')
+                    raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not int or float type')
 
 
 

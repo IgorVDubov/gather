@@ -4,8 +4,9 @@ from unicodedata import name
 from unittest import result
 from typing import *
 from abc import ABC, abstractmethod
-import consts
 import inspect
+from copy import deepcopy
+import consts
 
 
 def auto_str(cls):
@@ -17,30 +18,70 @@ def auto_str(cls):
     cls.__str__ = __str__
     return cls
 
+def getDeepAttr(obj:type, attr:str):
+    '''
+    return  instance subobjects attributes value
+    obj - class instance
+    attr - attributes: example 'a', 'vars.b' if vars instance of Var with attr 'b'
+    '''
+    s=''
+    for i in range(0,len(attr)):
+        if attr[i]=='.':
+            result=getattr(obj,s)
+            s=''
+            obj=result
+            continue
+        s+=attr[i]
+    return getattr(obj,s)
+
+def getSubObjectAttr(obj:type, attr:str):
+    '''
+    return  subobjects instance and  attribute name for getattr
+    obj - class instance
+    attr - attributes: example 'a', 'vars.b' if vars instance of Var with attr 'b'
+    return (subobj:type, name:str)
+    example: getSubObjectAttr(someObj,'vars.b') returns (vars_instance,'b')
+    '''
+    s=''
+    for i in range(0,len(attr)):
+        if attr[i]=='.':
+            result=getattr(obj,s)
+            s=''
+            obj=result
+            continue
+        s+=attr[i]
+    return obj,s
+
 @auto_str
-class Params():
-    def __init__(self):
-        self.result=None
-        self.prevVal1=None
-        self.timeStamp=time()
-        self.length=0
-        self.event=False
-        self.changeEvent=False
-
-
 class BindVars:
     '''
     Binds dynamic added self instsnce attribute to another instance attribute
+    can bins subobject attr in format 'instance_attr.a'
     '''
     class Var:
         def __init__(self,name:str, obj:type, objAttrName:str) -> None:
         # def __init__(self,name:str, obj:type, objAttrName:str, readonly:bool=False) -> None:
             self.name=name
-            self.obj=obj
+            self.obj,self.objAttrName=getSubObjectAttr(obj,objAttrName)
             self.objAttrName=objAttrName
             # self.readonly=readonly
 
     vars=[]
+
+    def __new__(cls):
+        return deepcopy(cls)
+
+    def __str__(self):
+        s=''
+        for v in self.vars:
+            s+=f'{v.name}<-{v.objAttrName} '
+        return s
+    
+    def __repr__(self):
+        s=''
+        for v in self.vars:
+            s+=f'{v.name}<-{v.obj.id}.{v.objAttrName} '
+        return s
 
     def add(self, name:str, obj:type, objAttrName:str):
     # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
@@ -103,7 +144,7 @@ class Vars:
         fget = lambda self: self._getProperty( name )
         fset = lambda self, value: self._setProperty( name, value )
         
-        setattr( self, '_' + name, None )
+        setattr( self, '_' + name, defaultValue )
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
     
             
@@ -113,7 +154,6 @@ class Vars:
     
     def _getProperty( self, name ):
         return getattr( self, '_' + name )
-
 
 class Channel(ABC):
     id=None
@@ -126,7 +166,6 @@ class Channel(ABC):
     
     def __str__(self):
         return f' Channel: id:{self.id}'
-
 
 class Node(Channel):
     def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List,handler:callable=None) -> None:
@@ -159,8 +198,6 @@ class Node(Channel):
                 self.result=self.resultIN
         else:
             print (f'no source init for node id:{self.id}')
-           
-
     
 class Programm(Channel):
     def __init__(self,id:int,handler:callable,args:BindVars=None,stored:Vars=None) -> None:
