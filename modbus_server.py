@@ -64,7 +64,7 @@ class MBServer():
                 for device in ir:
                     valLength=2 if device['type']=='float' else 1
                     idMap[device['id']]=(unit['unit'],device['addr'],valLength,device['type'])
-            print(idMap)
+            # print(idMap)
         return idMap
 
     def addrContextInit(self,addrMap:dict):

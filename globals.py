@@ -1,15 +1,13 @@
-# from collections import namedtuple
-# consts = namedtuple('contst',['MODBUS'])
-# consts.MODBUS='ModBus'
 import channel_handlers
 from consts import AI, DI
 
-# HTTPServer='Tornado'
+# HTTPServerParams={'host':'192.168.1.200','port':8888}
+# from tornado_serv import TornadoHTTPServerInit
+# HTTPServer=TornadoHTTPServerInit(HTTPServerParams['port'])
 HTTPServer=None
-HTTPServerParams={'host':'192.168.1.200','port':8888}
 
 ModuleList=[ #{'id':'e41e0a011adc','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},
-            #{'id':'000de065a65f','type':'ModbusTcp','ip':'192.168.1.98','port':'502','unit':0x1, 'address':0, 'regNumber':16, 'function':2, 'period':0.5}
+            {'id':'000de065a65f','type':'ModbusTcp','ip':'192.168.1.98','port':'502','unit':0x1, 'address':0, 'regCount':16, 'function':2,'format':DI, 'period':0.5},
             {'id':'test2','type':'ModbusTcp','ip':'test2','port':'2','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
             {'id':'test3','type':'ModbusTcp','ip':'test3','port':'2','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
             #{'id':'ModuleA','type':'ModbusTcp','ip':'192.168.1.200','port':502,'unit':0x1, 'address':1, 'count':2, 'function':3, 'format':consts.DI, 'period':0.5,'handler':''},

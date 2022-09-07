@@ -10,8 +10,6 @@ from exchange_server import ModbusExchangeServer
 from source_pool import SourcePool
 
 
-# def makeChannelBase():
-
 def MBServerAdrMapInit(channelBase:channelbase.ChannelsBase,addrMaping:dict)->dict:
     newAddrMap=deepcopy(addrMaping)
     bindings=dict()
@@ -19,7 +17,6 @@ def MBServerAdrMapInit(channelBase:channelbase.ChannelsBase,addrMaping:dict)->di
         for regType,data in unit.get('map').items():
             for reg in data:
                 if attr:=reg.pop('attr'):
-                    print(f'{reg["id"]}, {attr}')
                     bindings.update({reg['id']:channelbase.bindChannelAttr(channelBase,reg['id'],attr)})
                 else:
                     raise Exception(f'no value to bind at {reg}')
@@ -30,19 +27,16 @@ def init():
     sourcePool=SourcePool(globals.ModuleList,loop)
     channelBase=channelbase.ChannelBaseInit(globals.nodes, globals.programms)
     newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,globals.MBServerAdrMap)
-    print('exchangeBindings')
-    print(exchangeBindings)
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'])
     # ModbusExchServer=None
-    HTTPServer=None
-    if globals.HTTPServer:
-        from tornado_serv import TornadoHTTPServerInit
-        HTTPServer=TornadoHTTPServerInit(globals.HTTPServerParams['port'])
-    mainPool=MainPool(loop, sourcePool, channelBase, ModbusExchServer, exchangeBindings, HTTPServer)
+    HTTPServer=globals.HTTPServer
     print ('Sources')
-    print (mainPool.sourcePool)
+    print (sourcePool)
     print ('Channels:')
-    print(mainPool.channelBase)
+    print(channelBase)
+    print('ExchangeBindings')
+    print(exchangeBindings)
+    mainPool=MainPool(loop, sourcePool, channelBase, ModbusExchServer, exchangeBindings, HTTPServer)
     logger.info ('init ok')
     return mainPool
 

@@ -41,7 +41,7 @@ class Source(BaseSource):
         return self.result
     
     def __str__(self):
-        return f' {id(self)}    id:{self.id}, data format:{self.format}, period:{self.period}s, {self.connection.__str__()}'
+        return f' {id(self)}    id:{self.id}, data format:{self.format}, period:{self.period}s, {self.connection.__str__()} {"-OK" if self.dost else "-N/A"}'
 
 class SourcePool(object):
     def __init__(self,modules,loop=None):
