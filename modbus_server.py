@@ -27,7 +27,7 @@ from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
 # log.setLevel(logging.DEBUG)
 
 from threading import Thread
-from myexceptions import ModbusExchangeServerException
+from myexceptions import ModbusExchangeServerException, ConfigException
 import classes
 
 import struct 
@@ -191,7 +191,10 @@ class MBServer():
              int if HR type int
              float or int as float if HR type float
         '''
-        unit,addr,length,valType=self.idMap.get(id,None)
+        try:
+            unit,addr,length,valType=self.idMap.get(id,None)
+        except TypeError:
+            raise ConfigException(f'ModBus server[setValue]: cant get mnapping for id:{id}')
         if addr==None:
             # raise ModbusExchangeServerException('modbusServer setValue no such ID in map')
             return

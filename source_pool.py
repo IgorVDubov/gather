@@ -28,7 +28,7 @@ class Source(BaseSource):
                                                                 None if module.get('function')==(None or '') else module.get('function'),
                                                                 loop=loop)
         else:
-            raise ValueError (f'No class for type {module["type"]}')
+            raise myexceptions.ConfigException (f'No class for type {module["type"]}')
         self.dost=self.connection.connected
     
     async def read(self):
@@ -97,7 +97,7 @@ class SourcePool(object):
             self.loop.run_until_complete(source.read())
             #print(f'next step  after read task {source.result}')
             if not source.result:
-                raise ValueError(f'Cant read source {source.id}')
+                print (f'!!!!!!!!!!!!!!! Cant read source {source.id}')
 
         # Let also finish all running tasks:
         # pending = asyncio.Task.all_tasks()

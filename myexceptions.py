@@ -14,26 +14,36 @@ class BaseException(Exception):
         """Error"""
         return True
 
+
+
+class ConfigException(BaseException):
+    """ Error congurating program stucture """
+
+    def __init__(self, string=""):
+        """ Initialize the exception
+        :param string: The message to append to the error
+        """
+        self.message = "[Program stucture] %s" % string
+        BaseException.__init__(self, self.message)
+
 class ChannelException(BaseException):
     """ Error executing channel """
 
-    def __init__(self, string="", function_code=None):
+    def __init__(self, string=""):
         """ Initialize the exception
         :param string: The message to append to the error
         """
-        self.fcode = function_code
-        self.message = "[Input/Output] %s" % string
+        self.message = "[Channels] %s" % string
         BaseException.__init__(self, self.message)
 
 class SourceException(BaseException):
-    """ Error resulting from data source """
+    """ Error getting from data source """
 
-    def __init__(self, string="", function_code=None):
+    def __init__(self, string=""):
         """ Initialize the exception
         :param string: The message to append to the error
         """
-        self.fcode = function_code
-        self.message = "[Input/Output] %s" % string
+        self.message = "[Source] %s" % string
         BaseException.__init__(self, self.message)
 
 
@@ -45,18 +55,17 @@ class ModbusException(SourceException):
         :param string: The message to append to the error
         """
         self.fcode = function_code
-        self.message = "[Input/Output] %s" % string
+        self.message = "[Modbus] %s" % string
         SourceException.__init__(self, self.message)
 
 class ExchangeServerException(BaseException):
     """ Error resulting from data source """
 
-    def __init__(self, string="", function_code=None):
+    def __init__(self, string=""):
         """ Initialize the exception
         :param string: The message to append to the error
         """
-        self.fcode = function_code
-        self.message = "[Input/Output] %s" % string
+        self.message = "[ExchangeServer] %s" % string
         BaseException.__init__(self, self.message)
 
 class ModbusExchangeServerException(ExchangeServerException):
@@ -67,5 +76,5 @@ class ModbusExchangeServerException(ExchangeServerException):
         :param string: The message to append to the error
         """
         self.fcode = function_code
-        self.message = "[Input/Output] %s" % string
+        self.message = "[ModbusExchangeServer] %s" % string
         SourceException.__init__(self, self.message)

@@ -15,7 +15,7 @@ NODDE_READER_PAUSE=1
 class MainPool():
     def __init__(self,  loop:asyncio.AbstractEventLoop, 
                         sourcePool:SourcePool, 
-                        channeBase:ChannelsBase,
+                        channelBase:ChannelsBase,
                         exchangeServer:ExchangeServer, 
                         exchangeBindings:dict,
                         HTTPServer=None):
@@ -33,7 +33,7 @@ class MainPool():
         self.sourcePool=sourcePool
         self.sourcePool.readAllOneTime()                    #TODO  проверить как работает если нет доступа к source
                                                             #       или заполнять Null чтобы первый раз сработало по изменению
-        self.channelBase=channeBase
+        self.channelBase=channelBase
        
         for node in (Channel for Channel in self.channelBase.channels if isinstance(Channel,classes.Node)):
             for source in self.sourcePool.sources:
@@ -82,11 +82,11 @@ class MainPool():
             if node.funcParams.changeEvent:
                 node.funcParams.changeEvent=False
             if node.funcParams.event:
-                self.exchServer.SetValue(node.id,node.resultIN)
+                self.exchServer.setValue(node.id,node.resultIN)
                 #print(f'{datetime.now().strftime("%m/%d/%Y, %H:%M:%S")} result:{node.funcParams.prevVal1} length:{node.funcParams.length}s ')
                 node.funcParams.event=False
         else:
-            self.exchServer.SetValue(node.id,node.resultIN)
+            self.exchServer.setValue(node.id,node.resultIN)
 
     # def nodeHandler(self,node):
     #     node.funcParams=node.handler(node)
@@ -102,8 +102,10 @@ class MainPool():
                 before=time()
                 for channel in self.channelBase.channels:
                     channel()
-                    if self.exchServer:
-                        self.exchServer.SetValue(channel.id,channel.result)
+                                    
+                for channelId, binding in self.exchangeBindings.items():
+                    self.exchServer.setValue(channelId, binding.value)
+                
                 delay=NODDE_READER_PAUSE-(time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channelBase.channels)} channels ')

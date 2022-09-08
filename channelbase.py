@@ -1,6 +1,6 @@
 from asyncio.log import logger
 import classes 
-from myexceptions import ChannelException
+from myexceptions import ChannelException, ConfigException
 from time import time
 
 CHANNELS_EXEC_ORDER=[classes.Node,classes.Programm]
@@ -88,7 +88,7 @@ def bindChannelAttr(channelBase, id:int,attrNmae:str)->classes.BindVars:
         bindVar.add('value',channel,attrNmae)
         return bindVar
     else:
-        raise Exception(f'Cant find channel {id} in channelBase')
+        raise ConfigException(f'Cant find channel {id} in channelBase')
 
 if __name__ == '__main__':
     nodes=[  
