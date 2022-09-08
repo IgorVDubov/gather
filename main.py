@@ -27,6 +27,12 @@ def init():
     loop=asyncio.get_event_loop()
     sourcePool=SourcePool(scada_config.ModuleList,loop)
     channelBase=channelbase.ChannelBaseInit(scada_config.nodes, scada_config.programms)
+    import json
+    print(json.dumps([channelBase.nodesToDictFull()], sort_keys=True, indent=4))
+    print('---------------')
+    print(channelBase.toDict())
+    print(json.dumps([channelBase.toDictFull()], sort_keys=True, indent=4))
+    return
     newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,scada_config.MBServerAdrMap)
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'])
     # ModbusExchServer=None
@@ -46,7 +52,7 @@ def main():
     log_module.loggerInit('debug')
     logger.info('Starting........')
     mainPool=init()
-    mainPool.start()
+    # mainPool.start()
 
 if __name__=='__main__':
     main()

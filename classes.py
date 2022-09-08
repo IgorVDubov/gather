@@ -72,14 +72,10 @@ class BindVars:
     def __str__(self):
         s=''
         for v in self.vars:
-            s+=f'{v.name}<-{v.obj.id if hasattr(v.obj,"id") else v.obj}.{v.objAttrName} '
+            s+=f'{v.name}<-{v.obj.id if hasattr(v.obj,"id") else v.obj}.{v.objAttrName} '+'\n'
         return s
     
     def __repr__(self):
-        # s=''
-        # for v in self.vars:
-        #     s+=f'{v.name}<-{v.obj.id if hasattr(v.obj,"id") else v.obj}.{v.objAttrName} '
-        # return s
         return self.__str__()
 
     # def add(self,name:str, obj:type, objAttrName:str):
@@ -104,6 +100,12 @@ class BindVars:
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
         self.vars.append(Var(name, obj, objAttrName))
     
+    def toDict(self):
+        result=dict()
+        for attr in self.vars:
+            result.update({attr.name:getattr(self,attr.name)})
+        return result
+   
     def _getBinding(self, attrName):
         try:
             if found:=next(filter(lambda var: var.name == attrName, self.vars)):
@@ -113,7 +115,6 @@ class BindVars:
             found=None
         return None, None
         # return None, None, None
-        
 
     def _setProperty( self, name, value ):
         setattr( self, '_' + name, value )
@@ -132,7 +133,9 @@ class Vars:
     '''
     dynamic added attribute with setters and getters
     '''
-    
+    def __init__(self):
+        self.vars=[]
+
     def add(self, name:str, defaultValue=None):
     # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
         '''
@@ -148,8 +151,19 @@ class Vars:
         
         setattr( self, '_' + name, defaultValue )
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
-    
+        self.vars.append(name)
             
+    def toDict(self):
+        result=dict()
+        for attr in self.vars:
+            result.update({attr:getattr(self,attr)})
+        return result
+    
+    def __str__(self):
+        result=''
+        for attr in self.vars:
+            result+=f'{attr}={getattr(self,attr)}, '
+            return result
 
     def _setProperty( self, name, value ):
         setattr( self, '_' + name, value )
@@ -165,12 +179,15 @@ class Channel(ABC):
 
     @abstractmethod
     def __call__(self) -> Any: ...
-    
+    def toDict(self):...
+    def toDictFull(self):
+        return self.toDict()
+
     def __str__(self):
         return f' Channel: id:{self.id}'
 
 class Node(Channel):
-    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List,handler:callable=None) -> None:
+    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List,handler:callable=None,stored:Vars=None) -> None:
         self.id=id
         self.sourceId=moduleId
         self.type=type
@@ -179,10 +196,26 @@ class Node(Channel):
         self.resultIn=None
         self.result=None # данные после обработки handler
         self.handler=handler
-        self.handlerStoredVars=None
+        self.stored=stored
     
     def __str__(self):
         return f''' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}, {self.resultIn=}'''
+
+    def toDictFull(self):
+        result= { 'id':self.id,
+                'sourceId':self.sourceId,
+                'type':self.type,
+                'sourceIndexList':self.sourceIndexList,
+                'source':self.source,
+                'resultIn':self.resultIn,
+                'result':self.result}
+        if self.handler:
+            result.update({'handler':self.handler.__name__,'handlerStoredVars':self.handlerStoredVars.toDict()})
+        return result
+    
+    def toDict(self):
+        return { 'id':self.id,
+                'result':self.result}
 
     def __call__(self):
         if self.source:
@@ -210,6 +243,12 @@ class Programm(Channel):
     
     def __call__(self):
         self.stored=self.handler(self.args,self.stored)
+    
+    def toDict(self):
+        return { 'id':self.id,
+                'handler':self.handler.__name__,
+                'args':self.args.toDict(),
+                'stored':self.stored.toDict()}
     
     def exec(self):
         return self.__call__()

@@ -55,6 +55,38 @@ class ChannelsBase():
             channel()
         self.channelsExecTime=time()-startTime
 
+    def nodesToDict(self):
+        result=dict()
+        result.setdefault(classes.Node.__name__.lower(),[])
+        for channel in self.channels:
+            if isinstance(channel, classes.Node):
+                result[classes.Node.__name__.lower()].append(channel.toDict())
+        return result
+    
+    def nodesToDictFull(self):
+        result=dict()
+        result.setdefault(classes.Node.__name__.lower(),[])
+        for channel in self.channels:
+            if isinstance(channel, classes.Node):
+                result[classes.Node.__name__.lower()].append(channel.toDictFull())
+        return result
+    
+    def toDict(self):
+        result=dict()
+        for chType in CHANNELS_EXEC_ORDER:          #!!! если нет нового класса канала в массиве - не будет включен!!!!!!!!
+            result.setdefault(chType.__name__.lower(),[])
+        for channel in self.channels:
+            result[channel.__class__.__name__.lower()].append(channel.toDict())
+        return result
+    
+    def toDictFull(self):
+        result=dict()
+        for chType in CHANNELS_EXEC_ORDER:          #!!! если нет нового класса канала в массиве - не будет включен!!!!!!!!
+            result.setdefault(chType.__name__.lower(),[])
+        for channel in self.channels:
+            result[channel.__class__.__name__.lower()].append(channel.toDictFull())
+        return result
+
     def __str__(self) -> str:
         return ''.join(channel.__str__()+'\n' for channel in self.channels )
 
