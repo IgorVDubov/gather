@@ -5,7 +5,6 @@ from unittest import result
 from typing import *
 from abc import ABC, abstractmethod
 import inspect
-from copy import deepcopy
 import consts
 
 

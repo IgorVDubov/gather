@@ -2,8 +2,7 @@ import asyncio
 from typing import Any
 from pymodbus.client.asynchronous.tcp import AsyncModbusTCPClient as ModbusClient
 from pymodbus.client.asynchronous import schedulers
-import pymodbus.exceptions as ModbusExceptions
-import time
+import myexceptions
 
 from consts import AI,DI
 from log_module import logger
@@ -85,32 +84,38 @@ class AsyncModbusConnection(AsyncModbusClient):
     async def read(self):
         connection=self.connection.protocol
         result=[]
-        
-        if self.function==4:
-            readResult = await connection.read_input_registers(self.address, self.regCount, unit=self.unit)
-            if not(readResult.isError()):
-                if self.format==self.DI:
+        try:
+            if self.function==4:
+                readResult = await connection.read_input_registers(self.address, self.regCount, unit=self.unit)
+                if not(readResult.isError()):
+                    if self.format==self.DI:
+                        result=[reg for reg in readResult.registers]
+                    elif self.format==self.AI:
+                        result=[unpackCDABToFloat (readResult.registers,2)]
+                else:
+                    # print ('*'*20,f'raise error:{readResult}')
+                    self.error=readResult
+                    raise myexceptions.ModbusException(readResult)
+            elif self.function==3:
+                readResult = await connection.read_holding_registers(self.address, self.regCount, unit=self.unit)
+                if not(readResult.isError()):
                     result=[reg for reg in readResult.registers]
-                elif self.format==self.AI:
-                    result=[unpackCDABToFloat (readResult.registers,2)]
-            else:
-                print ('*'*20,f'raise error:{readResult}')
-                raise ModbusExceptions.ModbusException(result)
-        elif self.function==3:
-            readResult = await connection.read_holding_registers(self.address, self.regCount, unit=self.unit)
-            if not(readResult.isError()):
-                result=[reg for reg in readResult.registers]
-            else:
-                print ('*'*20,f'raise error:{readResult}')
-                raise ModbusExceptions.ModbusException(result)
-        elif self.function==2:
-            readResult = await connection.read_discrete_inputs(self.address, self.regCount, unit=self.unit)
-            if not(readResult.isError()):
-                result = readResult.bits
-            else:
-                print ('*'*20,f'raise error:{readResult}')
-                raise ModbusExceptions.ModbusException(result)
-
+                else:
+                    # print ('*'*20,f'raise error:{readResult}')
+                    self.error=readResult
+                    raise myexceptions.ModbusException(readResult)
+            elif self.function==2:
+                readResult = await connection.read_discrete_inputs(self.address, self.regCount, unit=self.unit)
+                if not(readResult.isError()):
+                    result = readResult.bits
+                else:
+                    self.error=readResult
+                    # print ('*'*20,f'raise error:{readResult}')
+                    raise myexceptions.ModbusException(readResult)
+        except AttributeError:
+            self.error='Connection error'
+            result=None
+            # raise ModbusExceptions.ConnectionException(result)
         #print(result)
         lock = asyncio.Lock()
         async with lock:

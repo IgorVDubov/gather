@@ -3,9 +3,10 @@ import log_module
 import asyncio
 from copy import deepcopy
 from main_pool import MainPool
-import classes
+import scada_config
 import channelbase
 import globals
+
 from exchange_server import ModbusExchangeServer
 from source_pool import SourcePool
 
@@ -24,9 +25,9 @@ def MBServerAdrMapInit(channelBase:channelbase.ChannelsBase,addrMaping:dict)->di
 
 def init():
     loop=asyncio.get_event_loop()
-    sourcePool=SourcePool(globals.ModuleList,loop)
-    channelBase=channelbase.ChannelBaseInit(globals.nodes, globals.programms)
-    newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,globals.MBServerAdrMap)
+    sourcePool=SourcePool(scada_config.ModuleList,loop)
+    channelBase=channelbase.ChannelBaseInit(scada_config.nodes, scada_config.programms)
+    newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,scada_config.MBServerAdrMap)
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'])
     # ModbusExchServer=None
     HTTPServer=globals.HTTPServer
@@ -45,7 +46,7 @@ def main():
     log_module.loggerInit('debug')
     logger.info('Starting........')
     mainPool=init()
-    # mainPool.start()
+    mainPool.start()
 
 if __name__=='__main__':
     main()
