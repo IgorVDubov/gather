@@ -6,6 +6,7 @@ def programm_1(vars,stored):
     stored.a=5
     # print (f'exit handler: {vars.ch1=}, {vars.result=}, {stored.a=}')
     return stored
+
 # шаблон программ
 def func(vars,stored):
     '''
@@ -16,19 +17,28 @@ def func(vars,stored):
     '''
     return stored
 
+# шаблон программs обработки канала
+def func(resultIn,stored):
+    '''
+    STORED
+    '''
+    resultOut=None
+    return resultOut, stored
+
 
 import collections
-middle10_q = collections.deque([],3)
-def middle10(vars,stored):
+def middle10(inResult, stored):
     '''
-    VARS
-        in
-        out
+    бегущее среднее из MAX_VALUES значений
     STORED
-        vals=[val1..val10]
+        deque
     '''
-
-    return stored
+    if not stored.deque:
+        stored.deque=collections.deque([inResult for r in range(stored.MAX_VALUES)],stored.MAX_VALUES)
+        
+    stored.deque.append(inResult)
+    outResult=sum(stored.deque)/stored.MAX_VALUES
+    return outResult, stored
 
 
 def progVEK(vars,stored):

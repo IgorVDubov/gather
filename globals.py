@@ -1,4 +1,4 @@
-HTTPServerParams={'host':'192.168.1.200','port':8888,'wsserver':'ws://192.168.1.200:8888/ws'}
+HTTPServerParams={'host':'localhost','port':8888,'wsserver':'ws://localhost:8888/ws'}
 
 users=[{'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'}]
 
