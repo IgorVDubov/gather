@@ -1,9 +1,7 @@
 import asyncio
 import random
 from time import strftime, gmtime, sleep
-
-#Algorithm=1 #random на все биты (регистры)
-Algorithm=2 #random на 1-й бит
+from bpacker import packFloatToCDAB
 
 class TestResult:
     def __init__(self):
@@ -40,7 +38,7 @@ class TestProtocol:
             for _ in range(0,regNumber-len(registers)):     #заполняем остаток 0
                 registers.append(0)  
             #print(f'sec:{sec} reg:{registers}')
-        elif self.testType==10:                                # аналоговый сигнал 1-10в по программе цикла (секунды любой минуты)
+        elif self.testType==4:                                # аналоговый сигнал 1-10в по программе цикла (секунды любой минуты)
             minVal=1   #минимум 
             maxVal=9   #максимум 
             frontLength=2  #длина фронта
@@ -53,6 +51,18 @@ class TestProtocol:
                 registers.append(0)
             #print(f'sec:{sec} reg:{registers}')
         
+        elif self.testType==5:                # float random меняется каждые N сек
+            minVal=7   #минимум 
+            maxVal=60   #максимум 
+            minValTreshold=2  #амплитуда
+            minValTreshold=15  #амплитуда
+            cycle=[(0,10,maxVal),(11,20,minVal),(21,30,maxVal),(31,40,minVal),(41,59,maxVal)]
+            sec=int(strftime("%S", gmtime()))
+            for period in cycle:
+                if sec>= period[0] and sec<=period[1]:
+                    tr=minValTreshold if period[2]==minVal else minValTreshold
+                    tr=random.random()*tr/2
+                    registers=packFloatToCDAB(period[2] + tr)
         self.result.registers=registers
         await asyncio.sleep(0.01)
         #print (f'out read_input_registers {self.result.registers}')

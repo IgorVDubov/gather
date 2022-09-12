@@ -1,7 +1,7 @@
 import asyncio
 from time import time
 import modbus_connector
-from log_module import logger
+from logger import logger
 from abc import ABC, abstractmethod
 import myexceptions
 

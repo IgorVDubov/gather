@@ -1,7 +1,7 @@
 import asyncio
 from time import time
-from typing import List
-from log_module import logger
+import json
+from logger import logger
 import classes
 from consts import Consts
 from exchange_server import ExchangeServer
@@ -16,11 +16,11 @@ class MainPool():
     def __init__(self,  loop:asyncio.AbstractEventLoop, 
                         sourcePool:SourcePool, 
                         channelBase:ChannelsBase,
-                        exchangeServer:ExchangeServer, 
-                        exchangeBindings:dict,
+                        exchangeServer:ExchangeServer=None, 
+                        exchangeBindings:dict={},
                         HTTPServer=None):
         '''
-        sources: source Moduke to read
+        sources: source Module to read
             [{'id':'module_id(str)','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},...]
         channeBlase: channe Blase
         MBServAddrMap: ModBus server address map for requesting node data
@@ -49,7 +49,7 @@ class MainPool():
         self.exchServer=exchangeServer
         self.exchangeBindings=exchangeBindings
         self.setTasks()
-        self.webApp= HTTPServer
+        self.HTTPServer= HTTPServer
             
     
     def start(self):   
@@ -75,25 +75,6 @@ class MainPool():
     def setTasks(self):
             self.loop.create_task(self.startReader())
     
-    def nodeHandler(self,node):
-        if node.handler:
-            node.funcParams=node.handler(node.resultIN, globalParams=node.funcParams)
-            
-            if node.funcParams.changeEvent:
-                node.funcParams.changeEvent=False
-            if node.funcParams.event:
-                self.exchServer.setValue(node.id,node.resultIN)
-                #print(f'{datetime.now().strftime("%m/%d/%Y, %H:%M:%S")} result:{node.funcParams.prevVal1} length:{node.funcParams.length}s ')
-                node.funcParams.event=False
-        else:
-            self.exchServer.setValue(node.id,node.resultIN)
-
-    # def nodeHandler(self,node):
-    #     node.funcParams=node.handler(node)
-    #     if node.funcParams.event:
-    #         print(f'{datetime.now().strftime("%m/%d/%Y, %H:%M:%S")} result:{node.funcParams.prevVal1} length:{node.funcParams.length}s ')
-    #         node.funcParams.event=False
-
 
     async def startReader(self):
         print ('start results Reader')
@@ -106,11 +87,14 @@ class MainPool():
                 for channelId, binding in self.exchangeBindings.items():
                     self.exchServer.setValue(channelId, binding.value)
                 
+                if len(self.HTTPServer.request_callback.wsClients):
+                    for wsClient in self.HTTPServer.request_callback.wsClients:
+                        wsClient.write_message(json.dumps(self.channelBase.toDict()))
+
                 delay=NODDE_READER_PAUSE-(time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channelBase.channels)} channels ')
                 await asyncio.sleep(delay)
-
         except asyncio.CancelledError:
             print('CancelledError')
         except Exception as e:
