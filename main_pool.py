@@ -77,8 +77,8 @@ class MainPool():
     
 
     async def startReader(self):
-        print ('start results Reader')
-        try:
+        # print ('start results Reader')
+        # try:
             while True:
                 before=time()
                 for channel in self.channelBase.channels:
@@ -95,12 +95,13 @@ class MainPool():
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channelBase.channels)} channels ')
                 await asyncio.sleep(delay)
-        except asyncio.CancelledError:
-            print('CancelledError')
-        except Exception as e:
-            logger.error(e)
-        finally:
-            print('startReader finally')
-            return
+        
+        # except asyncio.CancelledError:
+        #     print('CancelledError')
+        # except Exception as e:
+        #     logger.error(e)
+        # finally:
+        #     print('startReader finally')
+        #     return
 
         

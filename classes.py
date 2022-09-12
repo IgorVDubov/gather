@@ -1,5 +1,6 @@
 from cgitb import handler
 from time import time
+from tkinter.messagebox import NO
 from unicodedata import name
 from unittest import result
 from typing import *
@@ -103,6 +104,7 @@ class BindVars:
         
         setattr( self, '_' + name, None )
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
+        # setattr( self, name, property( fget = fget, fset = fset ) )
         self.vars.append(Var(name, obj, objAttrName))
     
     def toDict(self):
@@ -134,11 +136,12 @@ class BindVars:
         # return getattr( self, '_' + name )
         return getattr( obj, objAttrName )
 
-class Vars:
+class Vars(object):
     '''
     dynamic added attribute with setters and getters
     '''
     def __init__(self):
+        self.__class__=type(self.__class__.__name__+'1',(self.__class__,), {})
         self.vars=[]
 
     def add(self, name:str, defaultValue=None):
@@ -155,6 +158,7 @@ class Vars:
         fset = lambda self, value: self._setProperty( name, value )
         
         setattr( self, '_' + name, defaultValue )
+        # setattr( self.__class__, name, property( fget = fget, fset = fset ) )
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
         self.vars.append(name)
             
@@ -167,7 +171,7 @@ class Vars:
     def __str__(self):
         result=''
         for attr in self.vars:
-            result+=f'{attr}={getattr(self,attr)}, '
+            result+=f'{attr}={getattr(self,"_"+attr)}, '
             return result
 
     def _setProperty( self, name, value ):
@@ -192,7 +196,7 @@ class Channel(ABC):
         return f' Channel: id:{self.id}'
 
 class Node(Channel):
-    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List,handler:callable=None,stored:Vars=None) -> None:
+    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None,stored:Vars=None) -> None:
         self.id=id
         self.sourceId=moduleId
         self.type=type
@@ -201,7 +205,15 @@ class Node(Channel):
         self.resultIn=None
         self.result=None # данные после обработки handler
         self.handler=handler
-        self.stored=stored
+        if stored:
+            storedVars=Vars()
+            for name, value   in stored.items():
+                storedVars.add(name, value)
+            self.stored=storedVars
+            pass
+        else:
+            self.stored=None
+
     
     def __str__(self):
         return f''' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}, {self.resultIn=}'''
@@ -215,7 +227,7 @@ class Node(Channel):
                 'resultIn':self.resultIn,
                 'result':self.result}
         if self.handler:
-            result.update({'handler':self.handler.__name__,'handlerStoredVars':self.handlerStoredVars.toDict()})
+            result.update({'handler':self.handler.__name__,'handlerStoredVars':self.stored.toDict()})
         return result
     
     def toDict(self):
@@ -233,7 +245,7 @@ class Node(Channel):
                 print(f'No result in channel {self.id} source {self.source}')
             # print(f'result in channel {self.id} = {self.source.result}')
             if self.handler:
-                self.result,self.handlerStoredVars=handler(self.resultIN,self.handlerStoredVars)    #TODO поменять на VARS(), возможно BINDVARS()
+                self.result,self.stored=self.handler(self.resultIN,self.stored)    #TODO поменять на VARS(), возможно BINDVARS()
             else:
                 self.result=self.resultIN
         else:

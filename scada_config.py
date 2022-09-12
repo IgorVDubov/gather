@@ -28,7 +28,7 @@ nodes=[
             #{'id':4207,'moduleId':'ModuleA','type':'DI','sourceIndexList':[0,1],'handler':'func_1'},
             # {'id':4208,'moduleId':'ModuleB','type':'AI','sourceIndexList':[0]},
             {'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]},
-            {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 'handler':channel_handlers.middle10,'stored':{'vals':channel_handlers.middle10_q}}
+            {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 'handler':channel_handlers.middle10,'stored':{'deque':None,'MAX_VALUES':10}}
             ]
 '''
 список привязки входов к объекту контроля
@@ -41,7 +41,7 @@ handler->str: имя функции обработчика результата 
 '''            
 programms=[
     {'id':10001, 'handler':channel_handlers.programm_1, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}},
-    {'id':10002, 'handler':channel_handlers.middle10, 'args':{'in':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}},
+    # {'id':10002, 'handler':channel_handlers.programm_1, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}},
 ]
 
 #

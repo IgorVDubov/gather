@@ -1,17 +1,20 @@
-import collections
+import classes
+class C:
+    a=1
+    b=2
 
-q = collections.deque([],3)
+c=C()
 
-def pq(q):
-    s=''
-    for _ in q:
-       s+=str(q)+' ' 
-q.append(1)
-print (q, [i for i in q])
-q.append(2)
-print (q)
-q.append(3)
-print (q)
-q.append(4)
-print (q,sum(q))
-# pq(q1)
+
+v=classes.Vars()
+v.add('a',5)
+print (v.a)
+v1=classes.Vars()
+v1.add('b',1)
+print (v1.b)
+# v=classes.BindVars()
+# v.add('aa',c, 'a')
+# print (v.aa)
+# v1=classes.BindVars()
+# v1.add('bb',c,'b')
+# print (v1.bb)
