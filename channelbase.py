@@ -1,4 +1,4 @@
-from asyncio.log import logger
+from loguru import logger
 import classes 
 from myexceptions import ChannelException, ConfigException
 from time import time

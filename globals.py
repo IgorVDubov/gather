@@ -1,8 +1,6 @@
+HTTPServerParams={'host':'192.168.1.200','port':8888,'wsserver':'ws://192.168.1.200:8888/ws'}
 
-# HTTPServerParams={'host':'192.168.1.200','port':8888}
-# from tornado_serv import TornadoHTTPServerInit
-# HTTPServer=TornadoHTTPServerInit(HTTPServerParams['port'])
-HTTPServer=None
+users=[{'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'}]
 
 
 MBServerParams={'host':'localhost','port':5021}

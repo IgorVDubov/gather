@@ -4,7 +4,7 @@ from consts import AI, DI
 ModuleList=[ #{'id':'e41e0a011adc','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},
             #{'id':'000de065a65f','type':'ModbusTcp','ip':'192.168.1.98','port':'502','unit':0x1, 'address':0, 'regCount':16, 'function':2,'format':DI, 'period':0.5},
             {'id':'test2','type':'ModbusTcp','ip':'test2','port':'2','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
-            {'id':'test3','type':'ModbusTcp','ip':'test3','port':'2','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'test3','type':'ModbusTcp','ip':'test5','port':'2','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
             #{'id':'ModuleA','type':'ModbusTcp','ip':'192.168.1.200','port':502,'unit':0x1, 'address':1, 'count':2, 'function':3, 'format':consts.DI, 'period':0.5,'handler':''},
             # {'id':'ModuleB','type':'ModbusTcp','ip':'192.168.1.200','port':520,'unit':0x1, 'address':0, 'count':2, 'function':4, 'format':consts.AI,'period':0.5}
             ]    
@@ -28,10 +28,11 @@ nodes=[
             #{'id':4207,'moduleId':'ModuleA','type':'DI','sourceIndexList':[0,1],'handler':'func_1'},
             # {'id':4208,'moduleId':'ModuleB','type':'AI','sourceIndexList':[0]},
             {'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]},
-            {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0]}
+            {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 'handler':channel_handlers.middle10,'stored':{'vals':channel_handlers.middle10_q}}
             ]
 '''
 список привязки входов к объекту контроля
+{'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 'handler':channel_handlers.middle10,'stored':{'a':0}}
 id->int: id объекта контроля
 moduleId->str: модуль с входами датчиков от  объекта контроля
 type->str: di биты состояния, ai- аналоговые данные - одно значение, нет группового чтения
@@ -39,8 +40,9 @@ sourceIndexList->list: позиции (индексы с 0) данных мас�
 handler->str: имя функции обработчика результата (в модуле handler_funcs)
 '''            
 programms=[
-    {'id':10001, 'handler':channel_handlers.programm_1, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}}
-,]
+    {'id':10001, 'handler':channel_handlers.programm_1, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}},
+    {'id':10002, 'handler':channel_handlers.middle10, 'args':{'in':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}},
+]
 
 #
 MBServerAdrMap=[

@@ -17,6 +17,11 @@ def auto_str(cls):
     cls.__str__ = __str__
     return cls
 
+class Data():
+    def __init__(self,users,channelbase) -> None:
+        self.users = users
+        self.channelBase = channelbase
+
 def getDeepAttr(obj:type, attr:str):
     '''
     return  instance subobjects attributes value

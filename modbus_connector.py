@@ -5,7 +5,7 @@ from pymodbus.client.asynchronous import schedulers
 import myexceptions
 
 from consts import AI,DI
-from log_module import logger
+from logger import logger
 from modbus_emulator import TestAsyncModbusClient
 from bpacker import unpackCDABToFloat
 from abc import ABC, abstractmethod
