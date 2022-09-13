@@ -28,7 +28,6 @@ from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
 
 from threading import Thread
 from myexceptions import ModbusExchangeServerException, ConfigException
-import classes
 
 import struct 
 def packFloatTo2WordsCDAB(f):

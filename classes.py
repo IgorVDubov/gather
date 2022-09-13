@@ -19,6 +19,9 @@ def auto_str(cls):
     return cls
 
 class Data():
+    '''
+    class for HTTP server data exchanging
+    '''
     def __init__(self,users,channelbase) -> None:
         self.users = users
         self.channelBase = channelbase
@@ -61,18 +64,22 @@ class Var:
     def __init__(self,name:str, obj:type, objAttrName:str) -> None:
     # def __init__(self,name:str, obj:type, objAttrName:str, readonly:bool=False) -> None:
         self.name=name
-        self.obj,self.objAttrName=getSubObjectAttr(obj,objAttrName)
+        if obj !=None:
+            self.obj,self.objAttrName=getSubObjectAttr(obj,objAttrName)
+        else:
+            self.obj=None
+            self.objAttrName=None
         self.objAttrName=objAttrName
         # self.readonly=readonly
 
-class BindVars:
+class Vars:
     '''
     Binds dynamic added self instsnce attribute to another instance attribute
     can bins subobject attr in format 'instance_attr.a'
     '''
-    # vars=[]
 
     def __init__(self):
+        self.__class__=type(self.__class__.__name__,(self.__class__,), {})
         self.vars=[]
 
     def __str__(self):
@@ -86,8 +93,8 @@ class BindVars:
 
     # def add(self,name:str, obj:type, objAttrName:str):
     #     return self._add(name, obj, objAttrName)
-
-    def add(self, name:str, obj:type, objAttrName:str):
+    
+    def _add(self, name:str, obj:type, objAttrName:str):
     # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
         '''
         adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
@@ -105,8 +112,42 @@ class BindVars:
         setattr( self, '_' + name, None )
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
         # setattr( self, name, property( fget = fget, fset = fset ) )
+        try:
+            if found:=next(filter(lambda var: var.name == name, self.vars)):
+                found.obj= obj
+                found.objAttrName= objAttrName
+                return 
+        except StopIteration:
+            pass
         self.vars.append(Var(name, obj, objAttrName))
+
+    def bindVar(self, name:str, obj:type, objAttrName:str):
+        '''
+        adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
+        '''
+        self._add(name, obj, objAttrName)
     
+    def addBindVar(self, name:str, obj:type, objAttrName:str):
+        '''
+        adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
+        '''
+        self._add(name, obj, objAttrName)
+
+    def addVar(self, name, defaultValue=None):
+        '''
+        adds attribute to instance NO BINDING
+        name:str  attribute name
+        [defaultValue]:Any   default Value
+        '''
+        if not isinstance( name, str):
+            raise Exception(f'Wrong argument type adding arg: {name=}')
+        fget = lambda self: self._getAttrProperty( name )
+        fset = lambda self, value: self._setAttrProperty( name, value )
+        
+        setattr( self, '_' + name, defaultValue)
+        setattr( self.__class__, name, property( fget = fget, fset = fset ) )
+        self.vars.append(Var(name, None, None))
+        
     def toDict(self):
         result=dict()
         for attr in self.vars:
@@ -123,6 +164,12 @@ class BindVars:
         return None, None
         # return None, None, None
 
+    def _setAttrProperty( self, name, value ):
+        setattr( self, '_' + name, value )
+    
+    def _getAttrProperty( self, name ):
+        return getattr( self, '_' + name )
+
     def _setProperty( self, name, value ):
         setattr( self, '_' + name, value )
         obj, objAttrName= self._getBinding(name)
@@ -136,55 +183,60 @@ class BindVars:
         # return getattr( self, '_' + name )
         return getattr( obj, objAttrName )
 
-class Vars(object):
-    '''
-    dynamic added attribute with setters and getters
-    '''
-    def __init__(self):
-        self.__class__=type(self.__class__.__name__+'1',(self.__class__,), {})
-        self.vars=[]
+# class Vars(object):
+#     '''
+#     dynamic added attribute with setters and getters
+#     '''
+#     def __init__(self):
+#         self.__class__=type(self.__class__.__name__,(self.__class__,), {})
+#         self.vars=[]
 
-    def add(self, name:str, defaultValue=None):
-    # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
-        '''
-        adds attribute to instance
-        name:str  attribute name
-        [defaultValue]:Any   default Value
-        '''
-        if not isinstance( name, str):
-            raise Exception(f'Wrong argument type adding arg: {name=}')
+#     def add(self, name:str, defaultValue=None):
+#     # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
+#         '''
+#         adds attribute to instance
+#         name:str  attribute name
+#         [defaultValue]:Any   default Value
+#         '''
+#         if not isinstance( name, str):
+#             raise Exception(f'Wrong argument type adding arg: {name=}')
 
-        fget = lambda self: self._getProperty( name )
-        fset = lambda self, value: self._setProperty( name, value )
+#         fget = lambda self: self._getProperty( name )
+#         fset = lambda self, value: self._setProperty( name, value )
         
-        setattr( self, '_' + name, defaultValue )
-        # setattr( self.__class__, name, property( fget = fget, fset = fset ) )
-        setattr( self.__class__, name, property( fget = fget, fset = fset ) )
-        self.vars.append(name)
+#         setattr( self, '_' + name, defaultValue )
+#         # setattr( self.__class__, name, property( fget = fget, fset = fset ) )
+#         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
+#         self.vars.append(name)
             
-    def toDict(self):
-        result=dict()
-        for attr in self.vars:
-            result.update({attr:getattr(self,attr)})
-        return result
+#     def toDict(self):
+#         result=dict()
+#         for attr in self.vars:
+#             result.update({attr:getattr(self,attr)})
+#         return result
     
-    def __str__(self):
-        result=''
-        for attr in self.vars:
-            result+=f'{attr}={getattr(self,"_"+attr)}, '
-            return result
+#     def __str__(self):
+#         result=''
+#         for attr in self.vars:
+#             result+=f'{attr}={getattr(self,"_"+attr)}, '
+#             return result
 
-    def _setProperty( self, name, value ):
-        setattr( self, '_' + name, value )
+#     def _setProperty( self, name, value ):
+#         setattr( self, '_' + name, value )
     
-    def _getProperty( self, name ):
-        return getattr( self, '_' + name )
+#     def _getProperty( self, name ):
+#         return getattr( self, '_' + name )
 
 class Channel(ABC):
     id=None
     result=None
     dost=None
     error=None
+    argsMap:dict={}
+    storedMap:dict={}
+    handler:callable=None
+    args:Vars
+    stored:Vars
 
     @abstractmethod
     def __call__(self) -> Any: ...
@@ -196,7 +248,7 @@ class Channel(ABC):
         return f' Channel: id:{self.id}'
 
 class Node(Channel):
-    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None,stored:Vars=None) -> None:
+    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None, args:Vars=None, stored:Vars=None) -> None:
         self.id=id
         self.sourceId=moduleId
         self.type=type
@@ -205,12 +257,21 @@ class Node(Channel):
         self.resultIn=None
         self.result=None # данные после обработки handler
         self.handler=handler
+
+        if args:
+            self.argsMap=args
+            vars=Vars()
+            for name, binding   in args():
+                vars.add(name, value)
+            self.stored=storedVars
+        else:
+            self.stored=None
         if stored:
+            self.storedMap=stored
             storedVars=Vars()
             for name, value   in stored.items():
                 storedVars.add(name, value)
             self.stored=storedVars
-            pass
         else:
             self.stored=None
 
@@ -252,7 +313,7 @@ class Node(Channel):
             print (f'no source init for node id:{self.id}')
     
 class Programm(Channel):
-    def __init__(self,id:int,handler:callable,args:BindVars=None,stored:Vars=None) -> None:
+    def __init__(self,id:int,handler:callable,args:Vars=None,stored:Vars=None) -> None:
         self.id=id
         self.stored=stored
         self.args=args

@@ -1,7 +1,7 @@
 import logger as loggerLib
 from loguru import logger
 import asyncio
-from copy import deepcopy
+
 import os.path
 from main_pool import MainPool
 import scada_config
@@ -13,17 +13,7 @@ from source_pool import SourcePool
 import classes
 
 
-def MBServerAdrMapInit(channelBase:channelbase.ChannelsBase,addrMaping:dict)->dict:
-    newAddrMap=deepcopy(addrMaping)
-    bindings=dict()
-    for unit in  newAddrMap:
-        for regType,data in unit.get('map').items():
-            for reg in data:
-                if attr:=reg.pop('attr'):
-                    bindings.update({reg['id']:channelbase.bindChannelAttr(channelBase,reg['id'],attr)})
-                else:
-                    raise Exception(f'no value to bind at {reg}')
-    return newAddrMap, bindings
+
 
 def init():
     loop=asyncio.get_event_loop()

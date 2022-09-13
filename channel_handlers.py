@@ -27,7 +27,7 @@ def func(resultIn,stored):
 
 
 import collections
-def middle10(inResult, stored):
+def middle(inResult, stored):
     '''
     бегущее среднее из MAX_VALUES значений
     STORED
@@ -65,3 +65,15 @@ def progVEK(vars,stored):
 
 
     return stored
+
+
+
+#---------------------------------------------------------------------------#
+# Exported Identifiers
+#---------------------------------------------------------------------------#
+__all__ = [
+        "middle",
+        "progVEK",
+        "programm_1",
+]
+

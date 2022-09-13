@@ -4,16 +4,40 @@
 '''
 import modbus_server
 from abc import ABC, abstractmethod
+from copy import deepcopy
+import channelbase
+
 
 class ExchangeServer(ABC):
     
-    
+    @abstractmethod
     def start():...
+    @abstractmethod
     def stop():...
+    @abstractmethod
     def setValue():...
+    @abstractmethod
     def getValue():...
 
     
+def MBServerAdrMapInit(channelBase:channelbase.ChannelsBase,addrMaping:dict)->tuple(dict, dict):
+    '''
+    привязка атрибутов каналов из addrMaping к атрибутов каналов из channelBase
+    return
+    channelBase у которой убраны поля привязки для совместимости с  MBServer
+    bindings {channelID:binding} - словарь привязок для ускорения обработки
+    '''
+    newAddrMap=deepcopy(addrMaping)
+    bindings=dict()
+    for unit in  newAddrMap:
+        for regType,data in unit.get('map').items():
+            for reg in data:
+                if attr:=reg.pop('attr'):
+                    bindings.update({reg['id']:channelbase.bindChannelAttr(channelBase,reg['id'],attr)})
+                else:
+                    raise Exception(f'no value to bind at {reg}')
+    return newAddrMap, bindings
+
 
 
 class ModbusExchangeServer(ExchangeServer):
