@@ -60,17 +60,17 @@ def getSubObjectAttr(obj:type, attr:str):
         s+=attr[i]
     return obj,s
 
-class Var:
-    def __init__(self,name:str, obj:type, objAttrName:str) -> None:
-    # def __init__(self,name:str, obj:type, objAttrName:str, readonly:bool=False) -> None:
-        self.name=name
-        if obj !=None:
-            self.obj,self.objAttrName=getSubObjectAttr(obj,objAttrName)
-        else:
-            self.obj=None
-            self.objAttrName=None
-        self.objAttrName=objAttrName
-        # self.readonly=readonly
+# class Var_:
+#     def __init__(self,name:str, obj:type, objAttrName:str) -> None:
+#     # def __init__(self,name:str, obj:type, objAttrName:str, readonly:bool=False) -> None:
+#         self.name=name
+#         if obj !=None:
+#             self.obj,self.objAttrName=getSubObjectAttr(obj,objAttrName)
+#         else:
+#             self.obj=None
+#             self.objAttrName=None
+#         self.objAttrName=objAttrName
+#         # self.readonly=readonly
 
 class Vars:
     '''
@@ -84,8 +84,8 @@ class Vars:
 
     def __str__(self):
         s=''
-        for v in self.vars:
-            s+=f'{v.name}<-{v.obj.id if hasattr(v.obj,"id") else v.obj}.{v.objAttrName} '+'\n'
+        for name, obj, objAttrName in self.vars:
+            s+=f'{name}'+(f'<-->{obj.id if hasattr(obj,"id") else obj}.{objAttrName}' if obj else '')+f'={getattr(self,name)}\n'
         return s
     
     def __repr__(self):
@@ -93,7 +93,25 @@ class Vars:
 
     # def add(self,name:str, obj:type, objAttrName:str):
     #     return self._add(name, obj, objAttrName)
-    
+    @staticmethod
+    def _getSubObjectAttr(obj:type, attr:str):
+        '''
+        return  subobjects instance and  attribute name for getattr
+        obj - class instance
+        attr - attributes: example 'a', 'vars.b' if vars instance of Var with attr 'b'
+        return (subobj:type, name:str)
+        example: getSubObjectAttr(someObj,'vars.b') returns (vars_instance,'b')
+        '''
+        s=''
+        for i in range(0,len(attr)):
+            if attr[i]=='.':
+                result=getattr(obj,s)
+                s=''
+                obj=result
+                continue
+            s+=attr[i]
+        return obj,s
+
     def _add(self, name:str, obj:type, objAttrName:str):
     # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
         '''
@@ -112,14 +130,17 @@ class Vars:
         setattr( self, '_' + name, None )
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
         # setattr( self, name, property( fget = fget, fset = fset ) )
+        if obj !=None:
+            obj,objAttrName=self._getSubObjectAttr(obj,objAttrName)
         try:
-            if found:=next(filter(lambda var: var.name == name, self.vars)):
-                found.obj= obj
-                found.objAttrName= objAttrName
+            if found:=next(filter(lambda var: var[0] == name, self.vars)):
+                attrName, _obj, _objAttr = found
+                self.vars.remove(found)
+                self.vars.append((attrName, obj, objAttrName))
                 return 
         except StopIteration:
             pass
-        self.vars.append(Var(name, obj, objAttrName))
+        self.vars.append((name, obj, objAttrName))
 
     def bindVar(self, name:str, obj:type, objAttrName:str):
         '''
@@ -146,19 +167,21 @@ class Vars:
         
         setattr( self, '_' + name, defaultValue)
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
-        self.vars.append(Var(name, None, None))
+        self.vars.append((name, None, None))
         
     def toDict(self):
         result=dict()
-        for attr in self.vars:
-            result.update({attr.name:getattr(self,attr.name)})
+        for name, obj, attr in self.vars:
+            result.update({name:getattr(self,name)})
         return result
    
-    def _getBinding(self, attrName):
+    def _getBinding(self, name):
         try:
-            if found:=next(filter(lambda var: var.name == attrName, self.vars)):
+            
+            if found:=next(filter(lambda var: var[0] == name, self.vars)):
+                attrName, obj, objAttr = found
                 # return found.obj, found.objAttrName, found.readonly
-                return found.obj, found.objAttrName
+                return obj, objAttr
         except StopIteration:
             found=None
         return None, None
