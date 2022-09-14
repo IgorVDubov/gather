@@ -233,10 +233,8 @@ class Channel(ABC):
     dost=None
     error=None
     argsMap:dict={}
-    storedMap:dict={}
     handler:callable=None
     args:Vars
-    stored:Vars
 
     @abstractmethod
     def __call__(self) -> Any: ...
