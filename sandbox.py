@@ -1,4 +1,6 @@
 import classes
+import time
+
 class C:
     a=1
     b=2
@@ -17,20 +19,28 @@ c=C()
 # print (v1.c)
 # print (v1.d)
 v=classes.Vars()
-v.addVar('aa')
-# print (v.aa)
+v.addVar('a',1)
+v.addVar('b',1)
+v.addVar('c',1)
+v.addVar('b',1)
 
-v1=classes.Vars()
-v1.bindVar('bb',v,'aa')
+def func1(arg,v):
+    pass
+    return v
+
+def func2(arg):
+    a=1
+    b=1
+    c=1
+    d=1
 
 
-v.bindVar('aa',c,'b')
-print (v.aa)
-
-print (v)
-
-print (v1.bb)
-print (v1)
-v1.bb=455
-print(c.b)
-
+TIMES = 10000000
+begin=time.time()
+for _ in range(TIMES):
+    v=func1(1,v)
+print(time.time()-begin)
+begin=time.time()
+for _ in range(TIMES):
+    func2(1)
+print(time.time()-begin)

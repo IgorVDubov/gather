@@ -23,15 +23,17 @@ period->float: период опроса в сек
 handler->callable: функция предобработки данных из channel_handlers 
 
 ''' 
-
+Channels=[
+    {'id':100,}
+]
 nodes=[  
             #{'id':4207,'moduleId':'ModuleA','type':'DI','sourceIndexList':[0,1],'handler':'func_1'},
             # {'id':4208,'moduleId':'ModuleB','type':'AI','sourceIndexList':[0]},
             {'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]},
             {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 
                         'handler':middle,
-                        'args':{'resultIn':{'id':4209,'arg':'result'},
-                                'resultOut':{'id':4209,'arg':'result'}},
+                        'args':{'resultIn':(4209,'result'),
+                                'resultOut':(4209,'result')},
                         'stored':{'deque':None,'MAX_VALUES':10}}
             ]
 '''
@@ -42,10 +44,33 @@ moduleId->str: модуль с входами датчиков от  объек�
 type->str: di биты состояния, ai- аналоговые данные - одно значение, нет группового чтения
 sourceIndexList->list: позиции (индексы с 0) данных массива результата чтения модуля moduleId
 handler->str: имя функции обработчика результата (в модуле handler_funcs)
-'''            
+'''    
+'''
+запись аргументов: 
+    'args':{
+        'argName1':value[число] в args создается аргумент с именем argName1 и значением value 
+        'argName1':'id' в args создается аргумент с именем argName1 и привязкой к объекту канала id 
+        'argName1':'id.arg' в args создается аргумент с именем argName1 и привязкой к аргументу arg объекта канала id 
+        'argName1':'id.arg.v1' в args создается аргумент с именем argName1 и привязкой к аргументу arg.v1 объекта канала id 
+}
+'''        
 programms=[
-    {'id':10001, 'handler':programm_1, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}},
-    # {'id':10002, 'handler':channel_handlers.programm_1, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}},
+    {'id':10001, 'handler':progSheduller, 'args':{'writeInit':False}},
+    {'id':10002, 'handler':progVEK, 
+                'args':{
+                    'chIn':'4209.result',
+                    'chIn':(4209,'result'),
+                    'dost':(4209,'dost'),
+                    'writeInit':(10001,'args.writeInit'),
+                    'statusCh':(100,'result'),
+                    'statusBit2':(10001,'args.writeInit'),
+
+                    'grStand':1,
+                    'grWork':8,
+                    'dostTimeout':5,
+                    'minLength':20,
+                    }
+    },
 ]
 
 #
