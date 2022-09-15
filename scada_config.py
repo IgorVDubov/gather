@@ -32,21 +32,23 @@ nodes=[
             {'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]},
             {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 
                         'handler':middle,
-                        'args':{'resultIn':(4209,'result'),
-                                'resultOut':(4209,'result')},
-                        'stored':{'deque':None,'MAX_VALUES':10}}
+                        'args':{'resultIn':'4209.resultIn',
+                                'resultOut':'4209.result',
+                                'deque':None,
+                                'MAX_VALUES':10
+                                }}
             ]
 '''
 список привязки входов к объекту контроля
-{'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 'handler':channel_handlers.middle10,'stored':{'a':0}}
+{'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 
+            'handler':channel_handlers.middle10,
+            'args':{('name':val),...}}
 id->int: id объекта контроля
 moduleId->str: модуль с входами датчиков от  объекта контроля
 type->str: di биты состояния, ai- аналоговые данные - одно значение, нет группового чтения
 sourceIndexList->list: позиции (индексы с 0) данных массива результата чтения модуля moduleId
 handler->str: имя функции обработчика результата (в модуле handler_funcs)
-'''    
-'''
-запись аргументов: 
+args: запись аргументов: 
     'args':{
         'argName1':value[число] в args создается аргумент с именем argName1 и значением value 
         'argName1':'id' в args создается аргумент с именем argName1 и привязкой к объекту канала id 
