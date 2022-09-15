@@ -1,8 +1,3 @@
-from cgitb import handler
-from time import time
-from tkinter.messagebox import NO
-from unicodedata import name
-from unittest import result
 from typing import *
 from abc import ABC, abstractmethod
 import inspect
@@ -26,11 +21,11 @@ class Data():
         self.users = users
         self.channelBase = channelbase
 
-def getDeepAttr(obj:type, attr:str):
+def getDeepAttrValue(obj:type, attr:str):
     '''
     return  instance subobjects attributes value
     obj - class instance
-    attr - attributes: example 'a', 'vars.b' if vars instance of Var with attr 'b'
+    attr - attributes: example getDeepAttrValue(a, 'vars.b') if vars is instance with attr 'b' returns a.vars.b value
     '''
     s=''
     for i in range(0,len(attr)):
@@ -60,17 +55,6 @@ def getSubObjectAttr(obj:type, attr:str):
         s+=attr[i]
     return obj,s
 
-# class Var_:
-#     def __init__(self,name:str, obj:type, objAttrName:str) -> None:
-#     # def __init__(self,name:str, obj:type, objAttrName:str, readonly:bool=False) -> None:
-#         self.name=name
-#         if obj !=None:
-#             self.obj,self.objAttrName=getSubObjectAttr(obj,objAttrName)
-#         else:
-#             self.obj=None
-#             self.objAttrName=None
-#         self.objAttrName=objAttrName
-#         # self.readonly=readonly
 
 class Vars:
     '''
@@ -84,8 +68,10 @@ class Vars:
 
     def __str__(self):
         s=''
-        for name, obj, objAttrName in self.vars:
-            s+=f'{name}'+(f'<-->{obj.id if hasattr(obj,"id") else obj}.{objAttrName}' if obj else '')+f'={getattr(self,name)}\n'
+        for i, (name, obj, objAttrName) in enumerate(self.vars):
+            s+=f'{name}'+(f'<-->{obj.id if hasattr(obj,"id") else obj}.{objAttrName}' if obj else '')+f'={getattr(self,name)}'
+            if i < len(self.vars)-1 :
+                s+='\n'
         return s
     
     def __repr__(self):
@@ -356,7 +342,25 @@ class Programm(Channel):
         return f'Programm id:{self.id}, handler:{self.handler}'
 
 
+def testVars():
+    print('Test Vars class:')
+    Cl=type('Cl',(),{'a':44})
+    c=Cl()
+    v=Vars()
+    v.addVar('a',55)
+    print('add attr a = 55')
+    print(v)
+    print('add binding to inst c <-> attr a , c.a= 44')
+    v.addBindVar('a',c,'a')
+    print (f'{v.a=}')
+    print(v)
+    print('change value of bind attr v.a to 500')
+    v.a=500
+    print(f'{c.a=}')
+    assert(c.a==500)
 
+def moduleTests():
+    testVars()
 
 if __name__ == '__main__':
-    pass
+    testVars()
