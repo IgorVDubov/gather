@@ -1,13 +1,7 @@
 from channel_handlers import *
 from consts import AI, DI
+from datetime import datetime
 
-ModuleList=[ #{'id':'e41e0a011adc','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},
-            #{'id':'000de065a65f','type':'ModbusTcp','ip':'192.168.1.98','port':'502','unit':0x1, 'address':0, 'regCount':16, 'function':2,'format':DI, 'period':0.5},
-            {'id':'test2','type':'ModbusTcp','ip':'test2','port':'2','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
-            {'id':'test3','type':'ModbusTcp','ip':'test5','port':'2','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            #{'id':'ModuleA','type':'ModbusTcp','ip':'192.168.1.200','port':502,'unit':0x1, 'address':1, 'count':2, 'function':3, 'format':consts.DI, 'period':0.5,'handler':''},
-            # {'id':'ModuleB','type':'ModbusTcp','ip':'192.168.1.200','port':520,'unit':0x1, 'address':0, 'count':2, 'function':4, 'format':consts.AI,'period':0.5}
-            ]    
 '''
 Список опрашиваемых модулей
 id->str: для идентификации
@@ -21,25 +15,17 @@ function->int: модбас функция: реализованы: 2-read_discr
 format->str: AI - массив бит, DI - массив чисел длинной count
 period->float: период опроса в сек
 handler->callable: функция предобработки данных из channel_handlers 
-
 ''' 
-Channels=[
-    {'id':100,}
-]
-nodes=[  
-            #{'id':4207,'moduleId':'ModuleA','type':'DI','sourceIndexList':[0,1],'handler':'func_1'},
-            # {'id':4208,'moduleId':'ModuleB','type':'AI','sourceIndexList':[0]},
-            {'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]},
-            {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 
-                        'handler':middle,
-                        'args':{'resultIn':'4209.resultIn',
-                                'resultOut':'4209.result',
-                                'deque':None,
-                                'MAX_VALUES':10
-                                }}
-            ]
+ModuleList=[ #{'id':'e41e0a011adc','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},
+            #{'id':'000de065a65f','type':'ModbusTcp','ip':'192.168.1.98','port':'502','unit':0x1, 'address':0, 'regCount':16, 'function':2,'format':DI, 'period':0.5},
+            {'id':'test2','type':'ModbusTcp','ip':'test2','port':'2','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
+            {'id':'test3','type':'ModbusTcp','ip':'test5','port':'2','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            #{'id':'ModuleA','type':'ModbusTcp','ip':'192.168.1.200','port':502,'unit':0x1, 'address':1, 'count':2, 'function':3, 'format':consts.DI, 'period':0.5,'handler':''},
+            # {'id':'ModuleB','type':'ModbusTcp','ip':'192.168.1.200','port':520,'unit':0x1, 'address':0, 'count':2, 'function':4, 'format':consts.AI,'period':0.5}
+            ]    
+
 '''
-список привязки входов к объекту контроля
+словарь конфигурации каналов:
 {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 
             'handler':channel_handlers.middle10,
             'args':{('name':val),...}}
@@ -55,25 +41,54 @@ args: запись аргументов:
         'argName1':'id.arg' в args создается аргумент с именем argName1 и привязкой к аргументу arg объекта канала id 
         'argName1':'id.arg.v1' в args создается аргумент с именем argName1 и привязкой к аргументу arg.v1 объекта канала id 
 }
-'''        
-programms=[
-    {'id':10001, 'handler':progSheduller, 'args':{'writeInit':False}},
-    {'id':10002, 'handler':progVEK, 
-                'args':{
-                    'chIn':'4209.result',
-                    'chIn':(4209,'result'),
-                    'dost':(4209,'dost'),
-                    'writeInit':(10001,'args.writeInit'),
-                    'statusCh':(100,'result'),
-                    'statusBit2':(10001,'args.writeInit'),
+'''   
+channelsConfig={
+    'channels':[
+        {'id':100,'args':{
+                        'chIn':'4209.result','chIn1':'4209.result'}
+        }
+    ],
+    'nodes':[  
+                #{'id':4207,'moduleId':'ModuleA','type':'DI','sourceIndexList':[0,1],'handler':'func_1'},
+                # {'id':4208,'moduleId':'ModuleB','type':'AI','sourceIndexList':[0]},
+                {'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]},
+                {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 
+                            'handler':None,
+                            'args':{'resultIn':'resultIn',
+                                    'resultOut':'4209.result',
+                                    'deque':None,
+                                    'MAX_VALUES':10
+                                    }}
+    ],
+    'programms':[
+        {'id':10001, 'handler':progSheduller, 'args':{'writeInit':False, 'writeInit1':False}},
+        {'id':10002, 'handler':progVEK, 
+                    'args':{
+                        'channel':'4209',
+                        'dbChannel':None,
+                        'writeInit':'10001.args.writeInit',
+                        'statusCh':'100.result',
+                        'grStand':1,
+                        'grWork':30,
+                        'dostTimeout':5,
+                        'minLength':5,
+                        'notDost':0,
+                        'NAStatusBefore':False,
+                        'currentState':0,
+                        'currentStateTime':0,
+                        'currentInterval':0,
+                        'buffered':False,
+                        'statusDB':0,
+                        'lengthDB':0,
+                        'timeDB':0,
+                        'buffered':False,
+                        'init':True,
 
-                    'grStand':1,
-                    'grWork':8,
-                    'dostTimeout':5,
-                    'minLength':20,
-                    }
-    },
-]
+                        }
+        },
+    ]
+}
+
 
 #
 MBServerAdrMap=[

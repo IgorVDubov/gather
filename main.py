@@ -8,7 +8,7 @@ import scada_config
 import channelbase
 import globals
 from webserver.web_connector import setHTTPServer
-from exchange_server import ModbusExchangeServer
+from exchange_server import ModbusExchangeServer, MBServerAdrMapInit
 from source_pool import SourcePool
 import classes
 
@@ -18,7 +18,7 @@ import classes
 def init():
     loop=asyncio.get_event_loop()
     sourcePool=SourcePool(scada_config.ModuleList,loop)
-    channelBase=channelbase.ChannelBaseInit(scada_config.nodes, scada_config.programms)
+    channelBase=channelbase.ChannelBaseInit(scada_config.channelsConfig)
     newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,scada_config.MBServerAdrMap)
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'])
     httpParams=globals.HTTPServerParams

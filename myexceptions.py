@@ -8,7 +8,7 @@ class BaseException(Exception):
         self.string = string
 
     def __str__(self):
-        return 'Modbus Error: %s' % self.string
+        return self.string
 
     def isError(self):
         """Error"""

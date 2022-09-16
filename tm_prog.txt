@@ -1,0 +1,93 @@
+if dost>0 then 
+	d_length:=d_length+1; //при недостоверности запускаем счетчик
+else 
+	d_length:=0;
+	NA_status=False;
+end_if;
+
+if d_length>dost_Timeout then  //если недостоверность больше таймаута
+  NA_status=True;
+  d_length:=dost_Timeout+1;  //останавливаем счетчик на значении срабатывания условия
+end_if;
+
+if NA_status_pred!=NA_status then
+	dost_change_flag = True;
+else
+	dost_change_flag = False;
+end_if;
+
+NA_status_pred=NA_status;
+
+//*******************вариант где отрезок < таймаута присоединяется к предыдущему************************
+
+if interval<>current_interval or write_init or dost_change_flag then  //если меняется интервал или принудительная инициализации записи
+	
+	// определяем текущий статус
+	if value_out > gr_work then status = 3; //работа
+	elsif value_out < gr_work and value_out > gr_stand then status = 2; //простой
+	elsif value_out < gr_stand then status = 1; //откл
+	elsif value_out == 0 then status = 1; //откл
+	end_if;
+	if NA_status then status = 0; end_if; //NA
+	
+	//выставляем биты состояния статуса для доступа по модбас для внешних клиентов
+ 	case status of     
+	 0: status_bit1:=0; status_bit2:=0;
+	 1: status_bit1:=1; status_bit2:=0;
+	 2: status_bit1:=0; status_bit2:=1;
+	 3: status_bit1:=1; status_bit2:=1;
+ 	end_case;
+	if write_init or NA_status then								//если форсированная запись или статус NA
+		status_db=current_state;								//задаем отрезок для записи: текущий статус до смены
+		time_db=current_state_time;								//							аналогично время
+		length_db=time_now - current_state_time;				//							и длительность
+		current_state= status;									//задаес текущий отрезок: статус
+		current_state_time = time_now ;							//						время
+		db_write_flag=True;										//отправляем сразу на запись
+		buffered=False;											// если отрезок был подвешен - сбрасываем флаг
+	else
+		buffered=true;	//подвешиваем запись и ждем не изменится ли статус в течении таймаута (min_length): ожидание записи 
+
+		if time_now - current_state_time <= min_length then 		// если статус меняется до таймаута
+			
+			//state_value не меняется
+			//state_time не меняется
+			length_db=length_db+(time_now - current_state_time);//увеличиваем длину подвешенного отрезка на длину текущего
+			if status==status_db then							//если  текущий статус стал такой же как у подвешеного отрезка		
+				current_state=status_db;						//подвешенный отрезок 
+				current_state_time=time_db;						//становится текущим
+				buffered=false;									//снимаем отрезок с ожидания записи
+			else												//если статус меняется			
+				current_state = status;							//обновляем статус и
+				current_state_time = time_now ;					//время текущего отрезка
+				buffered=true;									//и подвешиваем- ожидание записи
+			end_if;
+		else													// если статус меняется после таймаута
+			status_db=current_state;							//задаем отрезок для записи (подвешенный): статус
+			time_db=current_state_time;							//время
+			length_db=time_now - current_state_time;			//длительность
+			current_state = status;								//задаем новй текущий отрезок: статус
+			current_state_time = time_now ;						//начала отрезка
+		end_if;
+		current_interval = interval;							//в любом случае текущий интервал = интервал канала
+	end_if;
+end_if;
+
+
+if buffered then 
+	if (time_now-current_state_time)>=min_length then  //если есть отрезок ожидающий записи - пишем его по прошествии min_length
+		db_write_flag=True;
+		buffered=False;
+	end_if;
+end_if;
+
+if db_write_flag  then
+	db_write_flag=false;
+	write_init=false; //сбрасываем флаг инициализации записи если был 1
+	if length_db>10 or length_db<90000 then 
+		//length_db=1;//отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
+		db_write = 1; //устанавливаем флаг записи в бд
+	end_if;
+	//db_write = 1; //устанавливаем флаг записи в бд
+	
+end_if;
