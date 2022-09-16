@@ -20,7 +20,7 @@ class ExchangeServer(ABC):
     def getValue():...
 
     
-def MBServerAdrMapInit(channelBase:channelbase.ChannelsBase,addrMaping:dict)->tuple(dict, dict):
+def MBServerAdrMapInit(channelBase:channelbase.ChannelsBase,addrMaping:dict)->tuple():
     '''
     привязка атрибутов каналов из addrMaping к атрибутов каналов из channelBase
     return

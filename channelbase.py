@@ -3,7 +3,7 @@ import classes
 from myexceptions import ChannelException, ConfigException
 from time import time
 
-CHANNELS_EXEC_ORDER=[classes.Node,classes.Programm]
+CHANNELS_EXEC_ORDER=[classes.Node,classes.Channel,classes.Programm]
 
 class ChannelsBase():
     channels=[]
@@ -23,7 +23,7 @@ class ChannelsBase():
                             self.channels.insert(self.channels.index(ch),channel)
                             return
                 except ValueError:
-                    logger.warn(f'cant find order on CHANNELS_EXEC_ORDER for channel {channel.id}, move to end')
+                    logger.warning(f'cant find order on CHANNELS_EXEC_ORDER for channel {channel.id}, move to end')
             self.channels.append(channel)
             # print (f'append channel {channel.id} ' )
         else:
@@ -90,34 +90,59 @@ class ChannelsBase():
     def __str__(self) -> str:
         return ''.join(channel.__str__()+'\n' for channel in self.channels )
 
-def ChannelBaseInit(nodes=None, programms=None):
+
+
+
+
+
+def ChannelBaseInit(channelsConfig):
+    # сначала у всех каналов создаем аттрибуты, потом привязываем связанные
+    bindings=[]
     chBase=ChannelsBase()
-    for node in nodes:
-        chBase.add(classes.Node(**node))
-    for prg in programms:
-        args=classes.BindVars()
-        stored=classes.Vars()
-        for name, objParams   in prg['args'].items():
+    for channelType in channelsConfig:
+        chType=eval(classes.CHANNELS_CLASSES.get(channelType))
+        if chType==classes.Channel:
+            cls=classes.Channel
+        elif chType==classes.Node:
+            cls=classes.Node
+        elif chType==classes.Programm:
+            cls=classes.Programm
+        else:
+            raise ConfigException(f'no type in classes for {chType} {channelType}')
+        for channelConfig in channelsConfig.get(channelType):
+            if channelConfig.get('args'):
+                args=channelConfig.pop('args')
+                channel=cls(**channelConfig)
+                for name, arg in args.items():
+                    bindId, param= classes.parseAttrParams(arg)
+                    if bindId != None:
+                        channel.addArg(name)
+                        bindings.append((channel, name, bindId, param))
+                    else:
+                        channel.addArg(name, param)
+            else:
+                channel=cls(**channelConfig)
+            chBase.add(channel)
 
-            channel=chBase.get(objParams['id'])
-            # print(channel)
-            args.add(name, channel, objParams['arg'])
-        for name, value   in prg['stored'].items():
-            stored.add(name, value)
-        programm=classes.Programm(prg['id'], prg['handler'], args, stored)
-        chBase.add(programm)
-    
-
+    for (channel2Bind, name, bindId, param) in bindings:
+        if bindId=='self':
+            channel2Bind.bindArg(name, channel2Bind, param)
+        elif bindId and param:
+            channel2Bind.bindArg(name, chBase.get(bindId), param)
+        elif bindId and param==None:
+            channel2Bind.bindChannel2Arg(name, chBase.get(bindId))
+    bindings=[]
     return chBase
 
-def bindChannelAttr(channelBase, id:int,attrNmae:str)->classes.BindVars:
+
+def bindChannelAttr(channelBase, id:int,attrNmae:str)->classes.Vars:
     '''
     id- channel id
     attrname:str - channel attribute mane 
     '''
     if channel:=channelBase.get(id):
-        bindVar=classes.BindVars()
-        bindVar.add('value',channel,attrNmae)
+        bindVar=classes.Vars()
+        bindVar.addBindVar('value',channel,attrNmae)
         return bindVar
     else:
         raise ConfigException(f'Cant find channel {id} in channelBase')

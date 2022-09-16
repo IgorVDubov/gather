@@ -1,67 +1,149 @@
-from time import time
+from datetime import datetime
 
 def progSheduller(vars):
     
     return vars
 
 # шаблон программ
-def func(vars,stored):
+def func(vars):
     '''
     VARS
-        
-    STORED
-        
     '''
-    return stored
-
-# шаблон программs обработки канала
-def func(resultIn,stored):
-    '''
-    STORED
-    '''
-    resultOut=None
-    return resultOut, stored
 
 
 import collections
-def middle(inResult, stored):
+def middle(vars):
     '''
     бегущее среднее из MAX_VALUES значений
     STORED
         deque
     '''
-    if not stored.deque:
-        stored.deque=collections.deque([inResult for r in range(stored.MAX_VALUES)],stored.MAX_VALUES)
+    if vars.resultIn==None:
+        vars.resultIn=0
+    if not vars.deque:
+        vars.deque=collections.deque([vars.resultIn for r in range(vars.MAX_VALUES)],vars.MAX_VALUES)
         
-    stored.deque.append(inResult)
-    outResult=sum(stored.deque)/stored.MAX_VALUES
-    return outResult, stored
+    vars.deque.append(vars.resultIn)
+    resultOut=sum(vars.deque)/vars.MAX_VALUES
 
 
-def progVEK(vars,stored):
+
+def progVEK(vars):
     '''
     VARS:
+        'channel':'4209',
+        'dbChannel':None,
+        'writeInit':'10001.args.writeInit',
+        'statusCh':'100.result',
+        'grStand':1,
+        'grWork':8,
+        'dostTimeout':5,
+        'minLength':20,
+    ******************************************************        
+    channel - привязка к каналу
     VAR_INPUT value_in :  IN вход канала
-                * status_db : USINT; END_VAR // статус отрезка для записи БД
-                * length_db : UDINT; END_VAR // длительность отрезка для записи БД
-                * time_db : DATE_AND_TIME; END_VAR // начало отрезка для записи БД
-                * db_write : BOOL; END_VAR // флаг записи в БД -> DB_in
+                * vars.statusDB : USINT END_VAR # статус отрезка для записи БД
+                * vars.lengthDB : UDINT END_VAR # длительность отрезка для записи БД
+                * vars.timeDB : DATE_AND_TIME END_VAR # начало отрезка для записи БД
+                * db_write : BOOL END_VAR # флаг записи в БД -> DB_in
 	VAR_OUTPUT status : текущее состояние (для отображения)
 	VAR_INPUT dost :  достоверность аргумент от канала к источнику
-	VAR_INOUT write_init : BOOL := 1; END_VAR // принудительная инициализация записи
-	VAR_OUTPUT status_bit1 : BOOL; END_VAR // бит1 статуса для HEX канала состояния
-	VAR_OUTPUT status_bit2 : BOOL; END_VAR // бит2 статуса для HEX состояния
-	
-    STORED
+	VAR_INOUT write_init : BOOL := 1 END_VAR # принудительная инициализация записи
+	VAR_OUTPUT status_bit1 : BOOL END_VAR # бит1 статуса для HEX канала состояния
+	VAR_OUTPUT status_bit2 : BOOL END_VAR # бит2 статуса для HEX состояния
     gr_stand  граница простоя
-     gr_work : REAL; END_VAR // граница рботы
-	dost_Timeout : USINT := 5; END_VAR // таймаут НЕдостоверности канала
-	min_length : USINT := 20; END_VAR // минимальный отрезок времени сменеы статуса (если меньше, статус не меняется)
-	VAR time_now : DATE_AND_TIME; END_VAR
+    gr_work : REAL END_VAR # граница рботы
+	dost_Timeout : USINT := 5 END_VAR # таймаут НЕдостоверности канала
+	min_length : USINT := 20 END_VAR # минимальный отрезок времени сменеы статуса (если меньше, статус не меняется)
+	VAR timeNow : DATE_AND_TIME END_VAR
     '''
+    timeNow=datetime.now()
+    if vars.init:
+        vars.currentStateTime=timeNow
+        NAStatus=False
+        dostChangeFlag = False
+        dbWriteFlag = False
+        vars.lengthDB=0
+
+    if vars.channel.result==None:       #########!!!!!!!!!!!!
+        vars.channel.result=0
+    print (vars.channel.result)
+    if vars.channel.dost==False:
+        vars.notDost+=1
+    else:
+        vars.notDost=0
+        NA_status=False
+    if vars.notDost>vars.dostTimeout:
+        NA_status=True
+        vars.d_length=vars.dost_Timeout+1
+    if vars.NAStatusBefore!=NAStatus :
+        dostChangeFlag = True
+    else:
+       dostChangeFlag = False
+
+    vars.NAStatusBefore = NAStatus
+    # определяем текущий статус
+    if vars.channel.result < vars.grStand:  #откл
+        status=1
+        interval=1
+    elif vars.channel.result > vars.grStand and vars.channel.result<vars.grWork:    #простой
+        status=2
+        interval=2
+    elif vars.channel.result > vars.grWork: #работа
+        status=3
+        interval=3
 
 
-    return stored
+    if interval != vars.currentInterval or vars.writeInit or dostChangeFlag:  #если меняется интервал или принудительная инициализации записи
+	
+        if NAStatus:
+            status = 0 #NA
+        print(f'{status=}')
+    	#выставляем биты состояния статуса для доступа по модбас для внешних клиентов
+        vars.statusCh=status
+        if vars.writeInit or NA_status :							#если форсированная запись или статус NA
+            vars.statusDB=vars.currentState								#задаем отрезок для записи: текущий статус до смены
+            vars.timeDB=vars.currentStateTime							#аналогично время
+            vars.lengthDB=timeNow - vars.currentStateTime				#и длительность
+            vars.currentState= status								#задаес текущий отрезок: статус
+            vars.currentStateTime = timeNow                         #время
+            dbWriteFlag=True							
+            vars.buffered=False											# если отрезок был подвешен - сбрасываем флаг
+        else:
+            vars.buffered=True	#подвешиваем запись и ждем не изменится ли статус в течении таймаута (min_length): ожидание записи 
+            if timeNow - vars.currentStateTime <= vars.minLength : 		# если статус меняется до таймаута
+                #state_value не меняется
+                #state_time не меняется
+                vars.lengthDB=vars.lengthDB+(timeNow - vars.currentStateTime)#увеличиваем длину подвешенного отрезка на длину текущего
+                if status==vars.statusDB :							#если  текущий статус стал такой же как у подвешеного отрезка		
+                    vars.currentState=vars.statusDB						#подвешенный отрезок 
+                    vars.currentStateTime=vars.timeDB						#становится текущим
+                    vars.buffered=False									#снимаем отрезок с ожидания записи
+                else:												#если статус меняется			
+                    vars.currentState = status							#обновляем статус и
+                    vars.currentStateTime = timeNow 					#время текущего отрезка
+                    vars.buffered=True									#и подвешиваем- ожидание записи
+            else:													# если статус меняется после таймаута
+                vars.statusDB=vars.currentState				        	#задаем отрезок для записи (подвешенный): статус
+                vars.timeDB=vars.currentStateTime							#время
+                vars.lengthDB=timeNow - vars.currentStateTime			#длительность
+                vars.currentState = status								#задаем новй текущий отрезок: статус
+                vars.currentStateTime = timeNow 						#начала отрезка
+            vars.currentInterval = interval							#в любом случае текущий интервал = интервал канала
+    if vars.buffered : 
+        if (timeNow-vars.currentStateTime)>=vars.minLength :  #если есть отрезок ожидающий записи - пишем его по прошествии min_length
+            dbWriteFlag=True
+            vars.buffered=False
+
+    if dbWriteFlag  :
+        dbWriteFlag=False
+        vars.writeInit=False                    #сбрасываем флаг инициализации записи если был 1
+        if vars.lengthDB>10 or vars.lengthDB<90000 : 
+            #vars.lengthDB=1                    #отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
+            dbWrite = True                    #устанавливаем флаг записи в бд
+            print (f'WRITE TO DB HERE id:{vars.channel.id} {vars.statusDB=}, {vars.timeDB=}, {vars.lengthDB =}')										#отправляем сразу на запись
+
+
 
 
 

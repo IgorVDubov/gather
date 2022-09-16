@@ -55,6 +55,42 @@ def getSubObjectAttr(obj:type, attr:str):
         s+=attr[i]
     return obj,s
 
+def parseAttrParams(attrParam):
+    '''
+    parse attribute Params
+    return obj, attribute
+    get Number return None, Value
+    get str'channelID' return channelID:int , None
+    get str'channelID.atrName' return channelID:int , 'atrName':str
+    get str'channelID.atrName.var' return channelID:int , 'atrName.var':str
+    '''
+    if isinstance(attrParam, str):                                     #аттрибут - связь 
+        s=''
+        for i in range(0,len(attrParam)):
+            if attrParam[i]=='.':
+                break
+        if i==len(attrParam)-1:
+            first=attrParam
+        else:
+            first=attrParam[:i+(1 if len(attrParam)==1 else 0)]
+        other=attrParam[i+1:]
+        try:
+            BindChannelId=int(first)
+            if not other:
+                attr=None
+            else:
+                attr=other
+        except ValueError:
+            BindChannelId='self'
+            attr=attrParam
+        # print(f'{attrParam=}: {BindChannelId=},{attr=}')
+        if attr == None:      # channelBinding
+            return BindChannelId, None
+        else:                # channel attr Binding
+            return BindChannelId, attr
+    elif not(attrParam) or isinstance(attrParam, (int, float, bool)):   #аттрибут - число или None
+        return None, attrParam
+
 
 class Vars:
     '''
@@ -68,14 +104,14 @@ class Vars:
 
     def __str__(self):
         s=''
-        for i, (name, obj, objAttrName) in enumerate(self.vars):
-            s+=f'{name}'+(f'<-->{obj.id if hasattr(obj,"id") else obj}.{objAttrName}' if obj else '')+f'={getattr(self,name)}'
+        for i, (name, obj, objAttrName, parent) in enumerate(self.vars):
+            s+=f'    {name}'+(f'<-->{parent.id if hasattr(parent,"id") else parent}.{objAttrName}' if obj else '')+f'={getattr(self,name)}'
             if i < len(self.vars)-1 :
                 s+='\n'
         return s
     
-    def __repr__(self):
-        return self.__str__()
+    # def __repr__(self):
+    #     return self.__str__()
 
     # def add(self,name:str, obj:type, objAttrName:str):
     #     return self._add(name, obj, objAttrName)
@@ -103,6 +139,9 @@ class Vars:
         '''
         adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
         '''
+        if obj !=None:
+            parent=obj
+            obj, objAttrName=self._getSubObjectAttr(obj, objAttrName)
         if not ((inspect.isclass(type(obj)) and not type(obj) == type )
                 and isinstance( objAttrName, str) 
                 and isinstance( name, str)):
@@ -113,20 +152,18 @@ class Vars:
         fget = lambda self: self._getProperty( name )
         fset = lambda self, value: self._setProperty( name, value )
         
-        setattr( self, '_' + name, None )
+        setattr( self, '_' + name, getattr(obj,objAttrName) )
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
         # setattr( self, name, property( fget = fget, fset = fset ) )
-        if obj !=None:
-            obj,objAttrName=self._getSubObjectAttr(obj,objAttrName)
         try:
             if found:=next(filter(lambda var: var[0] == name, self.vars)):
-                attrName, _obj, _objAttr = found
+                attrName, _obj, _objAttr, _parent = found
                 self.vars.remove(found)
-                self.vars.append((attrName, obj, objAttrName))
+                self.vars.append((attrName, obj, objAttrName, parent))
                 return 
         except StopIteration:
             pass
-        self.vars.append((name, obj, objAttrName))
+        self.vars.append((name, obj, objAttrName, parent))
 
     def bindVar(self, name:str, obj:type, objAttrName:str):
         '''
@@ -134,11 +171,30 @@ class Vars:
         '''
         self._add(name, obj, objAttrName)
     
+
     def addBindVar(self, name:str, obj:type, objAttrName:str):
         '''
         adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
         '''
         self._add(name, obj, objAttrName)
+
+    def bindObject2Attr(self, name:str, obj:type):
+        '''
+        adds arg binding to inctance
+        name - argumrnt namr
+        obj - binding instance
+        '''
+        
+        setattr( self, '_' + name, obj )
+        try:
+            if found:=next(filter(lambda var: var[0] == name, self.vars)):
+                attrName, _obj, _objAttr, _parent = found
+                self.vars.remove(found)
+                self.vars.append((attrName, obj, None, obj))
+                return 
+        except StopIteration:
+            pass
+        self.vars.append((name, obj, None, obj))
 
     def addVar(self, name, defaultValue=None):
         '''
@@ -153,11 +209,11 @@ class Vars:
         
         setattr( self, '_' + name, defaultValue)
         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
-        self.vars.append((name, None, None))
+        self.vars.append((name, None, None, None))
         
     def toDict(self):
         result=dict()
-        for name, obj, attr in self.vars:
+        for name, obj, attr, parent in self.vars:
             result.update({name:getattr(self,name)})
         return result
    
@@ -165,7 +221,7 @@ class Vars:
         try:
             
             if found:=next(filter(lambda var: var[0] == name, self.vars)):
-                attrName, obj, objAttr = found
+                attrName, obj, objAttr, parent = found
                 # return found.obj, found.objAttrName, found.readonly
                 return obj, objAttr
         except StopIteration:
@@ -192,58 +248,18 @@ class Vars:
         # return getattr( self, '_' + name )
         return getattr( obj, objAttrName )
 
-# class Vars(object):
-#     '''
-#     dynamic added attribute with setters and getters
-#     '''
-#     def __init__(self):
-#         self.__class__=type(self.__class__.__name__,(self.__class__,), {})
-#         self.vars=[]
-
-#     def add(self, name:str, defaultValue=None):
-#     # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
-#         '''
-#         adds attribute to instance
-#         name:str  attribute name
-#         [defaultValue]:Any   default Value
-#         '''
-#         if not isinstance( name, str):
-#             raise Exception(f'Wrong argument type adding arg: {name=}')
-
-#         fget = lambda self: self._getProperty( name )
-#         fset = lambda self, value: self._setProperty( name, value )
-        
-#         setattr( self, '_' + name, defaultValue )
-#         # setattr( self.__class__, name, property( fget = fget, fset = fset ) )
-#         setattr( self.__class__, name, property( fget = fget, fset = fset ) )
-#         self.vars.append(name)
-            
-#     def toDict(self):
-#         result=dict()
-#         for attr in self.vars:
-#             result.update({attr:getattr(self,attr)})
-#         return result
-    
-#     def __str__(self):
-#         result=''
-#         for attr in self.vars:
-#             result+=f'{attr}={getattr(self,"_"+attr)}, '
-#             return result
-
-#     def _setProperty( self, name, value ):
-#         setattr( self, '_' + name, value )
-    
-#     def _getProperty( self, name ):
-#         return getattr( self, '_' + name )
-
-class Channel(ABC):
+class Channel(object):
     id=None
     result=None
     dost=None
     error=None
-    argsMap:dict={}
     handler:callable=None
-    args:Vars
+    args:Vars=None
+
+    def __init__(self, id, args:Vars=None) -> None:
+        self.id=id
+        self.args=args
+        
 
     @abstractmethod
     def __call__(self) -> Any: ...
@@ -252,10 +268,42 @@ class Channel(ABC):
         return self.toDict()
 
     def __str__(self):
-        return f' Channel: id:{self.id}'
+        return f' Channel: id:{self.id}' + f'\n  args:\n{self.args}' if self.args else ''
+    
+
+    def addArg(self, name, value=None):
+        if not self.args:
+            self.args=Vars()
+        self.args.addVar(name, value)
+    
+    def bindArg(self, name:str, channel:type, argName:str):
+        self.args.addBindVar(name, channel, argName)
+
+    def bindChannel2Arg(self, name:str, channel:type):
+        self.args.bindObject2Attr(name, channel)
+
+    def addBindArg(self, name:str, channel:type, argName:str):
+        if not self.args:
+            self.args=Vars()
+        obj=self if channel==None else channel
+        if argName!=None:
+            self.args.addBindVar(name, obj, argName)
+        else:
+            self.args.bindObject(name, obj)
+    
+    def toDictFull(self):
+        return self.toDict()
+
+    def toDict(self):
+        if self.args:
+            return { 'id':self.id,
+                    'args':self.args.toDict()}
+        else:
+            return { 'id':self.id}
+
 
 class Node(Channel):
-    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None, args:Vars=None, stored:Vars=None) -> None:
+    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None, args:Vars=None) -> None:
         self.id=id
         self.sourceId=moduleId
         self.type=type
@@ -264,27 +312,10 @@ class Node(Channel):
         self.resultIn=None
         self.result=None # данные после обработки handler
         self.handler=handler
+        self.args=args
 
-        if args:
-            self.argsMap=args
-            vars=Vars()
-            for name, binding   in args():
-                vars.add(name, value)
-            self.stored=storedVars
-        else:
-            self.stored=None
-        if stored:
-            self.storedMap=stored
-            storedVars=Vars()
-            for name, value   in stored.items():
-                storedVars.add(name, value)
-            self.stored=storedVars
-        else:
-            self.stored=None
-
-    
     def __str__(self):
-        return f''' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}, {self.resultIn=}'''
+        return f' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}, {self.resultIn=}' + f'\n  args:\n{self.args}' if self.args else ''
 
     def toDictFull(self):
         result= { 'id':self.id,
@@ -295,7 +326,9 @@ class Node(Channel):
                 'resultIn':self.resultIn,
                 'result':self.result}
         if self.handler:
-            result.update({'handler':self.handler.__name__,'handlerStoredVars':self.stored.toDict()})
+            result.update({'handler':self.handler.__name__})
+        if self.args:
+            result.update({'args':self.args.toDict()})
         return result
     
     def toDict(self):
@@ -313,34 +346,38 @@ class Node(Channel):
                 print(f'No result in channel {self.id} source {self.source}')
             # print(f'result in channel {self.id} = {self.source.result}')
             if self.handler:
-                self.result,self.stored=self.handler(self.resultIN,self.stored)    #TODO поменять на VARS(), возможно BINDVARS()
+                self.handler(self.args)    
             else:
                 self.result=self.resultIN
         else:
             print (f'no source init for node id:{self.id}')
     
 class Programm(Channel):
-    def __init__(self,id:int,handler:callable,args:Vars=None,stored:Vars=None) -> None:
+    def __init__(self,id:int,handler:callable, args:Vars=None) -> None:
         self.id=id
-        self.stored=stored
         self.args=args
         self.handler=handler
     
     def __call__(self):
-        self.stored=self.handler(self.args,self.stored)
+        self.handler(self.args)
     
+    def toDictFull(self):
+        return self.toDict()
+
     def toDict(self):
-        return { 'id':self.id,
-                'handler':self.handler.__name__,
-                'args':self.args.toDict(),
-                'stored':self.stored.toDict()}
+        result= { 'id':self.id,
+                'handler':self.handler.__name__}
+        if self.args:
+            result.update({'args':self.args.toDict()})
+        return result
     
     def exec(self):
         return self.__call__()
 
     def __str__(self):
-        return f'Programm id:{self.id}, handler:{self.handler}'
+        return f'Programm id:{self.id}, handler:{self.handler}'+ f'\n  args:\n{self.args}' if self.args else ''
 
+CHANNELS_CLASSES={'channels':'classes.Channel', 'nodes':'classes.Node', 'programms':'classes.Programm'} 
 
 def testVars():
     print('Test Vars class:')
@@ -358,6 +395,13 @@ def testVars():
     v.a=500
     print(f'{c.a=}')
     assert(c.a==500)
+    v.addVar('obj')
+    # v.obj=c
+    v.bindObject2Attr('obj',c)
+    print(v)
+    v.obj.a=65438
+    print(f'{c.a=}')
+
 
 def moduleTests():
     testVars()
