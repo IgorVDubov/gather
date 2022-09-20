@@ -54,7 +54,7 @@ class RequestHtmlHandler(BaseHandler):
         if user:=self.getUser():
             if request.get('type')=='allStateQuerry':
                 logger.log('MESSAGE',f'client {user["login"]} do allStateQuerry from ip:{self.request.remote_ip}.')
-                self.write(json.dumps(self.application.data.channelBase.toDict()))
+                self.write(json.dumps(self.application.data.channelBase.toDict(), default=str))
     
     
     def get(self):
@@ -101,7 +101,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             if jsonData['type']=="allStateQuerry":
                 logger.debug ("ws_message: allStateQuerry")
                 msg = {'type':'mb_data','data': None}
-                json_data = json.dumps(msg)
+                json_data = json.dumps(msg, default=str)
                 self.write_message(json_data)
             elif jsonData['type']=="testMsg":
                 pass
@@ -151,6 +151,7 @@ class Aplication(tornado.web.Application):
         self.wsClients=[]
         super().__init__(handlers, default_host, transforms, **settings)
 
+
 def TornadoHTTPServerInit(params,data):
     settings = {
         #'static_path': os.path.join(os.path.dirname(__file__), "static"),
@@ -172,6 +173,7 @@ def TornadoHTTPServerInit(params,data):
         (r'/images/(.*)', tornado.web.StaticFileHandler, {'path': './webserver/webdata/static'}),
         (r'/(favicon.ico)', tornado.web.StaticFileHandler, {'path': './webserver/webdata/static'})
         ]
+
 
     http_server=tornado.httpserver.HTTPServer(Aplication(handlers, data, **settings))
     http_server.listen(params.get('port',8888))

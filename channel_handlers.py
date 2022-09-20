@@ -58,6 +58,7 @@ def progVEK(vars):
 	VAR timeNow : DATE_AND_TIME END_VAR
     '''
     timeNow=datetime.now()
+    print(f'{ vars.buffered=} delta={vars.currentStateTime=}')
     if vars.init:
         vars.currentStateTime=timeNow
         NAStatus=False
@@ -101,37 +102,37 @@ def progVEK(vars):
         print(f'{status=}')
     	#выставляем биты состояния статуса для доступа по модбас для внешних клиентов
         vars.statusCh=status
-        if vars.writeInit or NA_status :							#если форсированная запись или статус NA
-            vars.statusDB=vars.currentState								#задаем отрезок для записи: текущий статус до смены
-            vars.timeDB=vars.currentStateTime							#аналогично время
-            vars.lengthDB=timeNow - vars.currentStateTime				#и длительность
-            vars.currentState= status								#задаес текущий отрезок: статус
-            vars.currentStateTime = timeNow                         #время
+        if vars.writeInit or NA_status :							        #если форсированная запись или статус NA
+            vars.statusDB=vars.currentState								    #задаем отрезок для записи: текущий статус до смены
+            vars.timeDB=vars.currentStateTime							    #аналогично время
+            vars.lengthDB=(timeNow - vars.currentStateTime).total_seconds()	#и длительность
+            vars.currentState= status						        		#задаес текущий отрезок: статус
+            vars.currentStateTime = timeNow                                  #время
             dbWriteFlag=True							
-            vars.buffered=False											# если отрезок был подвешен - сбрасываем флаг
+            vars.buffered=False									    		# если отрезок был подвешен - сбрасываем флаг
         else:
             vars.buffered=True	#подвешиваем запись и ждем не изменится ли статус в течении таймаута (min_length): ожидание записи 
-            if timeNow - vars.currentStateTime <= vars.minLength : 		# если статус меняется до таймаута
+            if (timeNow - vars.currentStateTime).total_seconds() <= vars.minLength : 		# если статус меняется до таймаута
                 #state_value не меняется
                 #state_time не меняется
-                vars.lengthDB=vars.lengthDB+(timeNow - vars.currentStateTime)#увеличиваем длину подвешенного отрезка на длину текущего
-                if status==vars.statusDB :							#если  текущий статус стал такой же как у подвешеного отрезка		
-                    vars.currentState=vars.statusDB						#подвешенный отрезок 
-                    vars.currentStateTime=vars.timeDB						#становится текущим
-                    vars.buffered=False									#снимаем отрезок с ожидания записи
-                else:												#если статус меняется			
-                    vars.currentState = status							#обновляем статус и
-                    vars.currentStateTime = timeNow 					#время текущего отрезка
-                    vars.buffered=True									#и подвешиваем- ожидание записи
-            else:													# если статус меняется после таймаута
-                vars.statusDB=vars.currentState				        	#задаем отрезок для записи (подвешенный): статус
-                vars.timeDB=vars.currentStateTime							#время
-                vars.lengthDB=timeNow - vars.currentStateTime			#длительность
-                vars.currentState = status								#задаем новй текущий отрезок: статус
-                vars.currentStateTime = timeNow 						#начала отрезка
-            vars.currentInterval = interval							#в любом случае текущий интервал = интервал канала
+                vars.lengthDB=vars.lengthDB+(timeNow - vars.currentStateTime).total_seconds()           #увеличиваем длину подвешенного отрезка на длину текущего
+                if status==vars.statusDB :							                    #если  текущий статус стал такой же как у подвешеного отрезка		
+                    vars.currentState=vars.statusDB						                #подвешенный отрезок 
+                    vars.currentStateTime=vars.timeDB						            #становится текущим
+                    vars.buffered=False									                #снимаем отрезок с ожидания записи
+                else:												                    #если статус меняется			
+                    vars.currentState = status							                #обновляем статус и
+                    vars.currentStateTime = timeNow 					                #время текущего отрезка
+                    vars.buffered=True									                #и подвешиваем- ожидание записи
+            else:													                    # если статус меняется после таймаута
+                vars.statusDB=vars.currentState				        	                #задаем отрезок для записи (подвешенный): статус
+                vars.timeDB=vars.currentStateTime						                #время
+                vars.lengthDB=(timeNow - vars.currentStateTime).total_seconds()			#длительность
+                vars.currentState = status								                #задаем новй текущий отрезок: статус
+                vars.currentStateTime = timeNow 						                #начала отрезка
+            vars.currentInterval = interval							                    #в любом случае текущий интервал = интервал канала
     if vars.buffered : 
-        if (timeNow-vars.currentStateTime)>=vars.minLength :  #если есть отрезок ожидающий записи - пишем его по прошествии min_length
+        if (timeNow-vars.currentStateTime).total_seconds()>=vars.minLength :            #если есть отрезок ожидающий записи - пишем его по прошествии min_length
             dbWriteFlag=True
             vars.buffered=False
 

@@ -67,16 +67,22 @@ class MainPool():
             logger.info ('************* KeyboardInterrupt *******************')
             self.cancelEvent.set()
             for task in asyncio.all_tasks(loop=self.loop):
+                print(f'Task {task.get_name()} cancelled')
                 task.cancel()
+            
         finally:
-            print ('************* loop close *******************')
+            if self.HTTPServer:
+                print('HTTPServer stop')
+                self.HTTPServer.stop()
+                asyncio.run(self.HTTPServer.close_all_connections())
             self.loop.stop()
+            print ('************* main loop close *******************')
 
     def setTasks(self):
             self.loop.create_task(self.startReader())
     
 
-    async def startReader(self):
+    async def startReader(self):                                
         # print ('start results Reader')
         # try:
             while True:
@@ -89,7 +95,7 @@ class MainPool():
                 
                 if len(self.HTTPServer.request_callback.wsClients):
                     for wsClient in self.HTTPServer.request_callback.wsClients:
-                        wsClient.write_message(json.dumps(self.channelBase.toDict()))
+                        wsClient.write_message(json.dumps(self.channelBase.toDict(), default=str))
 
                 delay=NODDE_READER_PAUSE-(time()-before)
                 if delay<=0:
@@ -97,11 +103,11 @@ class MainPool():
                 await asyncio.sleep(delay)
         
         # except asyncio.CancelledError:
-        #     print('CancelledError')
+        #     print('CancelledEvent in startReader')
         # except Exception as e:
         #     logger.error(e)
         # finally:
-        #     print('startReader finally')
+        #     print('startReader stops by exception ')
         #     return
 
         
