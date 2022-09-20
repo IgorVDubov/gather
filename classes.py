@@ -249,6 +249,7 @@ class Vars:
         return getattr( obj, objAttrName )
 
 class Channel(object):
+    channelType='channel'
     id=None
     result=None
     dost=None
@@ -296,13 +297,16 @@ class Channel(object):
 
     def toDict(self):
         if self.args:
-            return { 'id':self.id,
+            return { 
+                    'channelType':self.channelType,
+                    'id':self.id,
                     'args':self.args.toDict()}
         else:
-            return { 'id':self.id}
+            return { 'type':self.type, 'id':self.id}
 
 
 class Node(Channel):
+    channelType='node'
     def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None, args:Vars=None) -> None:
         self.id=id
         self.sourceId=moduleId
@@ -318,7 +322,9 @@ class Node(Channel):
         return f' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}, {self.resultIn=}' + f'\n  args:\n{self.args}' if self.args else ''
 
     def toDictFull(self):
-        result= { 'id':self.id,
+        result= { 
+                'channelType':self.channelType,
+                'id':self.id,
                 'sourceId':self.sourceId,
                 'type':self.type,
                 'sourceIndexList':self.sourceIndexList,
@@ -332,8 +338,9 @@ class Node(Channel):
         return result
     
     def toDict(self):
-        return { 'id':self.id,
-                'result':self.result}
+        return {    'channelType':self.channelType,
+                    'id':self.id,
+                    'result':self.result}
 
     def __call__(self):
         if self.source:
@@ -353,6 +360,7 @@ class Node(Channel):
             print (f'no source init for node id:{self.id}')
     
 class Programm(Channel):
+    channelType='programm'
     def __init__(self,id:int,handler:callable, args:Vars=None) -> None:
         self.id=id
         self.args=args
@@ -365,7 +373,8 @@ class Programm(Channel):
         return self.toDict()
 
     def toDict(self):
-        result= { 'id':self.id,
+        result= { 'channelType':self.channelType,
+                'id':self.id,
                 'handler':self.handler.__name__}
         if self.args:
             result.update({'args':self.args.toDict()})

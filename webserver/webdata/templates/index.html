@@ -20,6 +20,8 @@
 <script src="/js/smoothie.js" ></script> 
 <script>
   const SMOOTHE_CONFIG={}
+  const NOTPRINTATTRS=['channelType', 'args']
+  const NOTTRACKATTRS=['channelType', 'id', 'handler']
   var CHANNELCHART=new Map([])    //список id канала : объекты SmoothieChart 
   
   async function dataRequest(){
@@ -40,7 +42,6 @@
   function wsEvents(){
     ws.onmessage = function(evt) {
             let JsonMsg = JSON.parse(evt.data);
-            // console.log("JsonMsg")
             // console.log(JsonMsg)
             setDataById(JsonMsg)
             
@@ -70,52 +71,105 @@
   };
   
   function setDataById(result){
-    function setData(data){
-      for (let i = 0; i < data.length; i++){
-        if (data[i].id !=null){
-          let elem= document.getElementById(data[i].id.toString())
+    function setDatatoElement(id, data){
+          let elem= document.getElementById(id)
           if (elem) {
-            elem.innerHTML=data[i].result
-            CHANNELCHART.get(data[i].id).seriesSet[0].timeSeries.append(new Date().getTime(), data[i].result)         //TODO только первый график, можно добавить ID + фильтр по нему
+            elem.innerHTML=data
+          }
+    }
+
+    for (let chType in result){
+      for (var i=0; i<result[chType].length; i++){
+        for(var attrib in result[chType][i]){
+          if (NOTTRACKATTRS.includes(attrib)) continue;
+          if (attrib=='args'){
+            if (result[chType][i].args!=undefined){
+              for (let arg in result[chType][i].args){
+                id=result[chType][i].id.toString()+'args'+arg
+                data=result[chType][i].args[arg]
+                setDatatoElement(id, data)
+              }
+              continue;
+            }
+          }
+          id=result[chType][i].id.toString()+attrib
+          data=result[chType][i][attrib]
+          setDatatoElement(id, data)
+          if (attrib='result'){
+            CHANNELCHART.get(id=result[chType][i].id).seriesSet[0].timeSeries.append(new Date().getTime(), data)         
           }
         }
       }
     }
-    setData(result.node)
-    //setData(result.programm)
-   
   }
 
 
+
   function makePage(result){
-    console.log('makePage result-',result)
+    // console.log('makePage result-', result)
     let page= document.getElementById('container');
     page.innerHTML='';
     let container=document.createElement('div');
     container.classList=['mainContainer'];
     page.append(container);
-    let nodes=result.nodes;
-    let div=document.createElement('div');
-
-    div.innerHTML='Nodes'
-    container.append(div)
-    for (var i=0; i<result.node.length; i++){
-      p=document.createElement('div');
-      p.innerHTML='id:'+result.node[i].id+' result:<span id='+result.node[i].id +'>'+result.node[i].result+'</span>'
-      container.append(p)
-      canvas=document.createElement('canvas');
-      canvas.id='canvas_'+result.node[i].id
-      canvas.width="300";
-      canvas.height="70";
-      container.append(canvas)
-      chart = new SmoothieChart({millisPerPixel:60,maxValue:100,minValue:0,horizontalLines:[{color:'#ffffff',lineWidth:1,value:5},{color:'#880000',lineWidth:2,value:60}]});
-      console.log(chart)
-      chart.streamTo(canvas);
-      line=new TimeSeries();
-      chart.addTimeSeries(line, { strokeStyle: 'rgba(0, 255, 0, 1)',  lineWidth: 2 });
-      CHANNELCHART.set(result.node[i].id, chart);
+    for (let chType in result){
+      let channelTypeContainer=document.createElement('div');
+      let h=document.createElement('h5');
+      h.innerHTML=chType;
+      channelTypeContainer.append(h)
+      for (var i=0; i<result[chType].length; i++){
+        let channelContainer=document.createElement('div');
+        channelTypeContainer.append(channelContainer)
+        let attribsContainer=document.createElement('div');
+        channelContainer.append(attribsContainer)
+        for(var attrib in result[chType][i]){
+          if (NOTPRINTATTRS.includes(attrib)) continue;
+          let attribNameContainer=document.createElement('span');
+          attribNameContainer.innerText=attrib+':'
+          attribsContainer.append(attribNameContainer)
+          let attribContainer=document.createElement('span');
+          attribContainer.id=result[chType][i].id+attrib
+          attribContainer.innerText=result[chType][i][attrib]
+          attribsContainer.append(attribContainer)
+          let attribAfterContainer=document.createElement('span');
+          attribAfterContainer.innerText=', '
+          attribsContainer.append(attribAfterContainer)
+        }
+        if (chType=='node'){
+          let canvas=document.createElement('canvas');
+          canvas.id='canvas_'+result[chType][i].id
+          canvas.width=parseInt(300);
+          canvas.height=parseInt(70);
+          let chart = new SmoothieChart({millisPerPixel:60,maxValue:100,minValue:0,horizontalLines:[{color:'#ffffff',lineWidth:1,value:5},{color:'#880000',lineWidth:2,value:60}]});
+          chart.streamTo(canvas);
+          line=new TimeSeries();
+          chart.addTimeSeries(line, { strokeStyle: 'rgba(0, 255, 0, 1)',  lineWidth: 2 });
+          channelContainer.append(canvas)
+          CHANNELCHART.set(result[chType][i].id, chart);
+        };
+        if (result[chType][i]['args']!=undefined){
+          let argsContainer=document.createElement('div');
+          channelContainer.append(argsContainer)
+          let argsHeaderContainer=document.createElement('div');
+          argsHeaderContainer.innerHTML='arguments:'
+          argsContainer.append(argsHeaderContainer);
+          for (let arg in result[chType][i]['args']){
+            let argContainer=document.createElement('div');
+            let argNameContainer=document.createElement('span');
+            argNameContainer.innerText='________'+arg+': '
+            argContainer.append(argNameContainer)
+            let argDataContainer=document.createElement('span');
+            argDataContainer.id=result[chType][i].id+attrib + arg;
+            argDataContainer.innerHTML=result[chType][i][attrib][arg];
+            argContainer.append(argDataContainer)
+            channelContainer.append(argContainer)
+          }
+        }
+        // p.innerHTML='id:'+result[t][i].id+' result:<span id='+result[t][i].id +'>'+result[t][i].result+'</span>'
+        container.append(channelTypeContainer)
+        
+      };
     };
-    console.log(CHANNELCHART)
     ws=wsConnect()
     wsEvents()
   };
