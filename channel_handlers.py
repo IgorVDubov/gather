@@ -58,13 +58,14 @@ def progVEK(vars):
 	VAR timeNow : DATE_AND_TIME END_VAR
     '''
     timeNow=datetime.now()
-    print(f'{ vars.buffered=} delta={vars.currentStateTime=}')
+    dostChangeFlag = False
+    dbWriteFlag = False
     if vars.init:
+        vars.init=False
         vars.currentStateTime=timeNow
-        NAStatus=False
-        dostChangeFlag = False
-        dbWriteFlag = False
+        vars.NAStatus=False
         vars.lengthDB=0
+        vars.timeDB=timeNow
 
     if vars.channel.result==None:       #########!!!!!!!!!!!!
         vars.channel.result=0
@@ -77,12 +78,12 @@ def progVEK(vars):
     if vars.notDost>vars.dostTimeout:
         NA_status=True
         vars.d_length=vars.dost_Timeout+1
-    if vars.NAStatusBefore!=NAStatus :
+    if vars.NAStatusBefore!=vars.NAStatus :
         dostChangeFlag = True
     else:
        dostChangeFlag = False
 
-    vars.NAStatusBefore = NAStatus
+    vars.NAStatusBefore = vars.NAStatus
     # определяем текущий статус
     if vars.channel.result < vars.grStand:  #откл
         status=1
@@ -97,7 +98,7 @@ def progVEK(vars):
 
     if interval != vars.currentInterval or vars.writeInit or dostChangeFlag:  #если меняется интервал или принудительная инициализации записи
 	
-        if NAStatus:
+        if vars.NAStatus:
             status = 0 #NA
         print(f'{status=}')
     	#выставляем биты состояния статуса для доступа по модбас для внешних клиентов
@@ -142,7 +143,7 @@ def progVEK(vars):
         if vars.lengthDB>10 or vars.lengthDB<90000 : 
             #vars.lengthDB=1                    #отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
             dbWrite = True                    #устанавливаем флаг записи в бд
-            print (f'WRITE TO DB HERE id:{vars.channel.id} {vars.statusDB=}, {vars.timeDB=}, {vars.lengthDB =}')										#отправляем сразу на запись
+            print (f'WRITE TO DB HERE id: {vars.channel.id}, time: {vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")} status: {vars.statusDB}, length: {int(vars.lengthDB)}')										#отправляем сразу на запись
 
 
 
