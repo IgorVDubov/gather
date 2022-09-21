@@ -2,6 +2,7 @@ HTTPServerParams={'host':'localhost','port':8888,'wsserver':'ws://localhost:8888
 
 users=[{'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'}]
 
+DB_PERIOD=30
 
 MBServerParams={'host':'localhost','port':5021}
 '''

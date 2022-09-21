@@ -63,7 +63,7 @@ class SourcePool(object):
     
     def setTasks(self):
         for source in self.sources:
-            self.loop.create_task(self.loopSourceReader(source), name='task_'+source.id)
+            self.loop.create_task(self.loopSourceReader(source), name='SourceReader_'+source.id)
         #self.loop.create_task(self.startQueueReder())
 
 

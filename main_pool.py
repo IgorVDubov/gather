@@ -7,6 +7,7 @@ from consts import Consts
 from exchange_server import ExchangeServer
 from source_pool import SourcePool
 from channelbase import ChannelsBase
+import globals
 
 NODDE_READER_PAUSE=1
 
@@ -18,7 +19,8 @@ class MainPool():
                         channelBase:ChannelsBase,
                         exchangeServer:ExchangeServer=None, 
                         exchangeBindings:dict={},
-                        HTTPServer=None):
+                        HTTPServer=None,
+                        dbQuie=None):
         '''
         sources: source Module to read
             [{'id':'module_id(str)','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},...]
@@ -50,6 +52,7 @@ class MainPool():
         self.exchangeBindings=exchangeBindings
         self.setTasks()
         self.HTTPServer= HTTPServer
+        self.dbQuere=dbQuie
             
     
     def start(self):   
@@ -79,8 +82,15 @@ class MainPool():
             print ('************* main loop close *******************')
 
     def setTasks(self):
-            self.loop.create_task(self.startReader())
+            self.loop.create_task(self.startReader(), name='reader')
+            self.loop.create_task(self.dbRequester(), name='dbRequester')
     
+    async def dbRequester(self):
+        while True:
+            while not self.dbQuere.empty():
+                rec=self.dbQuere.get_nowait()
+                print(f'dqQuie:       {rec}')
+            await asyncio.sleep(globals.DB_PERIOD)
 
     async def startReader(self):                                
         # print ('start results Reader')
