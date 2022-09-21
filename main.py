@@ -17,8 +17,9 @@ import classes
 
 def init():
     loop=asyncio.get_event_loop()
+    dbQuie=asyncio.Queue()
     sourcePool=SourcePool(scada_config.ModuleList,loop)
-    channelBase=channelbase.ChannelBaseInit(scada_config.channelsConfig)
+    channelBase=channelbase.ChannelBaseInit(scada_config.channelsConfig, dbQuie)
     newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,scada_config.MBServerAdrMap)
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'])
     httpParams=globals.HTTPServerParams
@@ -36,7 +37,7 @@ def init():
     print('HTTPServer:')
     print(f"host:{httpParams.get('host')}, port:{httpParams.get('port')}, wsserver:{httpParams.get('wsserver')}, " if HTTPServer else None )
     
-    mainPool=MainPool(loop, sourcePool, channelBase, ModbusExchServer, exchangeBindings, HTTPServer)
+    mainPool=MainPool(loop, sourcePool, channelBase, ModbusExchServer, exchangeBindings, HTTPServer, dbQuie)
     logger.info ('init ok')
     return mainPool
 

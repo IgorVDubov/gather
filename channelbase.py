@@ -3,7 +3,7 @@ import classes
 from myexceptions import ChannelException, ConfigException
 from time import time
 
-CHANNELS_EXEC_ORDER=[classes.Node,classes.Channel,classes.Programm]
+CHANNELS_EXEC_ORDER=[classes.Node,classes.Channel,classes.Programm, classes.DBQuie]
 
 class ChannelsBase():
     channels=[]
@@ -95,9 +95,10 @@ class ChannelsBase():
 
 
 
-def ChannelBaseInit(channelsConfig):
+def ChannelBaseInit(channelsConfig, dbQuie):
     # сначала у всех каналов создаем аттрибуты, потом привязываем связанные
     bindings=[]
+    dbQuieChannel=False
     chBase=ChannelsBase()
     for channelType in channelsConfig:
         chType=eval(classes.CHANNELS_CLASSES.get(channelType))
@@ -107,9 +108,14 @@ def ChannelBaseInit(channelsConfig):
             cls=classes.Node
         elif chType==classes.Programm:
             cls=classes.Programm
+        elif chType==classes.DBQuie:
+            cls=classes.DBQuie
+            dbQuieChannel=True
         else:
             raise ConfigException(f'no type in classes for {chType} {channelType}')
         for channelConfig in channelsConfig.get(channelType):
+            if dbQuieChannel:
+                channelConfig.update({'dbQuie':dbQuie})
             if channelConfig.get('args'):
                 args=channelConfig.pop('args')
                 channel=cls(**channelConfig)
@@ -123,7 +129,7 @@ def ChannelBaseInit(channelsConfig):
             else:
                 channel=cls(**channelConfig)
             chBase.add(channel)
-
+        dbQuieChannel=False
     for (channel2Bind, name, bindId, param) in bindings:
         if bindId=='self':
             channel2Bind.bindArg(name, channel2Bind, param)

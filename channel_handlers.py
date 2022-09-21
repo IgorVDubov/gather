@@ -142,7 +142,7 @@ def progVEK(vars):
         vars.writeInit=False                    #сбрасываем флаг инициализации записи если был 1
         if vars.lengthDB>10 or vars.lengthDB<90000 : 
             #vars.lengthDB=1                    #отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
-            dbWrite = True                    #устанавливаем флаг записи в бд
+            vars.dbQuie.put({'id': vars.channel.id, 'time': vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), 'status': vars.statusDB, 'length': int(vars.lengthDB)})
             print (f'WRITE TO DB HERE id: {vars.channel.id}, time: {vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")} status: {vars.statusDB}, length: {int(vars.lengthDB)}')										#отправляем сразу на запись
 
 

@@ -304,6 +304,15 @@ class Channel(object):
         else:
             return { 'type':self.type, 'id':self.id}
 
+class DBQuie(Channel):
+    def __init__(self, id, dbQuie, args: Vars = None) -> None:
+        self.dbQuie=dbQuie
+        super().__init__(id, args)
+    def __str__(self):
+        return f'DBQuieChannel: id:{self.id}, quie length: {self.dbQuie.qsize()} '
+   
+    def put(self, data):
+        self.dbQuie.put_nowait(data)
 
 class Node(Channel):
     channelType='node'
@@ -386,7 +395,7 @@ class Programm(Channel):
     def __str__(self):
         return f'Programm id:{self.id}, handler:{self.handler}'+ f'\n  args:\n{self.args}' if self.args else ''
 
-CHANNELS_CLASSES={'channels':'classes.Channel', 'nodes':'classes.Node', 'programms':'classes.Programm'} 
+CHANNELS_CLASSES={'channels':'classes.Channel', 'nodes':'classes.Node', 'programms':'classes.Programm', 'dbquie':'classes.DBQuie'} 
 
 def testVars():
     print('Test Vars class:')

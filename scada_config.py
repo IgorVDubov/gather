@@ -40,6 +40,7 @@ args: запись аргументов:
         'argName1':'id' в args создается аргумент с именем argName1 и привязкой к объекту канала id 
         'argName1':'id.arg' в args создается аргумент с именем argName1 и привязкой к аргументу arg объекта канала id 
         'argName1':'id.arg.v1' в args создается аргумент с именем argName1 и привязкой к аргументу arg.v1 объекта канала id 
+        'argName1':'self.v1' в args создается аргумент с именем argName1 и привязкой к аргументу v1 этого канала 
 }
 '''   
 channelsConfig={
@@ -83,10 +84,12 @@ channelsConfig={
                         'timeDB':0,
                         'buffered':False,
                         'init':True,
+                        'dbQuie':'11001',
 
                         }
         },
-    ]
+    ],
+    'dbquie':[{'id':11001}]
 }
 
 
