@@ -1,7 +1,9 @@
+from cgitb import handler
 from typing import *
 from abc import ABC, abstractmethod
 import inspect
 import consts
+import myexceptions
 
 
 def auto_str(cls):
@@ -314,6 +316,19 @@ class DBQuie(Channel):
     def put(self, data):
         self.dbQuie.put_nowait(data)
 
+class DBConnector(Channel):
+    def __init__(self, id, dbQuie, handler:callable, args: Vars = None) -> None:
+        if handler==None:
+            raise myexceptions.ConfigException(f'No handler at channel {id} params')
+        self.handler=handler
+        super().__init__(id, args)
+        if args !=None:
+            self.args.addVar(dbQuie)
+    
+    def execute(self):
+        self.handler(self.args)
+
+
 class Node(Channel):
     channelType='node'
     def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None, args:Vars=None) -> None:
@@ -395,7 +410,12 @@ class Programm(Channel):
     def __str__(self):
         return f'Programm id:{self.id}, handler:{self.handler}'+ f'\n  args:\n{self.args}' if self.args else ''
 
-CHANNELS_CLASSES={'channels':'classes.Channel', 'nodes':'classes.Node', 'programms':'classes.Programm', 'dbquie':'classes.DBQuie'} 
+CHANNELS_CLASSES={  'channels':'classes.Channel',           # соответствие имени класса для корректной привязки в аргументах Vars 
+                    'nodes':'classes.Node', 
+                    'programms':'classes.Programm', 
+                    'dbquie':'classes.DBQuie',  
+                    'dbconnector':'classes.DBConnector'
+                } 
 
 def testVars():
     print('Test Vars class:')
