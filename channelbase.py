@@ -111,6 +111,8 @@ def ChannelBaseInit(channelsConfig, dbQuie):
         elif chType==classes.DBQuie:
             cls=classes.DBQuie
             dbQuieChannel=True
+        elif chType==classes.DBconnector:
+            cls=classes.DBQuie
         else:
             raise ConfigException(f'no type in classes for {chType} {channelType}')
         for channelConfig in channelsConfig.get(channelType):

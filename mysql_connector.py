@@ -3,7 +3,21 @@ Connection and SQL script funcs to MySql DB
 '''
 import mysql.connector
 from mysql.connector import errorcode
-from log_module import logger
+from loguru import logger
+
+def connection(func):
+    def makeConn(self,*args, **kwargs):
+        ctx=self.connect()
+        try:
+            cnx = mysql.connector.connect(**self.params)
+            if cnx.is_connected():
+                result=func(self,ctx,*args,**kwargs)
+                ctx.close()
+                return result
+        except mysql.connector.Error as err:
+            logger.error(err)
+    return makeConn
+
 
 class MySQLConnector(object):
     '''
@@ -70,9 +84,9 @@ class MySQLConnector(object):
         Values nunber = table fields number!!!
         '''
         if len(values):
+            values = list(filter(None, values))
             valueLenngth=len(values[0])
             if values[0]:
-                values = list(filter(None, values))
                 sql=f'INSERT INTO {table} VALUES( {", ".join(["%s"] * valueLenngth)})'
                 cur = connection.cursor()
                 cur.executemany(sql,values)
@@ -82,6 +96,8 @@ class MySQLConnector(object):
                 logger.error(f'Empty value tuple in isert querry to table:{table}, values:{values} ')
         else:
             logger.error(f'Empty value list in isert querry to table:{table}, values:{values} ')
+
+
 
 if __name__ == '__main__':
     import globals
