@@ -93,7 +93,6 @@ def parseAttrParams(attrParam):
     elif not(attrParam) or isinstance(attrParam, (int, float, bool)):   #аттрибут - число или None
         return None, attrParam
 
-
 class Vars:
     '''
     Binds dynamic added self instsnce attribute to another instance attribute
@@ -258,6 +257,7 @@ class Channel(object):
     error=None
     handler:callable=None
     args:Vars=None
+    type=None
 
     def __init__(self, id, args:Vars=None) -> None:
         self.id=id
@@ -343,7 +343,7 @@ class Node(Channel):
         self.args=args
 
     def __str__(self):
-        return f' Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=}, {self.resultIn=}' + f'\n  args:\n{self.args}' if self.args else ''
+        return f"Node: id:{self.id}, source:{self.source.id if self.source  else None}, source Id:{id(self.source)}, handler:{self.handler}, {self.result=},"  + (f'\n  args:\n{self.args}' if self.args else '')
 
     def toDictFull(self):
         result= { 

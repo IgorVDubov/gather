@@ -22,7 +22,7 @@ class ExchangeServer(ABC):
     
 def MBServerAdrMapInit(channelBase:channelbase.ChannelsBase,addrMaping:dict)->tuple():
     '''
-    привязка атрибутов каналов из addrMaping к атрибутов каналов из channelBase
+    привязка атрибутов каналов из addrMaping к атрибутам каналов из channelBase
     return
     channelBase у которой убраны поля привязки для совместимости с  MBServer
     bindings {channelID:binding} - словарь привязок для ускорения обработки
