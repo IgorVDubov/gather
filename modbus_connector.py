@@ -43,7 +43,7 @@ class AsyncModbusClient(AsyncBaseModbusClient):
             loop, self.connection = TestAsyncModbusClient(schedulers.ASYNC_IO, host=self.ip, port=self.port,loop=self.loop)
         else:
             loop, self.connection = ModbusClient(schedulers.ASYNC_IO, host=self.ip, port=self.port,loop=self.loop)
-        print(f"Client ip:{ self.ip}, connection:{self.connection.connected} ")
+        
 
     @property
     def connected(self):
@@ -76,7 +76,9 @@ class AsyncModbusConnection(AsyncModbusClient):
         self.function=function
 
         self.error=None
+        logger.debug(f"try connection to client ip:{ self.ip} addr:{address}")
         super().__init__(ip,port)
+        logger.debug(f"Client ip:{ self.ip}, addr:{address} connection:{self.connection.connected} ")
 
     def __str__(self):
         return f'ip:{self.ip}, port:{self.port}, unit:{self.unit}, address:{self.address}, regCount:{self.regCount}, function:{self.function}'
