@@ -7,9 +7,9 @@ import scada_config
 from exchange_server import ModbusExchangeServer, MBServerAdrMapInit
 
 STATES={    'N/A':{'result':(None,None),'length':(20,200)},
-            'Off':{'result':(0,0),'length':(20,200)},
-            'Stand':{'result':(1,5),'length':(30,150)},
-            'Work':{'result':(20,30),'length':(20,300)}
+            'Off':{'result':(0,0),'length':(5,20)},
+            'Stand':{'result':(10,20),'length':(5,15)},
+            'Work':{'result':(70,90),'length':(2,20)}
         }
 
 class Source():
@@ -66,7 +66,10 @@ def mainLoop(nodes, MBServer):
                 node.counter+=1
                 if node.counter>= node.length:
                     node.counter=0
-                    node.state=list(STATES.keys())[randint(1,3)]
+                    newStateIndex=randint(1,3)
+                    while abs(newStateIndex-list(STATES.keys()).index(node.state))>1:
+                        newStateIndex=randint(1,3)
+                    node.state=list(STATES.keys())[newStateIndex]
                     node.length=randint(STATES.get(node.state)['length'][0], STATES.get(node.state)['length'][1])
                 MBServer.setValue(node.id, node.result)
             asyncio.run(aSleep(0.5))
