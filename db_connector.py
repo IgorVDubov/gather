@@ -1,1 +1,0 @@
-def insertValues(db, table)

@@ -1,13 +1,27 @@
+
 '''
-Connection and SQL script funcs to MySql DB
+Connection and SQL script funcs to Sqlite3 DB
 '''
-import mysql.connector
-from mysql.connector import errorcode
+import sqlite3
 from loguru import logger
 from myexceptions import DBException
 
+def connection(func):
+    def makeConn(self,*args, **kwargs):
+        ctx=self.connect()
+        try:
+            cnx = sqlite3.connect(**self.params)
+            if cnx.is_connected():                                  #TODO реализовать если надо?? 
+                result=func(self,ctx,*args,**kwargs)
+                ctx.close()
+                return result
+        except sqlite3.Error as err: 
+            logger.error(f'sqlite3 error: {err}')
+    return makeConn
 
-class MySQLConnector(object):
+
+
+class Sqlight3Connector(object):
     '''
     connection to MySQL base on 
     https://dev.mysql.com/doc/connector-python/en/
@@ -15,29 +29,30 @@ class MySQLConnector(object):
     '''
     def __init__(self,dbParams):
         '''
-        params
-        {host='localhost', port=3032, database=None, user=None, password=None}
+        params "DB_name_with_path"
+        
         '''
         self.params=dbParams
         
-    def connect(self):
+    def _connect(self):
         try:
-            cnx = mysql.connector.connect(**self.params)
-            if cnx.is_connected():
+            cnx =sqlite3.connect(self.params)
+            if cnx.cursor():                        #проверка подключения (проверить тестами сколько занимает времени)
                 return cnx
-        except mysql.connector.Error as err:
+        except sqlite3.Error as err:
             logger.error(err)
         else:
-            raise DBException (f'DB not connected with params: {self.params}')
+            raise DBException (f'DB {self.params} not connected')
+    
 
     def connection(func):
         def makeConn(self,*args, **kwargs):
             try:
-                ctx=self.connect()
+                ctx=self._connect()
                 result=func(self,ctx,*args,**kwargs)
                 ctx.close()
                 return result
-            except mysql.connector.Error as err:
+            except sqlite3.Error.Error as err:
                 logger.error(err)
             finally:
                 if ctx:
@@ -54,13 +69,13 @@ class MySQLConnector(object):
         params: None or list of %s..%sN params [param1,...,paramN] by order in sql
         '''
         cur = connection.cursor()
-        cur.execute(sql,params)
+        cur.execute(sql,tuple(params))
         result = cur.fetchall()
         cur.close()
         return result 
 
     @connection
-    def insertManyToTable(self,connection,table:str,values:list):    #TODO liast of tuples + executemany для нескольких записей
+    def insert(self,connection,table:str,values:tuple=()):    #TODO liast of tuples + executemany для нескольких записей
         '''
         insert querry of values list. 
         
@@ -80,23 +95,6 @@ class MySQLConnector(object):
                 cur.close()
             else:
                 logger.error(f'Empty value tuple in isert querry to table:{table}, values:{values} ')
-        else:
-                logger.error(f'Empty value tuple in isert querry to table:{table}, values:{values} ')
-    @connection
-    def insert(self,connection,sql:str,values:tuple=()):    #TODO liast of tuples + executemany для нескольких записей
-        '''
-        insert querry of values list. 
-        
-        table: table name in sql string as INSERT INTO TABLE VALUES ( %s... %s )
-        values:list of tuples (%s..%sN) values by order in sql [(p1,p2)...,(p1,p2)]
-         
-        Values nunber = table fields number!!!
-        '''
-        if len(values):
-            cur = connection.cursor()
-            cur.execute(sql,values)
-            connection.commit()
-            cur.close()
         else:
                 logger.error(f'Empty value tuple in isert querry to table:{table}, values:{values} ')
        

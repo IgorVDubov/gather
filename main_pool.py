@@ -9,7 +9,7 @@ from source_pool import SourcePool
 from channelbase import ChannelsBase
 import globals
 
-NODDE_READER_PAUSE=1
+
 
 
 
@@ -20,7 +20,8 @@ class MainPool():
                         exchangeServer:ExchangeServer=None, 
                         exchangeBindings:dict={},
                         HTTPServer=None,
-                        dbQuie=None):
+                        dbQuie=None,
+                        DBInterface=None):
         '''
         sources: source Module to read
             [{'id':'module_id(str)','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},...]
@@ -50,9 +51,10 @@ class MainPool():
         #self.cancelEvent=asyncio.Event()
         self.exchServer=exchangeServer
         self.exchangeBindings=exchangeBindings
-        self.setTasks()
         self.HTTPServer= HTTPServer
         self.dbQuere=dbQuie
+        self.DBInterface=DBInterface
+        self.setTasks()
             
     
     def start(self):   
@@ -82,17 +84,18 @@ class MainPool():
             print ('************* main loop close *******************')
 
     def setTasks(self):
-            self.loop.create_task(self.startReader(), name='reader')
-            self.loop.create_task(self.dbRequester(), name='dbRequester')
+            self.loop.create_task(self.calcChannelBaseLoop(), name='reader')
+            if self.DBInterface:
+                self.loop.create_task(self.dbRequesterLoop(), name='dbRequesterLoop')
     
-    async def dbRequester(self):
+    async def dbRequesterLoop(self):
         while True:
             while not self.dbQuere.empty():
-                rec=self.dbQuere.get_nowait()
-                print(f'dqQuie:       {rec}')
+                req=self.dbQuere.get_nowait()
+                self.DBInterface.execSQL(req.get('questType'),req.get('sql'),req.get('params'))
             await asyncio.sleep(globals.DB_PERIOD)
 
-    async def startReader(self):                                
+    async def calcChannelBaseLoop(self):                                
         # print ('start results Reader')
         # try:
             while True:
@@ -107,17 +110,17 @@ class MainPool():
                     for wsClient in self.HTTPServer.request_callback.wsClients:
                         wsClient.write_message(json.dumps(self.channelBase.toDict(), default=str))
 
-                delay=NODDE_READER_PAUSE-(time()-before)
+                delay=globals.CHANNELBASE_CALC_PERIOD-(time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channelBase.channels)} channels ')
                 await asyncio.sleep(delay)
         
         # except asyncio.CancelledError:
-        #     print('CancelledEvent in startReader')
+        #     print('CancelledEvent in calcChannelBaseLoop')
         # except Exception as e:
         #     logger.error(e)
         # finally:
-        #     print('startReader stops by exception ')
+        #     print('calcChannelBaseLoop stops by exception ')
         #     return
 
         
