@@ -1,16 +1,29 @@
-from time import time, sleep
-from random import randint, random
+'''
+Modbus Server эмулятор устройств отдающих данные по протоколу модбас
+реализовано:
+    +
+данные по адресному пространству: scada_config.MBServerAdrMap
+алгоритм в STATES {'N/A':{'result':(A,B),'length':(C,D)}...
+                 { состояние:{значение_датчика:int random в диапазоне A,B, длительность_отрезка:int random в диапазоне C,D}}
+обновление данных UPDATE_PERIOD секунд
+'''
+from random import randint
 import asyncio
+import sys
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  #Если запускаем из под win    
+
 from classes import Node
 import globals
 import scada_config
-from exchange_server import ModbusExchangeServer, MBServerAdrMapInit
+from exchange_server import ModbusExchangeServer
 
 STATES={    'N/A':{'result':(None,None),'length':(20,200)},
             'Off':{'result':(0,0),'length':(5,20)},
-            'Stand':{'result':(10,20),'length':(5,15)},
-            'Work':{'result':(70,90),'length':(2,20)}
+            'Stand':{'result':(10,20),'length':(5,50)},
+            'Work':{'result':(70,90),'length':(20,100)}
         }
+UPDATE_PERIOD:float= 1 #update period in seconds
 
 class Source():
     def __init__(self,id,addr,regCount,format,function) -> None:
@@ -26,6 +39,7 @@ class NodeEmulator(Node):
     state:int = None
     length:int = None
     counter:int = 0
+
     def __str__(self):
         return super().__str__() + f'state:{self.state} len:{self.length}'
 
@@ -72,13 +86,20 @@ def mainLoop(nodes, MBServer):
                     node.state=list(STATES.keys())[newStateIndex]
                     node.length=randint(STATES.get(node.state)['length'][0], STATES.get(node.state)['length'][1])
                 MBServer.setValue(node.id, node.result)
-            asyncio.run(aSleep(0.5))
+            asyncio.run(aSleep(UPDATE_PERIOD))
     except KeyboardInterrupt:
+        print ('server stoping...')
         MBServer.stop()
-        print ('loop stop')
+        print ('server stops')
         return
 
 def main():
+    print ('*'*40)
+    print ('*'+' '*38+'*')
+    print ('*'+' '*12+''+'Modbus EMULATOR'+' '*11+'*')
+    print ('*'+' '*38+'*')
+    print ('*'*40)
+
     nodes = nodesInit(scada_config.ModuleList, scada_config.channelsConfig.get('nodes'))
     MBServer = MBServerInit(globals.MBServerParams_E,scada_config.MBServerAdrMap)
     mainLoop(nodes, MBServer)

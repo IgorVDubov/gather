@@ -9,7 +9,7 @@ Modbus server class based on Pymodbus Synchronous Server
 # --------------------------------------------------------------------------- #
 from typing import Any
 from pymodbus.version import version
-from pymodbus.server.sync import StartTcpServer
+from pymodbus.server.sync import ModbusTcpServer, StartTcpServer
 
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSparseDataBlock
@@ -35,13 +35,15 @@ def packFloatTo2WordsCDAB(f):
     return [b[i+1]*256+b[i] for i in range(0,len(b),2)]
 
 
-class MBServer():
+class MBServer(ModbusTcpServer):
     def __init__(self,addrMap,serverParams):
         #self.context=[slave for slave in self.addrMapInit(addrMap)]
         self.addrMap=addrMap
         self.serverParams=serverParams
         self.context=self.addrContextInit(addrMap)
         self.idMap=self.idAddrMapDictInit(addrMap)
+        super().__init__(self.context,address=(self.serverParams['host'],self.serverParams['port']))
+
         
     def idAddrMapDictInit(self,addrMap):
         '''
@@ -153,8 +155,12 @@ class MBServer():
         return context
 
     def start(self):
-        StartTcpServer(self.context, address=(self.serverParams['host'],self.serverParams['port']))
+        # StartTcpServer(self.context, address=(self.serverParams['host'],self.serverParams['port']))
+        self.serve_forever()
     
+    def stop(self):
+        # self.server_close()
+        self.shutdown()
 
     def startInThread(self):
         serverThread = Thread(target = self.start)    
@@ -175,7 +181,7 @@ class MBServer():
 
     def setInt(self,unit,addr,val):
         # print('setInt')
-        self.context[unit].setValues(4,addr,[val])
+        self.context[unit].setValues(3,addr,[val])
 
     def setFloat(self,unit,addr,val):
         # print('setFloat')

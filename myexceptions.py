@@ -16,6 +16,16 @@ class BaseException(Exception):
 
 
 
+class DBException(BaseException):
+    """ Error congurating program stucture """
+
+    def __init__(self, string=""):
+        """ Initialize the exception
+        :param string: The message to append to the error
+        """
+        self.message = "DB error: %s" % string
+        BaseException.__init__(self, self.message)
+
 class ConfigException(BaseException):
     """ Error congurating program stucture """
 
@@ -23,7 +33,17 @@ class ConfigException(BaseException):
         """ Initialize the exception
         :param string: The message to append to the error
         """
-        self.message = "[Program stucture] %s" % string
+        self.message = string
+        BaseException.__init__(self, self.message)
+
+class ProgrammException(BaseException):
+    """ Error congurating program stucture """
+
+    def __init__(self, string=""):
+        """ Initialize the exception
+        :param string: The message to append to the error
+        """
+        self.message = string
         BaseException.__init__(self, self.message)
 
 class ChannelException(BaseException):

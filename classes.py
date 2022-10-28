@@ -3,7 +3,7 @@ from typing import *
 from abc import ABC, abstractmethod
 import inspect
 import consts
-import myexceptions
+from myexceptions import ConfigException, ProgrammException
 
 
 def auto_str(cls):
@@ -146,9 +146,9 @@ class Vars:
         if not ((inspect.isclass(type(obj)) and not type(obj) == type )
                 and isinstance( objAttrName, str) 
                 and isinstance( name, str)):
-            raise Exception(f'Wrong argument type adding binding, args: {name=}, {obj=}, {objAttrName=}')
+            raise ConfigException(f'Wrong argument type adding binding, args: {name=}, {obj=}, {objAttrName=}')
         if not hasattr(obj, objAttrName):
-            raise Exception(f'Instance {obj} has no attribute {objAttrName}')
+            raise ConfigException(f'Instance {obj.channelType} id:{obj.id} has no attribute {objAttrName}')
 
         fget = lambda self: self._getProperty( name )
         fset = lambda self, value: self._setProperty( name, value )
@@ -204,7 +204,7 @@ class Vars:
         [defaultValue]:Any   default Value
         '''
         if not isinstance( name, str):
-            raise Exception(f'Wrong argument type adding arg: {name=}')
+            raise ConfigException(f'Wrong argument type adding arg: {name=}')
         fget = lambda self: self._getAttrProperty( name )
         fset = lambda self, value: self._setAttrProperty( name, value )
         
@@ -262,8 +262,6 @@ class Channel(object):
     def __init__(self, id, args:Vars=None) -> None:
         self.id=id
         self.args=args
-        
-
     @abstractmethod
     def __call__(self) -> Any: ...
     def toDict(self):...
@@ -273,7 +271,6 @@ class Channel(object):
     def __str__(self):
         return f' Channel: id:{self.id}' + f'\n  args:\n{self.args}' if self.args else ''
     
-
     def addArg(self, name, value=None):
         if not self.args:
             self.args=Vars()
@@ -327,7 +324,6 @@ class DBConnector(Channel):
     
     def execute(self):
         self.handler(self.args)
-
 
 class Node(Channel):
     channelType='node'
@@ -391,7 +387,10 @@ class Programm(Channel):
         self.handler=handler
     
     def __call__(self):
-        self.handler(self.args)
+        try:
+            self.handler(self.args)
+        except Exception as e:
+            raise ProgrammException(f'Exc in channel {self.id} handler:{self.handler.__name__} raise {e}')
     
     def toDictFull(self):
         return self.toDict()

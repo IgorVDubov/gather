@@ -1,6 +1,7 @@
 '''
 модуль обмена данными по запросам от внешних клиентов
 реализация : ModBus
+
 '''
 import modbus_server
 from abc import ABC, abstractmethod

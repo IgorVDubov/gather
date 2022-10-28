@@ -136,9 +136,15 @@ def ChannelBaseInit(channelsConfig, dbQuie):
         if bindId=='self':
             channel2Bind.bindArg(name, channel2Bind, param)
         elif bindId and param:
-            channel2Bind.bindArg(name, chBase.get(bindId), param)
+            if bindChannel:=chBase.get(bindId):
+                channel2Bind.bindArg(name, bindChannel, param)
+            else:
+                raise ConfigException(f'Cant find channel {bindId} when binding to {channel2Bind.id}')
         elif bindId and param==None:
-            channel2Bind.bindChannel2Arg(name, chBase.get(bindId))
+            if bindChannel:=chBase.get(bindId):
+                channel2Bind.bindChannel2Arg(name, bindChannel)
+            else:
+                raise ConfigException(f'Cant find channel {bindId} when binding in {channel2Bind.id}')
     bindings=[]
     return chBase
 

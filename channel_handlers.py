@@ -1,8 +1,25 @@
 from datetime import datetime
+from consts import Consts
 
 def progSheduller(vars):
+    vars.writeInit=False
+    result=0
+    i1=[0]*16
+    i1[0]=1
+    for i,bit in enumerate( i1 ):
+        result+=bit*2**i
+    vars.result=result
+    vars.v1=result
+    result=0
+    i1=[0]*16
+    i1[1]=1
+    for i,bit in enumerate( i1 ):
+        result+=bit*2**i
+    vars.result=result
+    vars.v2=result
+    vars.v3=0
     
-    return vars
+    
 
 # шаблон программ
 def func(vars):
@@ -24,8 +41,20 @@ def middle(vars):
         vars.deque=collections.deque([vars.resultIn for r in range(vars.MAX_VALUES)],vars.MAX_VALUES)
         
     vars.deque.append(vars.resultIn)
-    resultOut=sum(vars.deque)/vars.MAX_VALUES
+    vars.resultOut=sum(vars.deque)/vars.MAX_VALUES
 
+def toWord(vars):
+    '''
+    bits to 2 byte 
+    vars:
+        b1..b32:bool
+    '''
+    result=0
+    for i,bit in enumerate( [vars.b1, vars.b2, vars.b3, vars.b4, vars.b5, vars.b6, vars.b7, vars.b8, vars.b9, vars.b10,
+                            vars.b11, vars.b12, vars.b13, vars.b14, vars.b15, vars.b16] ):
+        result+=bit*2**i
+    vars.result=result
+    print(vars.result)
 
 
 def progVEK(vars):
@@ -69,7 +98,7 @@ def progVEK(vars):
 
     if vars.channel.result==None:       #########!!!!!!!!!!!!
         vars.channel.result=0
-    print (vars.channel.result)
+    # print (vars.channel.result)
     if vars.channel.dost==False:
         vars.notDost+=1
     else:
@@ -100,9 +129,22 @@ def progVEK(vars):
 	
         if vars.NAStatus:
             status = 0 #NA
-        print(f'{status=}')
+        print(f'{vars.channel.id}:{status=}')
     	#выставляем биты состояния статуса для доступа по модбас для внешних клиентов
-        vars.statusCh=status
+        #vars.statusCh=status
+        if status==0: 
+            vars.statusCh_b1=0 
+            vars.statusCh_b2=0
+        elif status==1: 
+            vars.statusCh_b1=1 
+            vars.statusCh_b2=0
+        elif status==2: 
+            vars.statusCh_b1=0 
+            vars.statusCh_b2=1
+        elif status==3: 
+            vars.statusCh_b1=1 
+            vars.statusCh_b2=1
+
         if vars.writeInit or NA_status :							        #если форсированная запись или статус NA
             vars.statusDB=vars.currentState								    #задаем отрезок для записи: текущий статус до смены
             vars.timeDB=vars.currentStateTime							    #аналогично время
@@ -142,8 +184,12 @@ def progVEK(vars):
         vars.writeInit=False                    #сбрасываем флаг инициализации записи если был 1
         if vars.lengthDB>10 or vars.lengthDB<90000 : 
             #vars.lengthDB=1                    #отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
-            vars.dbQuie.put({'id': vars.channel.id, 'time': vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), 'status': vars.statusDB, 'length': int(vars.lengthDB)})
-            print (f'WRITE TO DB HERE id: {vars.channel.id}, time: {vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")} status: {vars.statusDB}, length: {int(vars.lengthDB)}')										#отправляем сразу на запись
+            vars.dbQuie.put({'questType':Consts.INSERT,
+            'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
+            ,'params': (vars.channel.id, vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), vars.statusDB, int(vars.lengthDB))
+            })
+            print(f'Put ti dbquire id={vars.channel.id}, time={vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")}, status={vars.statusDB}, length={int(vars.lengthDB)}')
+            
 
 
 
@@ -156,5 +202,6 @@ __all__ = [
         "middle",
         "progVEK",
         "progSheduller",
+        "toWord",
 ]
 
