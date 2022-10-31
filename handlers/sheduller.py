@@ -3,7 +3,7 @@ from time import time
 import sys
 import subprocess
 
-TASK1_TIME='22:16'
+TASK1_TIME='22:30'
 
 def daySheduller(vars):
     '''
@@ -11,8 +11,7 @@ def daySheduller(vars):
     TASK1_TIME format str '24h:m:s' or '24h:m' (00 sec) 
     external cmd files at ./cmd  dir
     '''
-    # now=datetime.now()
-    now=time.now()
+    now=datetime.now()
     try:
         time1 = datetime.strptime(TASK1_TIME, '%H:%M:%S')
     except ValueError:
