@@ -1,62 +1,6 @@
 from datetime import datetime
 from consts import Consts
 
-def progSheduller(vars):
-    vars.writeInit=False
-    result=0
-    i1=[0]*16
-    i1[0]=1
-    for i,bit in enumerate( i1 ):
-        result+=bit*2**i
-    vars.result=result
-    vars.v1=result
-    result=0
-    i1=[0]*16
-    i1[1]=1
-    for i,bit in enumerate( i1 ):
-        result+=bit*2**i
-    vars.result=result
-    vars.v2=result
-    vars.v3=0
-    
-    
-
-# шаблон программ
-def func(vars):
-    '''
-    VARS
-    '''
-
-
-import collections
-def middle(vars):
-    '''
-    бегущее среднее из MAX_VALUES значений
-    STORED
-        deque
-    '''
-    if vars.resultIn==None:
-        vars.resultIn=0
-    if not vars.deque:
-        vars.deque=collections.deque([vars.resultIn for r in range(vars.MAX_VALUES)],vars.MAX_VALUES)
-        
-    vars.deque.append(vars.resultIn)
-    vars.resultOut=sum(vars.deque)/vars.MAX_VALUES
-
-def toWord(vars):
-    '''
-    bits to 2 byte 
-    vars:
-        b1..b32:bool
-    '''
-    result=0
-    for i,bit in enumerate( [vars.b1, vars.b2, vars.b3, vars.b4, vars.b5, vars.b6, vars.b7, vars.b8, vars.b9, vars.b10,
-                            vars.b11, vars.b12, vars.b13, vars.b14, vars.b15, vars.b16] ):
-        result+=bit*2**i
-    vars.result=result
-    print(vars.result)
-
-
 def progVEK(vars):
     '''
     VARS:
@@ -129,7 +73,7 @@ def progVEK(vars):
 	
         if vars.NAStatus:
             status = 0 #NA
-        print(f'{vars.channel.id}:{status=}')
+        # print(f'{vars.channel.id}:{status=}')
     	#выставляем биты состояния статуса для доступа по модбас для внешних клиентов
         #vars.statusCh=status
         if status==0: 
@@ -188,20 +132,5 @@ def progVEK(vars):
             'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
             ,'params': (vars.channel.id, vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), vars.statusDB, int(vars.lengthDB))
             })
-            print(f'Put ti dbquire id={vars.channel.id}, time={vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")}, status={vars.statusDB}, length={int(vars.lengthDB)}')
+            # print(f'Put ti dbquire id={vars.channel.id}, time={vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")}, status={vars.statusDB}, length={int(vars.lengthDB)}')
             
-
-
-
-
-
-#---------------------------------------------------------------------------#
-# Exported Identifiers
-#---------------------------------------------------------------------------#
-__all__ = [
-        "middle",
-        "progVEK",
-        "progSheduller",
-        "toWord",
-]
-
