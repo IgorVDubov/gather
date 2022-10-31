@@ -1,8 +1,12 @@
-from channel_handlers import *
+from handlers import *
+# from handlers.bitstoword import bitsToWord
+# from handlers.middle import middle
+# from handlers.progvek import progVEK
+# from handlers.sheduller import  progSheduller
+
 from consts import AI, DI
-from datetime import datetime
-grStand=1
 grWork=30
+grStand=1
 dostTimeout=5
 minLength=5
 
@@ -24,30 +28,30 @@ ModuleList_exmpl=[ #{'id':'e41e0a011adc','type':'ModbusTcp','ip':'192.168.1.99',
             #{'id':'000de065a65f','type':'ModbusTcp','ip':'192.168.1.98','port':'502','unit':0x1, 'address':0, 'regCount':16, 'function':2,'format':DI, 'period':0.5},
             {'id':'test2','type':'ModbusTcp','ip':'test2','port':'2','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
             {'id':'test3','type':'ModbusTcp','ip':'test5','port':'2','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            #{'id':'ModuleA','type':'ModbusTcp','ip':'192.168.1.200','port':502,'unit':0x1, 'address':1, 'count':2, 'function':3, 'format':consts.DI, 'period':0.5,'handler':''},
-            # {'id':'ModuleB','type':'ModbusTcp','ip':'192.168.1.200','port':520,'unit':0x1, 'address':0, 'count':2, 'function':4, 'format':consts.AI,'period':0.5}
+            #{'id':'ModuleA','type':'ModbusTcp','ip':'127.0.0.1','port':502,'unit':0x1, 'address':1, 'count':2, 'function':3, 'format':consts.DI, 'period':0.5,'handler':''},
+            # {'id':'ModuleB','type':'ModbusTcp','ip':'127.0.0.1','port':520,'unit':0x1, 'address':0, 'count':2, 'function':4, 'format':consts.AI,'period':0.5}
             ]    
 ModuleList=[ 
-            {'id':'10001','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10002','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':2, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10003','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':4, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10004','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':6, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10005','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':8, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10006','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':10, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10007','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':12, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10008','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':14, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10009','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':16, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10010','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':18, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10011','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':20, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10012','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':22, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10013','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':24, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10014','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':26, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10015','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':28, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10016','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':30, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10017','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':32, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10018','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':34, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10019','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':36, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
-            {'id':'10020','type':'ModbusTcp','ip':'localhost','port':'5022','unit':0x1, 'address':38, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10001','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10002','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':2, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10003','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':4, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10004','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':6, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10005','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':8, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10006','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':10, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10007','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':12, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10008','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':14, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10009','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':16, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10010','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':18, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10011','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':20, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10012','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':22, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10013','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':24, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10014','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':26, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10015','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':28, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10016','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':30, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10017','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':32, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10018','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':34, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10019','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':36, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
+            {'id':'10020','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':38, 'regCount':2, 'function':4, 'format':AI, 'period':0.5},
             ]    
 
 '''
@@ -117,19 +121,19 @@ channelsConfig={
     ],
     'programms':[
 
-        {'id':13001,  'handler':progSheduller,
+        {'id':13001,  'handler':daySheduller,
                 'args':{'writeInit':False, 'v1':'1005.result','v2':'1006.result','v3':'1004.result'}},
-        {'id':11001,  'handler':toWord,
+        {'id':11001,  'handler':bitsToWord,
                 'args':{'result':'1001.result',
                         'b1':0,'b2':0,'b3':0,'b4':0,'b5':0,'b6':0,'b7':0,'b8':0,'b9':0,'b10':0,
                         'b11':0,'b12':0,'b13':0,'b14':0,'b15':0,'b16':0
                         }},
-        {'id':11002,  'handler':toWord,
+        {'id':11002,  'handler':bitsToWord,
                 'args':{'result':'1002.result',
                         'b1':0,'b2':0,'b3':0,'b4':0,'b5':0,'b6':0,'b7':0,'b8':0,'b9':0,'b10':0,
                         'b11':0,'b12':0,'b13':0,'b14':0,'b15':0,'b16':0
                         }},
-        {'id':11003,  'handler':toWord,
+        {'id':11003,  'handler':bitsToWord,
                 'args':{'result':'1003.result',
                         'b1':0,'b2':0,'b3':0,'b4':0,'b5':0,'b6':0,'b7':0,'b8':0,'b9':0,'b10':0,
                         'b11':0,'b12':0,'b13':0,'b14':0,'b15':0,'b16':0

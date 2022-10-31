@@ -61,10 +61,17 @@ def nodesInit(configSources, configNodes):
             node.source=next(filter(lambda source:source.id==node.sourceId, sources))
         except StopIteration:
             node.source=None
-        print(node)
+        # print(node)
     return nodes
 
 def MBServerInit(MBServerParams, MBServerAdrMap):
+    print('Address mapping:')
+    for unit in MBServerAdrMap:
+        print (f'Unit:{unit.get("unit")}')
+        for name, regs in unit.get('map').items():
+            print(f'    {name}')
+            for reg in regs:
+                print(f'        id:{reg.get("id")}, address:{reg.get("addr")}, type:{reg.get("type")}')
     return ModbusExchangeServer(MBServerAdrMap, MBServerParams['host'], MBServerParams['port'])
 
 async def aSleep(pause):
@@ -99,6 +106,7 @@ def main():
     print ('*'+' '*12+''+'Modbus EMULATOR'+' '*11+'*')
     print ('*'+' '*38+'*')
     print ('*'*40)
+    print (f"ip:{globals.MBServerParams_E['host']}, port:{globals.MBServerParams_E['port']}")
 
     nodes = nodesInit(scada_config.ModuleList, scada_config.channelsConfig.get('nodes'))
     MBServer = MBServerInit(globals.MBServerParams_E,scada_config.MBServerAdrMap)
