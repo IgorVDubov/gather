@@ -1,0 +1,67 @@
+описание источников (Sources):
+  Источник - модбас устройство. Может быть несколько источников у одного устройства указывающие на разные его адреса.
+   {'id':'10001','type':'ModbusTcp','ip':'127.0.0.1','port':'5022','unit':0x1, 'address':0, 'regCount':2, 'function':4, 'format':AI, 'period':0.5}
+   id   -   Имя источника, например МАС_n
+   type - тип (ModbusTcp)
+   ip - ip, по умолчанию 127.0.0.1
+   port  - порт, по умолчанию 502
+   unit - номер устройства в сети , по умолчанию 0х1
+   address - адрес в модбас адресном пространстве
+   regCount - сколько байт подряд читается за раз и выдается в результат
+   function - модбас функция (1,2,3,4)
+   format - AI/DI формат выдачи результата: float / [b1,b2,b3....,b(16*regCount)]
+   period - период (float) опроса устройства в сек 
+
+База каналов:
+порядок пересчета каналов:
+channelbase.CHANNELS_EXEC_ORDER=[classes.Node,classes.Channel,classes.Programm, classes.DBQuie]
+
+Описание Каналов (Channels):
+channels
+    каналы для обмена данными
+    аргументы:
+        channelType='channel'
+        id=None
+        result=None             - результат
+        dost=None               - достоверность
+        error=None              -текущая ошибка канала
+        handler:callable=None   - обработчик
+        args:Vars=None          - доп агрументы Vars()
+        type=None               - тип результата
+nodes
+    привязываются к источникам по moduleId, результат в аргументе resultIn
+    {'id':4001, 'moduleId':'10001', 'type':'AI', 'sourceIndexList':[0], 'handler':'func_1'},...
+    id -имя канала
+    moduleId - имя источника к которому привязян
+    type - формат чтения результата: AI-float / DI- бит
+    sourceIndexList - массив индексов бит в массиве результата источника с форматом DI / [0] - для AI
+    handler - описание ниже
+programms
+    программы обработчики (handlers) выполняются в цикле пересчета каналов, доступ/обмен данными через доп аргументы arg:Vars()
+
+dbquie - очередь связи с подсистемой БД
+    метод .put(data) - помещает данные в очередь для обработчик
+    формат data: {'questType':Consts.INSERT|SELECT|DELETE|UPDATE,
+            'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
+            ,'params': (vars.channel.id, vars.param1, vars.param2, param3)
+            }
+    в args добавляется аргумент dbQuie для доступа из обработчика к очереди обмена
+
+handlers:
+- имя обработчика (str) = имя функции в соответствующем модуле
+- каждому обработчику соответствует функция в одноименном модуле каталога /handlers.
+- все обработчики - функции имеют объект класса Vars() с аргументами в качестве входного параметра
+- доступ к аргументу внутри обработчика vars.arg_name (чтение/запись)
+    def func1(vars):
+        vars.x+=1
+
+аргументы args:Vars()
+args: запись аргументов: 
+    'args':{
+        'argName1':value[число] в args создается аргумент с именем argName1 и значением value 
+        'argName1':'id' в args создается аргумент с именем argName1 и привязкой к объекту канала id 
+        'argName1':'id.standart_arg' в args создается аргумент с именем argName1 и привязкой к аргументу arg объекта канала id 
+        'argName1':'id.arg.v1' в args создается аргумент с именем argName1 и привязкой к аргументу arg.v1 объекта канала id 
+        'argName1':'self.v1' в args создается аргумент с именем argName1 и привязкой к аргументу v1 этого канала 
+}
+
