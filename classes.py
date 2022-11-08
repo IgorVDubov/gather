@@ -316,7 +316,7 @@ class DBQuie(Channel):
 class DBConnector(Channel):
     def __init__(self, id, dbQuie, handler:callable, args: Vars = None) -> None:
         if handler==None:
-            raise myexceptions.ConfigException(f'No handler at channel {id} params')
+            raise ConfigException(f'No handler at channel {id} params')
         self.handler=handler
         super().__init__(id, args)
         if args !=None:
