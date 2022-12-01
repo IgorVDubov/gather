@@ -27,7 +27,7 @@ class ChannelsBase():
             self.channels.append(channel)
             # print (f'append channel {channel.id} ' )
         else:
-            raise Exception(f'duplicate id in channel base adding {channel} ')
+            raise ConfigException(f'duplicate id in channel base adding {channel} ')
     
     def get(self, id:int)->classes.Channel:
         try:
@@ -95,7 +95,7 @@ class ChannelsBase():
 
 
 
-def ChannelBaseInit(channelsConfig, dbQuie):
+def channelBaseInit(channelsConfig, dbQuie):
     # сначала у всех каналов создаем аттрибуты, потом привязываем связанные
     bindings=[]
     dbQuieChannel=False
@@ -168,9 +168,9 @@ if __name__ == '__main__':
             {'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]},
             {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0]}
             ]
-    import channel_handlers
-    prgs=[{'id':10001, 'handler':channel_handlers.programm_1, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}}]
-    cb=ChannelBaseInit(nodes, prgs) 
+    import handlers
+    prgs=[{'id':10001, 'handler':handlers.progvek, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}}]
+    cb=channelBaseInit(nodes, prgs) 
     print(cb)
     cb.get(4208).result=44
     cb.execute(10001)
@@ -180,3 +180,4 @@ if __name__ == '__main__':
     print(cb)
     cb.executeAll()
     print(cb.channelsExecTime)
+ 
