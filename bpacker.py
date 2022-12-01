@@ -1,4 +1,5 @@
-import struct 
+import struct
+from typing import Union 
 
 
 def getBit(byte,position):
@@ -16,46 +17,46 @@ def packFloatToCDAB(f:float)->list:
     b=[i for i in struct.pack('<f',f)]
     return [b[i+1]*256+b[i] for i in range(0,len(b),2)]
 
-def unpackCDABToFloat(twoWords:list,roundCount:int=None)->float:
+def unpackCDABToFloat(two_words:list,round_count:int=None)->Union(float,None):
     '''
     unpack list [LOW_16bit, HIGH_16bit] \n
     return [LOW_16_byte, HIGH_16_byte] \n
-    round to roundCount if exist
+    round to round_count if exist
     '''
     try:
-        hex=twoWords[1].to_bytes(2,byteorder='big')+twoWords[0].to_bytes(2,byteorder='big')
+        hex_data=two_words[1].to_bytes(2,byteorder='big')+two_words[0].to_bytes(2,byteorder='big')
     except Exception as e:
-        print (f'unpackABCDToFloat: Exception {e} list in parameters: {twoWords}')
+        print (f'unpackABCDToFloat: Exception {e} list in parameters: {two_words}')
         return None
     try:
-        result=struct.unpack('!f', hex)[0]
-        if roundCount:
-            return round(result, roundCount)
+        result=struct.unpack('!f', hex_data)[0]
+        if round_count:
+            return round(result, round_count)
         else:
             return result
     except Exception:
-        print(f"unpackCDABToFloat: can't unpack {twoWords}")
+        print(f"unpackCDABToFloat: can't unpack {two_words}")
         return None
 
-def unpackABCDToFloat(twoWords:list,roundCount:int=None)->float:
+def unpackABCDToFloat(two_words:list,round_count:int=None)->Union(float,None):
     '''
     unpack list [LOW_16bit, HIGH_16bit] \n
     return [LOW_16_byte, HIGH_16_byte] \n
-    round to roundCount if exist
+    round to round_count if exist
     '''
     try:
-        hex=twoWords[0].to_bytes(2,byteorder='big')+twoWords[1].to_bytes(2,byteorder='big')
+        hex_data=two_words[0].to_bytes(2,byteorder='big')+two_words[1].to_bytes(2,byteorder='big')
     except Exception as e:
-        print (f'unpackABCDToFloat: Exception {e} list in parameters: {twoWords}')
+        print (f'unpackABCDToFloat: Exception {e} list in parameters: {two_words}')
         return None
     try:
-        result=struct.unpack('!f', hex)[0]
-        if roundCount:
-            return round(result, roundCount)
+        result=struct.unpack('!f', hex_data)[0]
+        if round_count:
+            return round(result, round_count)
         else:
             return result
     except Exception:
-        print(f"unpackCDABToFloat: can't unpack {twoWords}")
+        print(f"unpackCDABToFloat: can't unpack {two_words}")
         return None
 
 def tests():
