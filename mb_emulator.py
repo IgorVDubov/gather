@@ -16,8 +16,8 @@ if sys.platform == 'win32':
 
 from classes import Node
 import globals
-import scada_config
-from exchange_server import ModbusExchangeServer
+import scadaconfig.scada_config as scada_config
+from exchangeserver import ModbusExchangeServer
 
 STATES={    'N/A':{'result':(None,None),'length':(20,200)},
             'Off':{'result':(0,0),'length':(5,20)},

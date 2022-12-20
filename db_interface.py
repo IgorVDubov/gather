@@ -20,7 +20,7 @@ from consts import Consts
 class DBInterface():
     def __init__(self,dbType,dbparams) -> None:
         if dbType==Consts.MYSQL:
-            from mysql_connector import MySQLConnector
+            from mysqlconnector import MySQLConnector
             self.connection= MySQLConnector(dbparams)
         if dbType==Consts.SQLIGHT3:
             from sqlite3_connector import Sqlight3Connector

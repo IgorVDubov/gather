@@ -1,4 +1,4 @@
-def bitsToWord(vars):
+def bits_to_word(vars):
     '''
     bits to 2 byte 
     vars:
