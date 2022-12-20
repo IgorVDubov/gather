@@ -9,7 +9,7 @@ Modbus server class based on Pymodbus Synchronous Server
 # --------------------------------------------------------------------------- #
 from typing import Any
 from pymodbus.version import version
-from pymodbus.server.sync import ModbusTcpServer, StartTcpServer
+from pymodbus.server.async_io import ModbusTcpServer, StartTcpServer
 
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSparseDataBlock

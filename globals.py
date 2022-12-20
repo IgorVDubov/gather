@@ -1,5 +1,9 @@
 from consts import Consts
-HTTPServerParams={'host':'127.0.0.1','port':8888,'wsserver':'ws://127.0.0.1:8888/ws'}
+import os.path
+PROJECT={'path':'demomachines','comment':''}
+project_path= os.path.join(PROJECT.get('path','/'),  'templates'),
+
+HTTPServerParams={'host':'127.0.0.1','port':8870,'wsserver':'ws://127.0.0.1:8870/ws'}
 # HTTPServerParams={'host':'127.0.0.1','port':8888,'wsserver':'ws://127.0.0.1:8888/ws'}
 
 users=[{'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'}]
@@ -23,7 +27,7 @@ DB_TYPE=Consts.MYSQL        #тип используемой СУБД (дост�
 MySQLServerParams={
     'host': '127.0.0.1',
     'database': 'utrack_demo',
-    'user': 'utrack',                       #TODO зашифровать!!!!!
+    'user': 'utrack',                       #TODO в переменные окружения!!!!!
     'password' : 'Adm_db78'
 }
 '''

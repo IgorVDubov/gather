@@ -1,7 +1,6 @@
 import asyncio
 from typing import Any
-from pymodbus.client.asynchronous.tcp import AsyncModbusTCPClient as ModbusClient
-from pymodbus.client.asynchronous import schedulers
+from pymodbus.client.tcp import AsyncModbusTcpClient as ModbusClient
 import myexceptions
 
 from consts import AI,DI

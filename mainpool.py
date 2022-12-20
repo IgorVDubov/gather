@@ -4,8 +4,8 @@ import json
 from logger import logger
 import classes
 from consts import Consts
-from exchange_server import ExchangeServer
-from source_pool import SourcePool
+from exchangeserver import ExchangeServer
+from sourcepool import SourcePool
 from channelbase import ChannelsBase
 import globals
 

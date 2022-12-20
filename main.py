@@ -4,18 +4,20 @@ import logger as loggerLib
 from loguru import logger
 import asyncio
 import sys
+import os.path
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  #Если запускаем из под win    
-
-import os.path
-
-from main_pool import MainPool
-import scada_config
-import channelbase
+from importlib.machinery import SourceFileLoader
 import globals
-from webserver.web_connector import setHTTPServer
-from exchange_server import ModbusExchangeServer, MBServerAdrMapInit
-from source_pool import SourcePool
+scada_config=SourceFileLoader('scadaconfig','projects'+globals.PROJECT['path']+'scadaconfig.py').load_module
+# import projects.demomachines.scadaconfig as scada_config
+
+from mainpool import MainPool
+import projects.demomachines.scadaconfig as scada_config
+import channelbase
+from webserver.webconnector import setHTTPServer
+from exchangeserver import ModbusExchangeServer, MBServerAdrMapInit
+from sourcepool import SourcePool
 import db_interface
 import classes
 

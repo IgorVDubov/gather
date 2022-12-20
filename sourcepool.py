@@ -1,6 +1,6 @@
 import asyncio
 from time import time
-import modbus_connector
+import modbusconnector
 from logger import logger
 from abc import ABC, abstractmethod
 import myexceptions
@@ -23,7 +23,7 @@ class Source(BaseSource):
         self.result=None
         self.format=module['format']
         if module['type']=='ModbusTcp':
-            self.connection = modbus_connector.AsyncModbusConnection(module['ip'],module['port'],module['unit'],
+            self.connection = modbusconnector.AsyncModbusConnection(module['ip'],module['port'],module['unit'],
                                                                 module['address'],module['regCount'],module['format'],
                                                                 None if module.get('function')==(None or '') else module.get('function'),
                                                                 loop=loop)
