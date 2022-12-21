@@ -5,6 +5,7 @@ from logger import logger
 import classes
 from consts import Consts
 from exchangeserver import ExchangeServer
+
 from sourcepool import SourcePool
 from channelbase import ChannelsBase
 import globals
@@ -15,13 +16,13 @@ import globals
 
 class MainPool():
     def __init__(self,  loop:asyncio.AbstractEventLoop, 
-                        sourcePool:SourcePool, 
-                        channelBase:ChannelsBase,
-                        exchangeServer:ExchangeServer=None, 
-                        exchangeBindings:dict={},
-                        HTTPServer=None,
-                        dbQuie=None,
-                        DBInterface=None):
+                        source_pool:SourcePool|None, 
+                        channel_base:ChannelsBase,
+                        exchange_server:ExchangeServer|None=None, 
+                        exchange_bindings:dict=None,
+                        HTTP_server=None,
+                        db_quie=None,
+                        db_interface=None):
         '''
         sources: source Module to read
             [{'id':'module_id(str)','type':'ModbusTcp','ip':'192.168.1.99','port':'502','unit':0x1, 'address':51, 'regNumber':2, 'function':4, 'period':0.5},...]
@@ -33,37 +34,37 @@ class MainPool():
         '''
         self.loop = loop
         self.cancelEvent=asyncio.Event()
-        self.sourcePool=sourcePool
-        self.sourcePool.readAllOneTime()                    #TODO  проверить как работает если нет доступа к source
-                                                            #       или заполнять Null чтобы первый раз сработало по изменению
-        self.channelBase=channelBase
-       
-        for node in (Channel for Channel in self.channelBase.channels if isinstance(Channel,classes.Node)):
-            for source in self.sourcePool.sources:
-                if source.id==node.sourceId:
-                    node.source=source
-                    break
-        for node in (Channel for Channel in self.channelBase.channels if isinstance(Channel,classes.Node)):
-            if not node.source:
-                print(f'!!!!!!!!!!Cant find source {node.sourceId} for node {node.id}, remove from pool')
-                self.channelBase.channels.pop(self.channelBase.channels.index(node))
+        self.source_pool=source_pool
+        self.channel_base=channel_base
+        if source_pool:       
+            self.source_pool.readAllOneTime()                    #TODO  проверить как работает если нет доступа к source
+                                                                #       или заполнять Null чтобы первый раз сработало по изменению
+            for node in (channel for channel in self.channel_base.channels if isinstance(channel,classes.Node)):
+                for source in self.source_pool.sources:
+                    if source.id==node.sourceId:
+                        node.source=source
+                        break
+        # for node in (channel for channel in self.channel_base.channels if isinstance(channel,classes.Node)):
+        #     if node.source==None and node.sourceId!=None :          # если указан sourceId, но не привязан source выключаем из базы каналов
+        #         print(f'!!!!!!!!!!Cant find source {node.sourceId} for node {node.id}, remove from pool')
+        #         self.channel_base.channels.pop(self.channel_base.channels.index(node))
 
         #self.cancelEvent=asyncio.Event()
-        self.exchServer=exchangeServer
-        self.exchangeBindings=exchangeBindings
-        self.HTTPServer= HTTPServer
-        self.dbQuere=dbQuie
-        self.DBInterface=DBInterface
-        self.setTasks()
+        self.exchange_server=exchange_server
+        self.exchange_bindings = exchange_bindings if exchange_bindings!=None else {}
+        self.HTTP_server= HTTP_server
+        self.db_quie = db_quie
+        self.db_interface=db_interface
+        self.set_tasks()
             
     
     def start(self):   
-        if self.exchServer:
-            self.exchServer.start() 
+        if self.exchange_server:
+            self.exchange_server.start() 
         logger.info ('start source reader pool')
-        self.startLoop()
+        self.start_loop()
 
-    def startLoop(self):
+    def start_loop(self):
         try:
             print ('start source read loop')
             self.loop.run_forever()
@@ -76,51 +77,51 @@ class MainPool():
                 task.cancel()
             
         finally:
-            if self.HTTPServer:
-                print('HTTPServer stop')
-                self.HTTPServer.stop()
-                asyncio.run(self.HTTPServer.close_all_connections())
+            if self.HTTP_server:
+                print('HTTP_server stop')
+                self.HTTP_server.stop()
+                asyncio.run(self.HTTP_server.close_all_connections())
             self.loop.stop()
             print ('************* main loop close *******************')
 
-    def setTasks(self):
-            self.loop.create_task(self.calcChannelBaseLoop(), name='reader')
-            if self.DBInterface:
-                self.loop.create_task(self.dbRequesterLoop(), name='dbRequesterLoop')
+    def set_tasks(self):
+            self.loop.create_task(self.calc_channel_base_loop(), name='reader')
+            if self.db_interface:
+                self.loop.create_task(self.db_requester_loop(), name='db_requester_loop')
     
-    async def dbRequesterLoop(self):
+    async def db_requester_loop(self):
         while True:
-            while not self.dbQuere.empty():
-                req=self.dbQuere.get_nowait()
-                self.DBInterface.execSQL(req.get('questType'),req.get('sql'),req.get('params'))
+            while not self.db_quie.empty():
+                req=self.db_quie.get_nowait()
+                self.db_interface.execSQL(req.get('questType'),req.get('sql'),req.get('params'))
             await asyncio.sleep(globals.DB_PERIOD)
 
-    async def calcChannelBaseLoop(self):                                
+    async def calc_channel_base_loop(self):                                
         # print ('start results Reader')
         # try:
             while True:
                 before=time()
-                for channel in self.channelBase.channels:
+                for channel in self.channel_base.channels:
                     channel()
                                     
-                for channelId, binding in self.exchangeBindings.items():
-                    self.exchServer.setValue(channelId, binding.value)
+                for channelId, binding in self.exchange_bindings.items():
+                    self.exchange_server.setValue(channelId, binding.value)
                 
-                if len(self.HTTPServer.request_callback.wsClients):
-                    for wsClient in self.HTTPServer.request_callback.wsClients:
-                        wsClient.write_message(json.dumps(self.channelBase.toDict(), default=str))
+                if len(self.HTTP_server.request_callback.wsClients):
+                    for wsClient in self.HTTP_server.request_callback.wsClients:
+                        wsClient.write_message(json.dumps(self.channel_base.toDict(), default=str))
 
                 delay=globals.CHANNELBASE_CALC_PERIOD-(time()-before)
                 if delay<=0:
-                    logger.warning(f'Not enough time for channels calc loop, {len(self.channelBase.channels)} channels ')
+                    logger.warning(f'Not enough time for channels calc loop, {len(self.channel_base.channels)} channels ')
                 await asyncio.sleep(delay)
         
         # except asyncio.CancelledError:
-        #     print('CancelledEvent in calcChannelBaseLoop')
+        #     print('CancelledEvent in calc_channel_base_loop')
         # except Exception as e:
         #     logger.error(e)
         # finally:
-        #     print('calcChannelBaseLoop stops by exception ')
+        #     print('calc_channel_base_loop stops by exception ')
         #     return
 
         

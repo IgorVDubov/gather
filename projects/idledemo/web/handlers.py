@@ -1,23 +1,24 @@
-import tornado.websocket
-import tornado.httpserver
-import tornado.ioloop
-import tornado.options
-import tornado.web
-import os.path  
-from logger import logger
-import json
-from typing import *
-
-from globals import users as users
+from loguru import logger
 import globals
-import importlib
-project_web_server=importlib.import_module('projects.'+globals.PROJECT['path']+'.web.server')
-project_web_handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.web.handlers')
+import os.path
+PATH_TO_PROJECT=os.path.join(os.path.dirname(__file__),'projects',
+                            globals.PROJECT['path'])
+from globals import CHECK_AUTORIZATION
+from globals import PROJECT
+
+import tornado.web
+import tornado.websocket
+import json
+
+RequestHandlerClass=tornado.web.RequestHandler
+StaticFileHandler=tornado.web.StaticFileHandler
+RequestHandler=tornado.web.RequestHandler
+WebSocketHandler=tornado.websocket.WebSocketHandler
 
 
-                            
-class BaseHandler(tornado.web.RequestHandler):
 
+class BaseHandler(RequestHandlerClass):
+    user=None
     def get_current_user(self):
         return self.get_secure_cookie("user")
 
@@ -37,30 +38,39 @@ class BaseHandler(tornado.web.RequestHandler):
                return None
         except TypeError or ValueError:
             return None
+    
+    def check_user(check_authorization=True): 
+        def decorator(handler_func):
+            def wrapper(self, *args, **kwargs):
+                user={}
+                if not check_authorization or (user:=self.getUser()):
+                    self.user=user
+                    handler_func(self, *args, **kwargs)
+                else:
+                    self.redirect("/login")
+            return wrapper
+        return decorator    
 
 class MainHtmlHandler(BaseHandler):
-    def get(self):
-        print ('in MainHtmlHandler')
-        if user:=self.getUser():
-            print('user '+user['login']+' ok, render stat.html')
-            # logger.debug('user '+user['login']+' ok, render stat.html')
-            self.render('index.html', user=user['login'],wsserv=self.application.settings['wsParams'])
-        else:
-            self.redirect("/login")
     
-    def post(self):
-            pass
-      
+    @BaseHandler.check_user(CHECK_AUTORIZATION)
+    def get(self):
+        print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
+        
+        self.render('index.html', 
+                    user=self.user.get('login'),
+                    data=json.dumps(self.application.data.channelBase.toDict(), default=str),
+                    wsserv=self.application.settings['wsParams'])
+    
     
 class RequestHtmlHandler(BaseHandler):
-    
+    @BaseHandler.check_user(CHECK_AUTORIZATION)
     def post(self):
         self.set_header("Content-Type", "application/json")
         request=json.loads(self.request.body)
-        if user:=self.getUser():
-            if request.get('type')=='allStateQuerry':
-                logger.log('MESSAGE',f'client {user["login"]} do allStateQuerry from ip:{self.request.remote_ip}.')
-                self.write(json.dumps(self.application.data.channelBase.toDict(), default=str))
+        if request.get('type')=='allStateQuerry':
+            logger.log('MESSAGE',f'client {user["login"]} do allStateQuerry from ip:{self.request.remote_ip}.')
+            self.write(json.dumps(self.application.data.channelBase.toDict(), default=str))
     
     
     def get(self):
@@ -151,62 +161,15 @@ class LogoutHandler(BaseHandler):
         self.clear_cookie("user")
         self.redirect("/login")
 
-class Aplication(tornado.web.Application):
-    def __init__(self, handlers, data:dict, default_host = None, transforms = None, **settings: Any) -> None:
-        self.data=data
-        self.wsClients=[]
-        super().__init__(handlers, default_host, transforms, **settings)
 
-
-def TornadoHTTPServerInit(params,data):
-    settings = project_web_server.get_config(params, globals.PATH_TO_PROJECT)
-    handlers=project_web_handlers.handlers
-    # handlers=[
-    #     (r"/", MainHtmlHandler),
-    #     (r"/login",LoginHandler),
-    #     (r"/request", RequestHtmlHandler),
-    #     (r'/ws', WSHandler, dict(clbk=None)),
-    #     (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": './webserver/webdata/static'}),
-    #     (r'/js/(.*)', tornado.web.StaticFileHandler, {'path': './webserver/webdata/static'}),
-    #     (r'/css/(.*)', tornado.web.StaticFileHandler, {'path': './webserver/webdata/static'}),
-    #     (r'/images/(.*)', tornado.web.StaticFileHandler, {'path': './webserver/webdata/static'}),
-    #     (r'/(favicon.ico)', tornado.web.StaticFileHandler, {'path': './webserver/webdata/static'})
-    #     ]
-
-
-    http_server=tornado.httpserver.HTTPServer(Aplication(handlers, data, **settings))
-    http_server.listen(params.get('port',8888))
-    return http_server
-        
-        
-        # http_server = tornado.httpserver.HTTPServer(application,ssl_options={"certfile": ".\ssl\device.crt","keyfile":".\ssl\device.key"})
-        #self.server=tornado.httpserver.HTTPServer(application)
-        # http_server = tornado.httpserver.HTTPServer(application,ssl_options={"certfile": "utrack_test_1.p12","keyfile":"root_cert.crt"})
-
-# def start(self):    
-#     print ('torando server starts')
-#     self.main_loop = tornado.ioloop.IOLoop.current()
-#     self.main_loop.make_current()
-#     self.main_loop.start()
-
-
-#a_loop=main_loop.asyncio_loop
-
-
-# import asyncio
-
-# loop=asyncio.get_event_loop()
-# print(a_loop==loop)
-
-# from source_pool import SourcePool
-# from globals import ModuleList
-
-# pool=SourcePool(ModuleList,a_loop)
-# pool.start()
-
-# try:
-#     print('server satrt')
-#     main_loop.start()
-# except: #KeyboardInterrupt:
-#     main_loop.stop ()
-    
+handlers=[
+        (r"/", MainHtmlHandler),
+        (r"/login",LoginHandler),
+        (r"/logout",LogoutHandler),
+        (r"/request", RequestHtmlHandler),
+        # (r'/ws', WSHandler, dict(clbk=None)),
+        (r"/static/(.*)", StaticFileHandler, {"path": 'PATH_TO_PROJECT'+'web/webdata'}),
+        (r'/js/(.*)', StaticFileHandler, {'path': 'PATH_TO_PROJECT'+'web/webdata/js'}),
+        (r'/css/(.*)', StaticFileHandler, {'path': 'PATH_TO_PROJECT'+'web/webdata/css'}),
+        (r'/images/(.*)', StaticFileHandler, {'path': 'PATH_TO_PROJECT'+'web/webdata/images'}),
+        ]

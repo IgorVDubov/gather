@@ -1,4 +1,7 @@
-from projects.demomachines.handlers import handlers as handlers
+import importlib
+import globals
+handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers.handlers')
+# from projects.idledemmo.handlers import handlers as handlers
 from handlerslib.bitstoword import bits_to_word
 
 
@@ -19,10 +22,7 @@ period->float: период опроса в сек
 handler->callable: функция предобработки данных из channel_handlers 
 ''' 
 module_list=[ 
-            {'id':'machine1','type':'ModbusTcp','ip':'127.0.0.1','port':'2000','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
-            {'id':'machine2','type':'ModbusTcp','ip':'127.0.0.1','port':'2001','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
-            {'id':'machine3','type':'ModbusTcp','ip':'127.0.0.1','port':'2002','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
-            {'id':'machine4','type':'ModbusTcp','ip':'127.0.0.1','port':'2003','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
+            # {'id':'machine1','type':'ModbusTcp','ip':'127.0.0.1','port':'2000','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
             ]    
   
 
@@ -49,23 +49,8 @@ channels_config={
     'channels':[
         # {'id':1001},
     ],
-    # 'nodes_exmpl':[  
-    #             #{'id':4207,'moduleId':'ModuleA','type':'DI','sourceIndexList':[0,1],'handler':'func_1'},
-    #             # {'id':4208,'moduleId':'ModuleB','type':'AI','sourceIndexList':[0]},
-    #             {'id':4208,'moduleId':'test2','type':'DI','sourceIndexList':[0,1]},
-    #             {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0], 
-    #                         'handler':None,
-    #                         'args':{'resultIn':'resultIn',
-    #                                 'resultOut':'4209.result',
-    #                                 'deque':None,
-    #                                 'MAX_VALUES':10
-    #                                 }}
-    # ],
     'nodes':[  
-                {'id':4001,'moduleId':'machine1','type':'DI','sourceIndexList':[0]},
-                {'id':4002,'moduleId':'machine2','type':'DI','sourceIndexList':[0]},
-                {'id':4003,'moduleId':'machine3','type':'DI','sourceIndexList':[0]},
-                {'id':4004,'moduleId':'machine4','type':'DI','sourceIndexList':[0]},
+        {'id':4001,'moduleId':None,'type':'DI','sourceIndexList':[], 'handler':handlers.prog1,'args':{'result':'4001.result'}},
     ],
     'programms':[
 
@@ -96,13 +81,12 @@ channels_config={
                                 
 mb_server_addr_map=[
     {'unit':0x1, 'map':{
-            'di':[{'id':4208, 'attr':'result', 'addr':0, 'len':16}
-                  #,{'id':4208,'addr':3,'len':5}
-                ],
-            'ir':[{'id':4209, 'attr':'result', 'addr':0, 'type':'float'}
-                  #,{'id':4210,'addr':1,'type':'float'}
-                ]
-            }
+        # 'di':[{'id':4001, 'attr':'result', 'addr':0, 'len':16}
+        #     ],
+        'ir':[{'id':4001, 'attr':'result', 'addr':0, 'type':'int'}
+        #       ,{'id':4210,'addr':1,'type':'float'}
+        ]
+        }
     }]
 
 

@@ -191,6 +191,7 @@ class MBServer(ModbusTcpServer):
     def setValue(self,id,val):
         '''
         set value by ID according to addr map
+        if val=None NOT SET value!!!!!
         id:int
         val: [b,b,b...] if DI
              int if HR type int
@@ -200,7 +201,7 @@ class MBServer(ModbusTcpServer):
             unit,addr,length,valType=self.idMap.get(id,None)
         except TypeError:
             raise ConfigException(f'ModBus server[setValue]: cant get mnapping for id:{id}')
-        if addr==None:
+        if addr==None or val==None:                                                             
             # raise ModbusExchangeServerException('modbusServer setValue no such ID in map')
             return
         else:
