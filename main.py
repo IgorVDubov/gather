@@ -7,19 +7,17 @@ import sys
 import os.path
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  #Если запускаем из под win    
-from importlib.machinery import SourceFileLoader
-import globals
-scada_config=SourceFileLoader('scadaconfig','projects'+globals.PROJECT['path']+'scadaconfig.py').load_module
-# import projects.demomachines.scadaconfig as scada_config
 
-from mainpool import MainPool
-import projects.demomachines.scadaconfig as scada_config
+import globals
+import importlib
+scada_config=importlib.import_module('projects.'+globals.PROJECT['path']+'.scadaconfig')
+from sourcepool import SourcePool
 import channelbase
 from webserver.webconnector import setHTTPServer
 from exchangeserver import ModbusExchangeServer, MBServerAdrMapInit
-from sourcepool import SourcePool
 import db_interface
 import classes
+from mainpool import MainPool
 
 
 
@@ -27,8 +25,11 @@ import classes
 def init():
     loop=asyncio.get_event_loop()
     dbQuie=asyncio.Queue()
-    sourcePool=SourcePool(scada_config.ModuleList,loop)
-    channelBase=channelbase.ChannelBaseInit(scada_config.channelsConfig, dbQuie)
+    if len(modules:=scada_config.ModuleList):
+        sourcePool=SourcePool(modules,loop)
+    else:
+        sourcePool=None 
+    channelBase=channelbase.channel_base_init(scada_config.channels_config, dbQuie)
     newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,scada_config.MBServerAdrMap)
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'])
     httpParams=globals.HTTPServerParams
@@ -42,6 +43,7 @@ def init():
     print(channelBase)
     # import json
     # print(json.dumps([channelBase.nodesToDictFull()], sort_keys=True, indent=4))
+    print(f'Modbus Exchange Server: {globals.MBServerParams["host"]}, {globals.MBServerParams["port"]}')
     print('ExchangeBindings')
     print(exchangeBindings)
     print('HTTPServer:')
@@ -51,13 +53,25 @@ def init():
     logger.info ('init done')
     return mainPool
 
+def test_component():
+    loop=asyncio.get_event_loop()
+    loggerLib.loggerInit('ERROR')
+    logger.info('Starting........')
+    httpParams=globals.HTTPServerParams
+    channelBase=None
+    HTTPServer=setHTTPServer(httpParams, classes.Data(globals.users,channelBase))
+    loop.run_forever()
+
+    
 
 def main():
     loggerLib.loggerInit('ERROR')
     logger.info('Starting........')
     mainPool=init()
     mainPool.start()
+    
 
 if __name__=='__main__':
     main()
+    # test_component()
     

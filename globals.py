@@ -1,10 +1,14 @@
 from consts import Consts
 import os.path
-PROJECT={'path':'demomachines','comment':''}
-project_path= os.path.join(PROJECT.get('path','/'),  'templates'),
+
+# PROJECT={'name':'Empty','path':'empty','comment':''}
+PROJECT={'name':'Idle demo machines','path':'idledemo','comment':''}
+PATH_TO_PROJECT=os.path.join(os.path.dirname(__file__),'projects',
+                            PROJECT.get('path','/'))
+# project_path= os.path.join(PROJECT.get('path','/'),  'templates'),
 
 HTTPServerParams={'host':'127.0.0.1','port':8870,'wsserver':'ws://127.0.0.1:8870/ws'}
-# HTTPServerParams={'host':'127.0.0.1','port':8888,'wsserver':'ws://127.0.0.1:8888/ws'}
+CHECK_AUTORIZATION=False
 
 users=[{'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'}]
 

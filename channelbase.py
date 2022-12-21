@@ -95,7 +95,7 @@ class ChannelsBase():
 
 
 
-def channelBaseInit(channelsConfig, dbQuie):
+def channel_base_init(channelsConfig, dbQuie):
     # сначала у всех каналов создаем аттрибуты, потом привязываем связанные
     bindings=[]
     dbQuieChannel=False

@@ -17,7 +17,7 @@ def packFloatToCDAB(f:float)->list:
     b=[i for i in struct.pack('<f',f)]
     return [b[i+1]*256+b[i] for i in range(0,len(b),2)]
 
-def unpackCDABToFloat(two_words:list,round_count:int=None)->Union(float,None):
+def unpackCDABToFloat(two_words:list,round_count:int=None)->Union[float,None]:
     '''
     unpack list [LOW_16bit, HIGH_16bit] \n
     return [LOW_16_byte, HIGH_16_byte] \n
@@ -38,7 +38,7 @@ def unpackCDABToFloat(two_words:list,round_count:int=None)->Union(float,None):
         print(f"unpackCDABToFloat: can't unpack {two_words}")
         return None
 
-def unpackABCDToFloat(two_words:list,round_count:int=None)->Union(float,None):
+def unpackABCDToFloat(two_words:list,round_count:int=None)->Union[float,None]:
     '''
     unpack list [LOW_16bit, HIGH_16bit] \n
     return [LOW_16_byte, HIGH_16_byte] \n

@@ -84,7 +84,8 @@ def parseAttrParams(attrParam):
                 attr=other
         except ValueError:
             BindChannelId='self'
-            attr=attrParam
+            # attr=attrParam
+            attr=other
         # print(f'{attrParam=}: {BindChannelId=},{attr=}')
         if attr == None:      # channelBinding
             return BindChannelId, None
@@ -372,12 +373,13 @@ class Node(Channel):
             else:
                 print(f'No result in channel {self.id} source {self.source}')
             # print(f'result in channel {self.id} = {self.source.result}')
-            if self.handler:
-                self.handler(self.args)    
-            else:
-                self.result=self.resultIN
+        if self.handler:
+            self.handler(self.args)    
         else:
-            print (f'no source init for node id:{self.id}')
+            self.result=self.resultIN
+        # else:
+            # print (f'no source init for node id:{self.id}')
+            # return
     
 class Programm(Channel):
     channelType='programm'
