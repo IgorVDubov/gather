@@ -1,29 +1,33 @@
 #!/usr/bin/env python3
 
-import logger as loggerLib
-from loguru import logger
 import asyncio
-import sys
 import os.path
+import sys
+
+from loguru import logger
+
+import logger as loggerLib
+
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  #Если запускаем из под win    
 
-import globals
 import importlib
+
+import globals
+
 scada_config=importlib.import_module('projects.'+globals.PROJECT['path']+'.scadaconfig')
-from sourcepool import SourcePool
 import channelbase
-from webserver.webconnector import setHTTPServer
-from exchangeserver import ModbusExchangeServer, MBServerAdrMapInit
-import db_interface
 import classes
+import db_interface
+from exchangeserver import MBServerAdrMapInit, ModbusExchangeServer
 from mainpool import MainPool
-
-
+from sourcepool import SourcePool
+from webserver.webconnector import setHTTPServer
 
 
 def init():
-    loop=asyncio.get_event_loop()
+    loop=asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     dbQuie=asyncio.Queue()
     if len(modules:=scada_config.ModuleList):
         sourcePool=SourcePool(modules,loop)
@@ -31,7 +35,7 @@ def init():
         sourcePool=None 
     channelBase=channelbase.channel_base_init(scada_config.channels_config, dbQuie)
     newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,scada_config.MBServerAdrMap)
-    ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'])
+    ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'],loop=loop)
     httpParams=globals.HTTPServerParams
     httpParams.update({'path':os.path.join(os.path.dirname(__file__),'webserver', 'webdata')})
     HTTPServer=setHTTPServer(httpParams, classes.Data(globals.users,channelBase))

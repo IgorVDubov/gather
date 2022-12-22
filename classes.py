@@ -1,7 +1,7 @@
-from cgitb import handler
-from typing import *
-from abc import ABC, abstractmethod
 import inspect
+from abc import ABC, abstractmethod
+from typing import type, list
+
 import consts
 from myexceptions import ConfigException, ProgrammException
 
@@ -291,6 +291,8 @@ class Channel(object):
             self.args.addBindVar(name, obj, argName)
         else:
             self.args.bindObject(name, obj)
+    def set_arg(self, arg_name, value):
+        self.__setattr__(arg_name,value)
     
     def toDictFull(self):
         return self.toDict()
@@ -328,7 +330,7 @@ class DBConnector(Channel):
 
 class Node(Channel):
     channelType='node'
-    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None, args:Vars=None) -> None:
+    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:list, handler:callable=None, args:Vars=None) -> None:
         self.id=id
         self.sourceId=moduleId
         self.type=type
