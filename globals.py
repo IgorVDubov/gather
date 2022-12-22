@@ -1,5 +1,6 @@
-from consts import Consts
 import os.path
+
+from consts import Consts
 
 # PROJECT={'name':'Empty','path':'empty','comment':''}
 PROJECT={'name':'Idle demo machines','path':'idledemo','comment':''}
@@ -8,9 +9,12 @@ PATH_TO_PROJECT=os.path.join(os.path.dirname(__file__),'projects',
 # project_path= os.path.join(PROJECT.get('path','/'),  'templates'),
 
 HTTPServerParams={'host':'127.0.0.1','port':8870,'wsserver':'ws://127.0.0.1:8870/ws'}
-CHECK_AUTORIZATION=False
+CHECK_AUTORIZATION=True
 
-users=[{'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'}]
+users=[
+    {'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'},
+    {'id': 2, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div1', 'pass': '123'},
+    ]
 
 DB_PERIOD=3    #период опроса очереди сообщений для БД DBQuie
 

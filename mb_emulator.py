@@ -8,15 +8,19 @@ Modbus Server эмулятор устройств отдающих данные 
                  { состояние:{значение_датчика:int random в диапазоне A,B, длительность_отрезка:int random в диапазоне C,D}}
 обновление данных UPDATE_PERIOD секунд
 '''
-from random import randint
 import asyncio
 import sys
+from random import randint
+
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  #Если запускаем из под win    
 
-from classes import Node
+import importlib
+
 import globals
-import scadaconfig.scada_config as scada_config
+from classes import Node
+
+scada_config=importlib.import_module('projects.'+globals.PROJECT['path']+'.scadaconfig')
 from exchangeserver import ModbusExchangeServer
 
 STATES={    'N/A':{'result':(None,None),'length':(20,200)},
