@@ -1,11 +1,10 @@
 import importlib
+
 import globals
+
 handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers.handlers')
-# from projects.idledemmo.handlers import handlers as handlers
-from handlerslib.bitstoword import bits_to_word
-
-
 from consts import AI, DI
+from handlerslib.bitstoword import bits_to_word
 
 '''
 Список опрашиваемых модулей

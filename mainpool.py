@@ -61,14 +61,13 @@ class MainPool():
     def start(self):   
         if self.exchange_server:
             self.exchange_server.start() 
-        logger.info ('start source reader pool')
         self.start_loop()
 
     def start_loop(self):
         try:
-            print ('start source read loop')
+            logger.info ('start main loop')
             self.loop.run_forever()
-            print ('afetr run_forever')
+            print ('stop main loop')
         except KeyboardInterrupt:
             logger.info ('************* KeyboardInterrupt *******************')
             self.cancelEvent.set()
