@@ -7,13 +7,17 @@ Modbus server class based on Pymodbus Synchronous Server
 # --------------------------------------------------------------------------- #
 # import the various server implementations
 # --------------------------------------------------------------------------- #
-from typing import Any
-from pymodbus.version import version
-from pymodbus.server.async_io import ModbusTcpServer, StartTcpServer
+import asyncio
+import struct
+from threading import Thread
 
+from pymodbus.datastore import (ModbusSequentialDataBlock, ModbusServerContext,
+                                ModbusSlaveContext, ModbusSparseDataBlock)
 from pymodbus.device import ModbusDeviceIdentification
-from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSparseDataBlock
-from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
+from pymodbus.server.async_io import ModbusTcpServer, _serverList
+from pymodbus.version import version
+
+from myexceptions import ConfigException, ModbusExchangeServerException
 
 #from pymodbus.transaction import ModbusRtuFramer, ModbusBinaryFramer
 # --------------------------------------------------------------------------- #
@@ -26,18 +30,15 @@ from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
 # log = logging.getLogger()
 # log.setLevel(logging.DEBUG)
 
-from threading import Thread
-from myexceptions import ModbusExchangeServerException, ConfigException
 
-import struct 
 def packFloatTo2WordsCDAB(f):
     b=[i for i in struct.pack('<f',f)]
     return [b[i+1]*256+b[i] for i in range(0,len(b),2)]
 
 
 class MBServer(ModbusTcpServer):
-    def __init__(self,addrMap,serverParams):
-        #self.context=[slave for slave in self.addrMapInit(addrMap)]
+    def __init__(self,addrMap,serverParams,**kwargs):
+        self.loop=kwargs.get("loop") or asyncio.get_event_loop()
         self.addrMap=addrMap
         self.serverParams=serverParams
         self.context=self.addrContextInit(addrMap)
@@ -156,11 +157,12 @@ class MBServer(ModbusTcpServer):
 
     def start(self):
         # StartTcpServer(self.context, address=(self.serverParams['host'],self.serverParams['port']))
-        self.serve_forever()
+        self.loop.create_task(self.serve_forever(),name='Exchange_Server')
     
     def stop(self):
         # self.server_close()
-        self.shutdown()
+         asyncio.create_task(self.shutdown())
+        
 
     def startInThread(self):
         serverThread = Thread(target = self.start)    
@@ -240,60 +242,6 @@ def updating_writer(con):
         sleep(1)
 
 def run_server():
-    # ----------------------------------------------------------------------- #
-    # initialize your data store
-    # ----------------------------------------------------------------------- #
-    # The datastores only respond to the addresses that they are initialized to
-    # Therefore, if you initialize a DataBlock to addresses of 0x00 to 0xFF, a
-    # request to 0x100 will respond with an invalid address exception. This is
-    # because many devices exhibit this kind of behavior (but not all)::
-    #
-    #     block = ModbusSequentialDataBlock(0x00, [0]*0xff)
-    #
-    # Continuing, you can choose to use a sequential or a sparse DataBlock in
-    # your data context.  The difference is that the sequential has no gaps in
-    # the data while the sparse can. Once again, there are devices that exhibit
-    # both forms of behavior::
-    #
-    #     block = ModbusSparseDataBlock({0x00: 0, 0x05: 1})
-    #     block = ModbusSequentialDataBlock(0x00, [0]*5)
-    #
-    # Alternately, you can use the factory methods to initialize the DataBlocks
-    # or simply do not pass them to have them initialized to 0x00 on the full
-    # address range::
-    #
-    #     store = ModbusSlaveContext(di = ModbusSequentialDataBlock.create())
-    #     store = ModbusSlaveContext()
-    #
-    # Finally, you are allowed to use the same DataBlock reference for every
-    # table or you may use a separate DataBlock for each table.
-    # This depends if you would like functions to be able to access and modify
-    # the same data or not::
-    #
-    #     block = ModbusSequentialDataBlock(0x00, [0]*0xff)
-    #     store = ModbusSlaveContext(di=block, co=block, hr=block, ir=block)
-    #
-    # The server then makes use of a server context that allows the server to
-    # respond with different slave contexts for different unit ids. By default
-    # it will return the same context for every unit id supplied (broadcast
-    # mode).
-    # However, this can be overloaded by setting the single flag to False and
-    # then supplying a dictionary of unit id to context mapping::
-    #
-    #     slaves  = {
-    #         0x01: ModbusSlaveContext(...),
-    #         0x02: ModbusSlaveContext(...),
-    #         0x03: ModbusSlaveContext(...),
-    #     }
-    #     context = ModbusServerContext(slaves=slaves, single=False)
-    #
-    # The slave context can also be initialized in zero_mode which means that a
-    # request to address(0-7) will map to the address (0-7). The default is
-    # False which is based on section 4.4 of the specification, so address(0-7)
-    # will map to (1-8)::
-    #
-    #     store = ModbusSlaveContext(..., zero_mode=True)
-    # ----------------------------------------------------------------------- #
 
     store = ModbusSlaveContext(
         #di=ModbusSequentialDataBlock(1, [1]*16),
@@ -335,50 +283,52 @@ def run_server():
 
     StartTcpServer(context, identity=identity, address=("192.168.1.200", 5020))
     print ('afterstart')
-    #
-    # TCP with different framer
-    # StartTcpServer(context, identity=identity,
-    #                framer=ModbusRtuFramer, address=("0.0.0.0", 5020))
 
-    # TLS
-    # StartTlsServer(context, identity=identity, certfile="server.crt",
-    #                keyfile="server.key", address=("0.0.0.0", 8020))
-
-    # Udp:
-    # StartUdpServer(context, identity=identity, address=("0.0.0.0", 5020))
-
-    # socat -d -d PTY,link=/tmp/ptyp0,raw,echo=0,ispeed=9600 PTY,link=/tmp/ttyp0,raw,echo=0,ospeed=9600
-    # Ascii:
-    # StartSerialServer(context, identity=identity,
-    #                    port='/dev/ttyp0', timeout=1)
-
-    # RTU:
-    # StartSerialServer(context, framer=ModbusRtuFramer, identity=identity,
-    #                   port='/tmp/ttyp0', timeout=.005, baudrate=9600)
-
-    # Binary
-    # StartSerialServer(context,
-    #                   identity=identity,
-    #                   framer=ModbusBinaryFramer,
-    #                   port='/dev/ttyp0',
-    #                   timeout=1)
-
-
-if __name__ == "__main__":
-    from globals import MBServerAdrMap
-    from globals import MBServerParams
-    from time import sleep
-    #run_server()
-    server=MBServer(MBServerAdrMap,MBServerParams)
-    server.startInThread()
+async def call(server):
     i=1
     while True:
         try:
             i+=1
-            server.setValue(4209,i)
-            server.setValue(4210,-9.99999)
-            server.setValue(4207,[1])
-            server.setValue(4208,[i%2==True,0,1])
-            sleep(1)
+            server.setValue(4001,i)
+            server.setValue(4002,i+50)
+            # server.setValue(4003,[1])
+            # server.setValue(4004,[i%2==True,0,1])
+            await asyncio.sleep(1)
         except KeyboardInterrupt:
             break
+
+from time import sleep
+
+
+def main(loop):
+    #run_server()
+    MBServerParams={'host':'127.0.0.1','port':5021}
+    mb_server_addr_map=[
+    {'unit':0x1, 'map':{
+        # 'di':[{'id':4001, 'attr':'result', 'addr':0, 'len':16}
+        #     ],
+        'ir':[
+            {'id':4001, 'attr':'result', 'addr':1, 'type':'int'},
+            {'id':4002, 'attr':'result', 'addr':2, 'type':'float'},
+            # {'id':4003, 'attr':'result', 'addr':3, 'type':'int'},
+            # {'id':4004, 'attr':'result', 'addr':4, 'type':'int'},
+        ]
+        }
+    }]
+ 
+    # server=loop.run_until_complete(StartAsyncTcpServer(mb_server_addr_map,MBServerParams,loop=loop))
+    server=MBServer(mb_server_addr_map,MBServerParams,loop=loop)
+    # l=_serverList(server,[],True)
+    # l.run()
+    loop.create_task(call(server))
+    loop.create_task(server.serve_forever())
+    # loop.run_forever()
+    # server.start()
+    # server.startInThread()
+
+if __name__ == "__main__":
+    loop=asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    main(loop)
+    loop.run_forever()
+
