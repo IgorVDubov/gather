@@ -2,8 +2,9 @@ import os.path
 
 
 def get_config(params, PATH_TO_PROJECT):
+    print (f' in  server app {PATH_TO_PROJECT}')
     settings = {
-        #'static_path': os.path.join(os.path.dirname(__file__), "static"),
+        'static_path':  os.path.join(PATH_TO_PROJECT, 'web' ,'webdata'),
         'template_path': os.path.join(PATH_TO_PROJECT, 'web' ,'webdata'),
         # 'template_path': os.path.join(params.get('path'), 'webserver','webdata','templates'),
         'debug': True,

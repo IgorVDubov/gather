@@ -10,13 +10,16 @@ DB adapter for different SQL servers:
 # UPDATE='update'
 # DELETE='delete'
 from consts import Consts
+
 SELECT=Consts.SELECT
 INSERT=Consts.INSERT
 UPDATE=Consts.UPDATE
 DELETE=Consts.DELETE
 
 from typing import Union
-from consts import Consts
+
+
+
 class DBInterface():
     def __init__(self,dbType,dbparams) -> None:
         if dbType==Consts.MYSQL:

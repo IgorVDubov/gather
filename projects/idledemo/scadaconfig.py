@@ -2,9 +2,16 @@ import importlib
 
 import globals
 
-handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers.handlers')
+handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers')
+import handlerslib
+# r_level_tout=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers.r_level_tout')
 from consts import AI, DI
 from handlerslib.bitstoword import bits_to_word
+
+grWork=30
+grStand=1
+dostTimeout=5
+minLength=5
 
 '''
 Список опрашиваемых модулей
@@ -46,19 +53,52 @@ args: запись аргументов:
 '''   
 channels_config={
     'channels':[
-        # {'id':1001},
+        {'id':1001, 'args':{
+                        'grWork':30,
+                        'grStand':1,
+                        'dostTimeout':5,
+                        'minLength':5,
+                    }
+        },
     ],
     'nodes':[  
-        {'id':4001,'moduleId':None,'type':'DI','sourceIndexList':[], 'handler':handlers.prog1,'args':{'result':'4001.result'}},
+        {'id':4001,'moduleId':None,'type':'AI','sourceIndexList':[], 'handler':handlers.prog1,'args':{'result_in':'4001.result',
+                                                                                                        'result_link_ch':'5001.result',}},
+        {'id':5001,'moduleId':None,'type':'AI','sourceIndexList':[], 'handler':handlers.r_level_timeout,'args':{
+                        'channel':'4001',
+                        'dbChannel':None,
+                        'writeInit':'13001.args.writeInit',
+                        'statusCh_b1':'11001.args.b1',
+                        'statusCh_b2':'11001.args.b2',
+                        'grWork':'1001.args.grWork',
+                        'grStand':'1001.args.grStand',
+                        'dostTimeout':'1001.args.dostTimeout',
+                        'minLength':'1001.args.minLength',
+                        'notDost':0,
+                        'NAStatusBefore':False,
+                        'currentState':0,
+                        'currentStateTime':0,
+                        'currentInterval':0,
+                        'buffered':False,
+                        'statusDB':0,
+                        'lengthDB':0,
+                        'timeDB':0,
+                        'init':True,
+                        'dbQuie':'12001',
+                        }},
     ],
     'programms':[
-
-        # {'id':13001,  'handler':daySheduller,
-        #         'args':{'writeInit':False, 'v1':'1005.result','v2':'1006.result','v3':'1004.result'}},
+        {'id':11001,  'handler':handlerslib.bits_to_word,
+                'args':{'result':'1001.result',
+                        'b1':0,'b2':0,'b3':0,'b4':0,'b5':0,'b6':0,'b7':0,'b8':0,'b9':0,'b10':0,
+                        'b11':0,'b12':0,'b13':0,'b14':0,'b15':0,'b16':0
+                        }},
+        {'id':13001,  'handler':handlers.day_sheduller,
+                'args':{'writeInit':False}},
         
     ],
     'dbquie':[
-        # {'id':12001},
+        {'id':12001},
         ]
 }
 

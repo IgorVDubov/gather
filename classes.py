@@ -1,6 +1,6 @@
 import inspect
 from abc import ABC, abstractmethod
-from typing import type, list
+from typing import Any, List, Type
 
 import consts
 from myexceptions import ConfigException, ProgrammException
@@ -23,7 +23,7 @@ class Data():
         self.users = users
         self.channelBase = channelbase
 
-def getDeepAttrValue(obj:type, attr:str):
+def getDeepAttrValue(obj:Type, attr:str):
     '''
     return  instance subobjects attributes value
     obj - class instance
@@ -37,14 +37,17 @@ def getDeepAttrValue(obj:type, attr:str):
             obj=result
             continue
         s+=attr[i]
-    return getattr(obj,s)
+    try:
+        return getattr(obj,s)
+    except AttributeError:          #или raise выше ???
+        return None
 
-def getSubObjectAttr(obj:type, attr:str):
+def getSubObjectAttr(obj:Type, attr:str):
     '''
     return  subobjects instance and  attribute name for getattr
     obj - class instance
     attr - attributes: example 'a', 'vars.b' if vars instance of Var with attr 'b'
-    return (subobj:type, name:str)
+    return (subobj:Type, name:str)
     example: getSubObjectAttr(someObj,'vars.b') returns (vars_instance,'b')
     '''
     s=''
@@ -118,12 +121,12 @@ class Vars:
     # def add(self,name:str, obj:type, objAttrName:str):
     #     return self._add(name, obj, objAttrName)
     @staticmethod
-    def _getSubObjectAttr(obj:type, attr:str):
+    def _getSubObjectAttr(obj:Type, attr:str):
         '''
         return  subobjects instance and  attribute name for getattr
         obj - class instance
         attr - attributes: example 'a', 'vars.b' if vars instance of Var with attr 'b'
-        return (subobj:type, name:str)
+        return (subobj:Type, name:str)
         example: getSubObjectAttr(someObj,'vars.b') returns (vars_instance,'b')
         '''
         s=''
@@ -136,8 +139,8 @@ class Vars:
             s+=attr[i]
         return obj,s
 
-    def _add(self, name:str, obj:type, objAttrName:str):
-    # def add(self, name:str, obj:type, objAttrName:str, readonly=False):
+    def _add(self, name:str, obj:Type, objAttrName:str):
+    # def add(self, name:str, obj:Type, objAttrName:str, readonly=False):
         '''
         adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
         '''
@@ -167,20 +170,20 @@ class Vars:
             pass
         self.vars.append((name, obj, objAttrName, parent))
 
-    def bindVar(self, name:str, obj:type, objAttrName:str):
+    def bindVar(self, name:str, obj:Type, objAttrName:str):
         '''
         adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
         '''
         self._add(name, obj, objAttrName)
     
 
-    def addBindVar(self, name:str, obj:type, objAttrName:str):
+    def addBindVar(self, name:str, obj:Type, objAttrName:str):
         '''
         adds self attribute (name) bindig to instance (obj) attribute  (objAttrName)
         '''
         self._add(name, obj, objAttrName)
 
-    def bindObject2Attr(self, name:str, obj:type):
+    def bindObject2Attr(self, name:str, obj:Type):
         '''
         adds arg binding to inctance
         name - argumrnt namr
@@ -277,13 +280,16 @@ class Channel(object):
             self.args=Vars()
         self.args.addVar(name, value)
     
-    def bindArg(self, name:str, channel:type, argName:str):
+    def get_arg(self, arg:str):
+        return getDeepAttrValue(self, arg)
+    
+    def bindArg(self, name:str, channel:Type, argName:str):
         self.args.addBindVar(name, channel, argName)
 
-    def bindChannel2Arg(self, name:str, channel:type):
+    def bindChannel2Arg(self, name:str, channel:Type):
         self.args.bindObject2Attr(name, channel)
 
-    def addBindArg(self, name:str, channel:type, argName:str):
+    def addBindArg(self, name:str, channel:Type, argName:str):
         if not self.args:
             self.args=Vars()
         obj=self if channel==None else channel
@@ -330,7 +336,7 @@ class DBConnector(Channel):
 
 class Node(Channel):
     channelType='node'
-    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:list, handler:callable=None, args:Vars=None) -> None:
+    def __init__(self,id:int,moduleId:str, type:str, sourceIndexList:List, handler:callable=None, args:Vars=None) -> None:
         self.id=id
         self.sourceId=moduleId
         self.type=type

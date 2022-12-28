@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gather</title>
+    <script src="/js/moment-with-locales.min.js" ></script> 
+    <style>
+        .machine{
+            border: 1px solid grey;
+            display: flex;
+            flex-direction: row;
+            width: 18rem;
+        }
+
+        .menu{
+            display: flex;
+            flex-direction: row;
+        }
+        .l2{
+            font-size: 2em;
+            text-align: center;
+        }
+        .l1_5{
+            font-size: 1.5em;
+            text-align: center;
+        }
+        .brd{
+            border: 1px solid grey;
+            display: table-cell;
+        }
+        .w6{
+            width: 6rem;
+        }
+        .w12{
+            width: 12rem;
+        }
+
+    </style>
+</head>
+<body>
+    <div>hello form UTrack gather, {{ user }}</div>
+        <div class= 'machine'>
+        <div class= 'brd l1_5 w6' id="result4001">-</div>
+        <div class= 'brd l1_5 w12' id="time4001">-</div>
+    </div>
+    <div class="menu">
+        <div class= 'brd w6 l2' id="off4001">off</div>
+        <div class= 'brd w6 l2'id="stand4001">stand</div>
+        <div class= 'brd w6 l2'id="work4001">work</div>
+    </div>
+</body>
+<script>
+    moment.locale('ru');
+    const STATUS_COLORS=['lightGrye','grey','yellow', 'lightGreen']
+    const STATUS_NAMES=['N/A','Откл','Простой', 'Работа']
+    const EMUL_CH=4001
+    const MACHINE_CH=5001
+    const SATATUS_ARG='args.currentState'
+    var statusTime;
+    var cahnnel=document.getElementById('result4001');
+
+   
+
+    async function channelGetRequest(chId){
+        let response = await fetch('/request', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({type: 'get_ch', id:chId})
+                            })
+        return await response.json()
+    }
+    async function channelGetArgRequest(chId, chArg){
+        let response = await fetch('/request', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({type: 'get_ch_arg', id:chId, arg:chArg})
+                            })
+        return await response.json()
+    }
+    async function channelSetRequest(chId, chArg, argValue){
+        let response = await fetch('/request', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({type: 'set_ch', id:chId, arg:chArg, value:argValue})
+                            })
+        return await response.json()
+    }
+    class PerodicalCallback {
+        constructor(callback, delay) {
+          this.callback = callback;
+          this.delay=delay;
+          this.remaining = delay;
+          this.resume();
+        }
+        
+        pause() {
+          this.paused = true;
+          window.clearInterval(this.id);
+          this.remaining -= new Date() - this.start;
+        }
+        
+        restart() {
+          this.remaining = this.delay;
+          this.resume();
+        }
+        
+        resume() {
+          this.paused = false;
+          this.start = new Date();
+          window.clearInterval(this.id);
+          this.id = window.setInterval(this.callback, this.remaining);
+        }
+      }
+    const secondsTimer=new PerodicalCallback ("updateTime()", 1000);
+    const dataUpdaterTimer=new PerodicalCallback ("dataUpdater()", 1000);
+    console.log('start')  
+    
+    
+    function resetTime(){
+        statusTime=moment();
+    }
+    document.getElementById('off4001').addEventListener('click', function(){
+            channelSetRequest(EMUL_CH, 'result', 0).then(()=>{resetTime();})
+        });
+    document.getElementById('stand4001').addEventListener('click', function(){
+            channelSetRequest(EMUL_CH, 'result', 2).then(()=>{resetTime();})
+        });
+    document.getElementById('work4001').addEventListener('click', function(){
+            channelSetRequest(EMUL_CH, 'result', 33).then(()=>{resetTime();})
+        });
+    
+    function setChannelData(chId, arg){
+        channelGetArgRequest(chId, arg).then((result) => {
+            console.log(result)  
+            cahnnel.style.backgroundColor=STATUS_COLORS[result]
+            cahnnel.innerText=STATUS_NAMES[result]
+
+                    // setDataById(result.data);
+                    });
+    }
+    function updateTime(){
+        let d=moment.duration(moment().diff(statusTime),'ms')
+        document.getElementById('time4001').innerText=  d.hours() + ':' + d.minutes() + ':'+d.seconds()
+    }
+    function dataUpdater(){
+        setChannelData(MACHINE_CH, SATATUS_ARG)
+    }
+    
+    resetTime();
+    secondsTimer.restart()
+    dataUpdaterTimer.restart()
+    
+</script>
+</html>
