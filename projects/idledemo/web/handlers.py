@@ -1,14 +1,12 @@
-from loguru import logger
-import globals
+import json
 import os.path
-PATH_TO_PROJECT=os.path.join(os.path.dirname(__file__),'projects',
-                            globals.PROJECT['path'])
-from globals import CHECK_AUTORIZATION
-from globals import PROJECT
 
 import tornado.web
 import tornado.websocket
-import json
+from loguru import logger
+
+import globals
+from globals import CHECK_AUTORIZATION, PROJECT
 
 RequestHandlerClass=tornado.web.RequestHandler
 StaticFileHandler=tornado.web.StaticFileHandler
@@ -32,7 +30,7 @@ class BaseHandler(RequestHandlerClass):
             userId = int(tornado.escape.xhtml_escape(self.current_user))
             # user=[user for user in self.application.data.users if user['id']==userId][0]
             if  user:=next(filter(lambda user: user['id'] == userId, self.application.data.users)):  
-                logger.debug('user '+user['login']+' ok')
+                # logger.debug('user '+user['login']+' ok')
                 return user
             else:
                return None
@@ -51,6 +49,16 @@ class BaseHandler(RequestHandlerClass):
             return wrapper
         return decorator    
 
+class MEmulHtmlHandler(BaseHandler):
+    
+    @BaseHandler.check_user(CHECK_AUTORIZATION)
+    def get(self):
+        print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
+        
+        self.render('memul.html', 
+                    user=self.user.get('login'),
+                    data=json.dumps(self.application.data.channelBase.toDict(), default=str),
+                    wsserv=self.application.settings['wsParams'])
 class MainHtmlHandler(BaseHandler):
     
     @BaseHandler.check_user(CHECK_AUTORIZATION)
@@ -68,19 +76,29 @@ class RequestHtmlHandler(BaseHandler):
     def post(self):
         self.set_header("Content-Type", "application/json")
         request=json.loads(self.request.body)
-        if request.get('type')=='allStateQuerry':
-            logger.log('MESSAGE',f'client {user["login"]} do allStateQuerry from ip:{self.request.remote_ip}.')
-            self.write(json.dumps(self.application.data.channelBase.toDict(), default=str))
+        print (request)
+        if request.get('type')=='get_ch':
+            logger.log('MESSAGE',f'client {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
+            self.write(json.dumps(self.application.data.channelBase.get(request.get('id')).toDict(), default=str))
+        elif request.get('type')=='get_ch_arg':
+            logger.log('MESSAGE',f'client {self.user.get("login")} do get_ch_arg from ip:{self.request.remote_ip}.')
+            print(f"result: {self.application.data.channelBase.get(request.get('id')).get_arg(request.get('arg'))}")
+            self.write(json.dumps(self.application.data.channelBase.get(request.get('id')).get_arg(request.get('arg')), default=str))
+        elif request.get('type')=='set_ch':
+            logger.log('MESSAGE',f'client {self.user.get("login")} do set_ch from ip:{self.request.remote_ip}.')
+            print(request)
+            self.application.data.channelBase.get(request.get('id')).set_arg(request.get('arg'),request.get('value'))
+            self.write(json.dumps(200, default=str))
     
     
     def get(self):
-        pass
         self.set_header("Content-Type", "application/x-www-form-urlencoded")
         requestHeader=self.request.headers
         print (f'GET request!!!!!!!!!!!!!')
         print (f'requestHeader:{requestHeader}')
         requestBody=self.request.body
         print (f'requestBody:{requestBody}')
+
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     def initialize(self, clbk):
@@ -161,15 +179,17 @@ class LogoutHandler(BaseHandler):
         self.clear_cookie("user")
         self.redirect("/login")
 
-
+print( 'in handlers '+globals.PATH_TO_PROJECT)
+print( 'in handlers full '+os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'js'))
 handlers=[
         (r"/", MainHtmlHandler),
+        (r"/me", MEmulHtmlHandler),
+        (r"/request",RequestHtmlHandler),
         (r"/login",LoginHandler),
         (r"/logout",LogoutHandler),
-        (r"/request", RequestHtmlHandler),
         # (r'/ws', WSHandler, dict(clbk=None)),
-        (r"/static/(.*)", StaticFileHandler, {"path": 'PATH_TO_PROJECT'+'web/webdata'}),
-        (r'/js/(.*)', StaticFileHandler, {'path': 'PATH_TO_PROJECT'+'web/webdata/js'}),
-        (r'/css/(.*)', StaticFileHandler, {'path': 'PATH_TO_PROJECT'+'web/webdata/css'}),
-        (r'/images/(.*)', StaticFileHandler, {'path': 'PATH_TO_PROJECT'+'web/webdata/images'}),
+        (r"/static/(.*)", StaticFileHandler, {"path": os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata')}),
+        (r'/js/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'js')}),
+        (r'/css/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'css')}),
+        (r'/images/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'images')}),
         ]

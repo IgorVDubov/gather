@@ -1,17 +1,14 @@
 import asyncio
-from time import time
 import json
-from logger import logger
+from time import time
+
 import classes
+import globals
+from channelbase import ChannelsBase
 from consts import Consts
 from exchangeserver import ExchangeServer
-
+from logger import logger
 from sourcepool import SourcePool
-from channelbase import ChannelsBase
-import globals
-
-
-
 
 
 class MainPool():
@@ -92,7 +89,8 @@ class MainPool():
         while True:
             while not self.db_quie.empty():
                 req=self.db_quie.get_nowait()
-                self.db_interface.execSQL(req.get('questType'),req.get('sql'),req.get('params'))
+                # self.db_interface.execSQL(req.get('questType'),req.get('sql'),req.get('params'))
+                logger.info(f'db_quie:{req}')
             await asyncio.sleep(globals.DB_PERIOD)
 
     async def calc_channel_base_loop(self):                                
