@@ -18,7 +18,7 @@ if sys.platform == 'win32':
 import importlib
 
 import globals
-from classes import Node
+from classes.channels import Node
 
 scada_config=importlib.import_module('projects.'+globals.PROJECT['path']+'.scadaconfig')
 from exchangeserver import ModbusExchangeServer

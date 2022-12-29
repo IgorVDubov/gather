@@ -1,13 +1,15 @@
 import asyncio
 import json
 from time import time
+from typing import List
 
-import classes
+import channels.channels
 import globals
-from channelbase import ChannelsBase
+from channels.channelbase import ChannelsBase
 from consts import Consts
 from exchangeserver import ExchangeServer
 from logger import logger
+from mutualcls import SubscriptChannelArg
 from sourcepool import SourcePool
 
 
@@ -15,6 +17,8 @@ class MainPool():
     def __init__(self,  loop:asyncio.AbstractEventLoop, 
                         source_pool:SourcePool|None, 
                         channel_base:ChannelsBase,
+                        sbscrptions: List[SubscriptChannelArg],
+                        ws_clients:dict,
                         exchange_server:ExchangeServer|None=None, 
                         exchange_bindings:dict=None,
                         HTTP_server=None,
@@ -33,10 +37,12 @@ class MainPool():
         self.cancelEvent=asyncio.Event()
         self.source_pool=source_pool
         self.channel_base=channel_base
+        self.sbscrptions=sbscrptions
+        self.ws_clients=ws_clients
         if source_pool:       
             self.source_pool.readAllOneTime()                    #TODO  проверить как работает если нет доступа к source
                                                                 #       или заполнять Null чтобы первый раз сработало по изменению
-            for node in (channel for channel in self.channel_base.channels if isinstance(channel,classes.Node)):
+            for node in (channel for channel in self.channel_base.channels if isinstance(channel,channels.Node)):
                 for source in self.source_pool.sources:
                     if source.id==node.sourceId:
                         node.source=source
@@ -93,25 +99,43 @@ class MainPool():
                 logger.info(f'db_quie:{req}')
             await asyncio.sleep(globals.DB_PERIOD)
 
-    async def calc_channel_base_loop(self):                                
+    async def calc_channel_base_loop(self): 
         # print ('start results Reader')
         # try:
             while True:
+                change_subscriptions=[]
                 before=time()
-                for channel in self.channel_base.channels:
+                for channel in self.channel_base.channels:                          #calc Channels
                     channel()
+                    if subscr_channel:=next((s_channel for s_channel in self.sbscrptions if s_channel.channel == channel), None):
+                        arg_value=subscr_channel.channel.get_arg(subscr_channel.argument)
+                        if arg_value!=subscr_channel.prev_value:
+                            change_subscriptions.append(subscr_channel)
+                            subscr_channel.prev_value = arg_value
+
                                     
-                for channelId, binding in self.exchange_bindings.items():
+                for channelId, binding in self.exchange_bindings.items():           #set vaues for Modbus Excange Server
                     self.exchange_server.setValue(channelId, binding.value)
                 
-                if len(self.HTTP_server.request_callback.wsClients):
-                    for wsClient in self.HTTP_server.request_callback.wsClients:
-                        wsClient.write_message(json.dumps(self.channel_base.toDict(), default=str))
+                # if len(self.HTTP_server.request_callback.wsClients):
+                #     for wsClient in self.HTTP_server.request_callback.wsClients:
+                #         wsClient.write_message(json.dumps(self.channel_base.toDict(), default=str))
 
                 delay=globals.CHANNELBASE_CALC_PERIOD-(time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channel_base.channels)} channels ')
+                # print(f'in mail loop:{self.sbscrptions}')
+                # print(f'{change_subscriptions=}')
+                for ws_client in self.ws_clients:
+                    for_send=[]
+                    for subscr in ws_client.subscriptions:
+                        if subscr in change_subscriptions:
+                            for_send.append(subscr.to_dict())
+                    if len(for_send):
+                        print(f'!!!!!!!!!!!!!!!!!!!{for_send}')
+                        ws_client.client.write_message(json.dumps(for_send, default=str))
                 await asyncio.sleep(delay)
+
         
         # except asyncio.CancelledError:
         #     print('CancelledEvent in calc_channel_base_loop')

@@ -7,6 +7,8 @@ from loguru import logger
 
 import globals
 from globals import CHECK_AUTORIZATION, PROJECT
+from mutualcls import WSClient, SubscriptChannelArg
+from channels.channels import parse_attr_params
 
 RequestHandlerClass=tornado.web.RequestHandler
 StaticFileHandler=tornado.web.StaticFileHandler
@@ -100,12 +102,13 @@ class RequestHtmlHandler(BaseHandler):
         print (f'requestBody:{requestBody}')
 
 
+
 class WSHandler(tornado.websocket.WebSocketHandler):
-    def initialize(self, clbk):
-        self.callback=clbk
-    def __init__(self, *args, **kwargs):
-        self.id = None
-        super(WSHandler, self).__init__(*args, **kwargs)
+    # def initialize(self, clbk):
+    #     self.callback=clbk
+    # def __init__(self, *args, **kwargs):
+    #     self.id = None
+    #     super(WSHandler, self).__init__(*args, **kwargs)
     
     # def check_origin(self, origin: str) -> bool:
         #print(f'origin:{origin}')
@@ -115,11 +118,12 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         #return super().check_origin(origin)
 
     def open(self):
-            logger.info(f'Web Socket open, IP:{self.request.remote_ip} Online {len(self.application.wsClients)} clients')
+            logger.info(f'Web Socket open, IP:{self.request.remote_ip} ')
             # if self.request.headers['User-Agent'] != 'UTHMBot':  #не логгируем запросы от бота и не включаем его в список ws рассылки
             #     #if tornado.escape.xhtml_escape(self.get_secure_cookie("user")) in [_ for _ in allUsers(users)]:
-            if self not in self.application.wsClients:
-                self.application.wsClients.append(self)
+            if self not in [client.client for client in self.application.data.ws_clients]:
+                self.application.data.ws_clients.append(WSClient(self))
+                logger.info(f'add, websocket IP:{self.request.remote_ip} Online {len(self.application.data.ws_clients)} clients')
             #         user=[user for user in globals.users if user['id']==int(tornado.escape.xhtml_escape(self.get_secure_cookie("user")))][0]
             #         logger.info(f'Web Socket open, IP:{self.request.remote_ip},  user:{user.get("login")}, Online {len(globals.wss)} clients')
             #     else:
@@ -137,8 +141,18 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 msg = {'type':'mb_data','data': None}
                 json_data = json.dumps(msg, default=str)
                 self.write_message(json_data)
-            elif jsonData['type']=="testMsg":
-                pass
+            elif jsonData['type']=="subscribe":
+                for arg in jsonData['data']:
+                    channel_id, argument=parse_attr_params(arg)
+                    channel=self.application.data.channelBase.get(channel_id)
+                    exist_subs=self.application.data.subsriptions.exist({'channel':channel, 'argument':argument})
+                    if exist_subs:
+                         subscription=exist_subs
+                    else:
+                        subscription=SubscriptChannelArg(channel, argument)
+                    self.application.data.subsriptions.append_subscription(subscription)
+                    self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
+                print (f'in ws:{self.application.data.subsriptions}')
             elif jsonData['type']=="msg":
                 logger.debug (f"ws_message: {jsonData['data']}")
             else:
@@ -147,9 +161,13 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         # if self.request.headers['User-Agent'] != 'UTHMBot':  #не логгируем запросы от бота
         #     user=[user for user in globals.users if user['id']==int(tornado.escape.xhtml_escape(self.get_secure_cookie("user")))][0]
-        #     logger.info(f' User {user.get("login")} close WebSocket. Online {len(self.application.wsClients)-1} clients')
-        if self in self.application.wsClients:
-            self.application.wsClients.remove(self)
+        #     logger.info(f' User {user.get("login")} close WebSocket. Online {len(self.application.wsC_cients)-1} clients')
+        if client:=self.application.data.ws_clients.get_by_attr('client',self):
+            for subscr in client.subscriptions:
+                self.application.data.subsriptions.del_subscription(subscr)
+            self.application.data.ws_clients.remove(client)
+
+            
         # if len(globals.wss)==0:
             # print('No online users, callback stops')
             # self.callback.stop()
@@ -187,7 +205,7 @@ handlers=[
         (r"/request",RequestHtmlHandler),
         (r"/login",LoginHandler),
         (r"/logout",LogoutHandler),
-        # (r'/ws', WSHandler, dict(clbk=None)),
+        (r'/ws', WSHandler),
         (r"/static/(.*)", StaticFileHandler, {"path": os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata')}),
         (r'/js/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'js')}),
         (r'/css/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'css')}),

@@ -6,8 +6,8 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 
+import channels.channelbase as channelbase
 import modbus_server
-import channelbase
 
 
 class ExchangeServer(ABC):
