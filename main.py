@@ -3,6 +3,7 @@
 import asyncio
 import os.path
 import sys
+from typing import List
 
 from loguru import logger
 
@@ -16,11 +17,12 @@ import importlib
 import globals
 
 scada_config=importlib.import_module('projects.'+globals.PROJECT['path']+'.scadaconfig')
-import channelbase
-import classes
+import channels.channels
 import db_interface
+from channels.channelbase import channel_base_init
 from exchangeserver import MBServerAdrMapInit, ModbusExchangeServer
 from mainpool import MainPool
+from mutualcls import Data, SubscriptChannelArg, EList, WSClient
 from sourcepool import SourcePool
 from webserver.webconnector import setHTTPServer
 
@@ -33,27 +35,29 @@ def init():
         sourcePool=SourcePool(modules,loop)
     else:
         sourcePool=None 
-    channelBase=channelbase.channel_base_init(scada_config.channels_config, dbQuie)
-    newAddrMap, exchangeBindings = MBServerAdrMapInit(channelBase,scada_config.MBServerAdrMap)
+    channel_base=channel_base_init(scada_config.channels_config, dbQuie)
+    newAddrMap, exchangeBindings = MBServerAdrMapInit(channel_base,scada_config.MBServerAdrMap)
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'],loop=loop)
     httpParams=globals.HTTPServerParams
     httpParams.update({'path':os.path.join(os.path.dirname(__file__),'webserver', 'webdata')})
-    HTTPServer=setHTTPServer(httpParams, classes.Data(globals.users,channelBase))
+    sbscrptions:EList[SubscriptChannelArg]=EList()
+    ws_clients:EList(WSClient)=EList()
+    HTTPServer=setHTTPServer(httpParams, Data(globals.users,channel_base, sbscrptions, ws_clients))
     DBInterface=db_interface.DBInterface(globals.DB_TYPE, globals.DB_PARAMS)
     #HTTPServer=None
     print ('Sources')
     print (sourcePool)
     print ('Channels:')
-    print(channelBase)
+    print(channel_base)
     # import json
-    # print(json.dumps([channelBase.nodesToDictFull()], sort_keys=True, indent=4))
+    # print(json.dumps([channel_base.nodesToDictFull()], sort_keys=True, indent=4))
     print(f'Modbus Exchange Server: {globals.MBServerParams["host"]}, {globals.MBServerParams["port"]}')
     print('ExchangeBindings')
     print(exchangeBindings)
     print('HTTPServer:')
     print(f"host:{httpParams.get('host')}, port:{httpParams.get('port')}, wsserver:{httpParams.get('wsserver')}, " if HTTPServer else None )
     
-    mainPool=MainPool(loop, sourcePool, channelBase, ModbusExchServer, exchangeBindings, HTTPServer, dbQuie, DBInterface)
+    mainPool=MainPool(loop, sourcePool, channel_base, sbscrptions, ws_clients ,ModbusExchServer, exchangeBindings, HTTPServer, dbQuie, DBInterface)
     logger.info ('init done')
     return mainPool
 
@@ -62,8 +66,8 @@ def test_component():
     loggerLib.loggerInit('ERROR')
     logger.info('Starting........')
     httpParams=globals.HTTPServerParams
-    channelBase=None
-    HTTPServer=setHTTPServer(httpParams, classes.Data(globals.users,channelBase))
+    channel_base=None
+    HTTPServer=setHTTPServer(httpParams, channels.Data(globals.users,channel_base))
     loop.run_forever()
 
     

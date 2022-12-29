@@ -1,7 +1,9 @@
 import asyncio
 import random
-from time import strftime, gmtime, sleep
+from time import gmtime, sleep, strftime
+
 from bpacker import packFloatToCDAB
+
 
 class TestResult:
     def __init__(self):

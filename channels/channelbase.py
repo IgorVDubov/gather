@@ -1,15 +1,18 @@
-from loguru import logger
-import classes 
-from myexceptions import ChannelException, ConfigException
 from time import time
 
-CHANNELS_EXEC_ORDER=[classes.Node,classes.Channel,classes.Programm, classes.DBQuie]
+from loguru import logger
+
+from channels import channels
+from myexceptions import ChannelException, ConfigException
+
+CHANNELS_EXEC_ORDER=[channels.Node,channels.Channel,channels.Programm, channels.DBQuie]
 
 class ChannelsBase():
-    channels=[]
-    channelsExecTime=None
+    def __init__(self):
+        self.channels=[]
+        self.channelsExecTime=None
     
-    def add(self,channel:classes.Channel):
+    def add(self,channel:channels.Channel):
         try:
             found=next(filter(lambda _channel: _channel.id == channel.id, self.channels))
         except StopIteration:
@@ -29,7 +32,7 @@ class ChannelsBase():
         else:
             raise ConfigException(f'duplicate id in channel base adding {channel} ')
     
-    def get(self, id:int)->classes.Channel:
+    def get(self, id:int)->channels.Channel:
         try:
             found=next(filter(lambda _channel: _channel.id == id, self.channels))
         except StopIteration:
@@ -57,18 +60,18 @@ class ChannelsBase():
 
     def nodesToDict(self):
         result=dict()
-        result.setdefault(classes.Node.__name__.lower(),[])
+        result.setdefault(channels.Node.__name__.lower(),[])
         for channel in self.channels:
-            if isinstance(channel, classes.Node):
-                result[classes.Node.__name__.lower()].append(channel.toDict())
+            if isinstance(channel, channels.Node):
+                result[channels.Node.__name__.lower()].append(channel.toDict())
         return result
     
     def nodesToDictFull(self):
         result=dict()
-        result.setdefault(classes.Node.__name__.lower(),[])
+        result.setdefault(channels.Node.__name__.lower(),[])
         for channel in self.channels:
-            if isinstance(channel, classes.Node):
-                result[classes.Node.__name__.lower()].append(channel.toDictFull())
+            if isinstance(channel, channels.Node):
+                result[channels.Node.__name__.lower()].append(channel.toDictFull())
         return result
     
     def toDict(self):
@@ -90,29 +93,24 @@ class ChannelsBase():
     def __str__(self) -> str:
         return ''.join(channel.__str__()+'\n' for channel in self.channels )
 
-
-
-
-
-
 def channel_base_init(channelsConfig, dbQuie):
     # сначала у всех каналов создаем аттрибуты, потом привязываем связанные
     bindings=[]
     dbQuieChannel=False
     chBase=ChannelsBase()
     for channelType in channelsConfig:
-        chType=eval(classes.CHANNELS_CLASSES.get(channelType))
-        if chType==classes.Channel:
-            cls=classes.Channel
-        elif chType==classes.Node:
-            cls=classes.Node
-        elif chType==classes.Programm:
-            cls=classes.Programm
-        elif chType==classes.DBQuie:
-            cls=classes.DBQuie
+        chType=eval(channels.CHANNELS_CLASSES.get(channelType))
+        if chType==channels.Channel:
+            cls=channels.Channel
+        elif chType==channels.Node:
+            cls=channels.Node
+        elif chType==channels.Programm:
+            cls=channels.Programm
+        elif chType==channels.DBQuie:
+            cls=channels.DBQuie
             dbQuieChannel=True
-        elif chType==classes.DBconnector:
-            cls=classes.DBQuie
+        elif chType==channels.DBconnector:
+            cls=channels.DBQuie
         else:
             raise ConfigException(f'no type in classes for {chType} {channelType}')
         for channelConfig in channelsConfig.get(channelType):
@@ -122,7 +120,7 @@ def channel_base_init(channelsConfig, dbQuie):
                 args=channelConfig.pop('args')
                 channel=cls(**channelConfig)
                 for name, arg in args.items():
-                    bindId, param= classes.parseAttrParams(arg)
+                    bindId, param= channels.parse_attr_params(arg)
                     if bindId != None:
                         channel.addArg(name)
                         bindings.append((channel, name, bindId, param))
@@ -148,14 +146,13 @@ def channel_base_init(channelsConfig, dbQuie):
     bindings=[]
     return chBase
 
-
-def bindChannelAttr(channelBase, id:int,attrNmae:str)->classes.Vars:
+def bindChannelAttr(channelBase, id:int,attrNmae:str)->channels.Vars:
     '''
     id- channel id
     attrname:str - channel attribute mane 
     '''
     if channel:=channelBase.get(id):
-        bindVar=classes.Vars()
+        bindVar=channels.Vars()
         bindVar.addBindVar('value',channel,attrNmae)
         return bindVar
     else:
@@ -170,7 +167,7 @@ if __name__ == '__main__':
             ]
     import handlers
     prgs=[{'id':10001, 'handler':handlers.progvek, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}}]
-    cb=channelBaseInit(nodes, prgs) 
+    cb=channel_base_init(nodes, prgs) 
     print(cb)
     cb.get(4208).result=44
     cb.execute(10001)
