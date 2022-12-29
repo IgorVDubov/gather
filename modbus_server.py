@@ -14,7 +14,7 @@ from threading import Thread
 from pymodbus.datastore import (ModbusSequentialDataBlock, ModbusServerContext,
                                 ModbusSlaveContext, ModbusSparseDataBlock)
 from pymodbus.device import ModbusDeviceIdentification
-from pymodbus.server.async_io import ModbusTcpServer, _serverList
+from pymodbus.server.async_io import ModbusTcpServer#, _serverList
 from pymodbus.version import version
 
 from myexceptions import ConfigException, ModbusExchangeServerException

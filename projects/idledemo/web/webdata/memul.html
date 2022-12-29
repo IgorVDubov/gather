@@ -132,6 +132,7 @@
       ws.onmessage = function(evt) {
               let jsonMsg = JSON.parse(evt.data);
               console.log(jsonMsg)
+              setElemData(resultCahnnel,jsonMsg[0]['5001.args.currentState'])
               switch (jsonMsg.type) {
                 //case "mb_data": 
                     //console.log("mb_data")
@@ -181,6 +182,11 @@
     
     function resetTime(){
         statusTime=moment();
+    }
+
+    function setElemData(elem,result){
+        elem.style.backgroundColor=STATUS_COLORS[result];
+        elem.innerText=STATUS_NAMES[result];
     }
     function setChannelData(chId, arg){
         channelGetArgRequest(chId, arg).then((result) => {
