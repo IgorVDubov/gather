@@ -52,7 +52,6 @@ class BaseHandler(RequestHandlerClass):
         return decorator    
 
 class MEmulHtmlHandler(BaseHandler):
-    
     @BaseHandler.check_user(CHECK_AUTORIZATION)
     def get(self):
         print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
@@ -61,8 +60,17 @@ class MEmulHtmlHandler(BaseHandler):
                     user=self.user.get('login'),
                     data=json.dumps(self.application.data.channelBase.toDict(), default=str),
                     wsserv=self.application.settings['wsParams'])
+class MEmul1HtmlHandler(BaseHandler):
+    @BaseHandler.check_user(CHECK_AUTORIZATION)
+    def get(self):
+        print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
+        
+        self.render('memul1.html', 
+                    user=self.user.get('login'),
+                    data=json.dumps(self.application.data.channelBase.toDict(), default=str),
+                    wsserv=self.application.settings['wsParams'])
+
 class MainHtmlHandler(BaseHandler):
-    
     @BaseHandler.check_user(CHECK_AUTORIZATION)
     def get(self):
         print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
@@ -202,6 +210,7 @@ print( 'in handlers full '+os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata
 handlers=[
         (r"/", MainHtmlHandler),
         (r"/me", MEmulHtmlHandler),
+        (r"/me1", MEmul1HtmlHandler),
         (r"/request",RequestHtmlHandler),
         (r"/login",LoginHandler),
         (r"/logout",LogoutHandler),
