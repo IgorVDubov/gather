@@ -3,15 +3,22 @@ from typing import Any, List
 
 from channels.channelbase import ChannelsBase
 from channels.channels import Channel, parse_attr_params
+from collections import UserList
 
-class EList(list):
-    def __init__(self):
+class EList(UserList):
+    def __init__(self, *args, **kwargs):
         self.members=dict()
-        super().__init__()
-    
+        super(EList, self).__init__(*args, **kwargs)
+    # def __eq__(self, other):
+    #     assert isinstance(other, EList)
+    #     return self.x == other.x
+    def remove_(self,member):
+        self.data=[m for m in self if m!=member]
+
     def get_by_attr(self,attr_name, attr_val):
         return next((i for i in self if getattr(i, attr_name) == attr_val), None)
-    
+    # def index(self,member):
+    #     return super().index(member)
     def exist(self, filters:dict):
         result=False
         result=0
@@ -36,7 +43,7 @@ class EList(list):
             refs-=1
             self.members[id(member)]=refs
             if refs<=0:
-                self.remove(member)
+                self.data.remove(member)
                 self.members.__delitem__(id(member))
             return member
         else:
@@ -63,7 +70,7 @@ class WSClient():
         self.subscriptions=[]
 
 @dataclass
-class SubscriptChannelArg:
+class SubscriptChannelArg(object):
     def __init__(self,channel, channel_arg:str) -> None:
         self.argument:str=channel_arg
         self.channel:Channel=channel
@@ -72,6 +79,8 @@ class SubscriptChannelArg:
     @property
     def value(self):
         return self.channel.get_arg(self.argument)  
+    def __hash__(self) -> int:
+        return hash(self)
     def to_dict(self):
         return {str(self.channel.id)+'.'+self.argument:self.value}
     def __repr__(self) -> str:
