@@ -22,7 +22,7 @@ import db_interface
 from channels.channelbase import channel_base_init
 from exchangeserver import MBServerAdrMapInit, ModbusExchangeServer
 from mainpool import MainPool
-from mutualcls import Data, EList, SubscriptChannelArg, WSClient
+from mutualcls import Data, EList, SubscriptChannelArg, WSClient, ChannelSubscriptionsList
 from sourcepool import SourcePool
 from webserver.webconnector import setHTTPServer
 
@@ -40,7 +40,7 @@ def init():
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'],loop=loop)
     httpParams=globals.HTTPServerParams
     httpParams.update({'path':os.path.join(os.path.dirname(__file__),'webserver', 'webdata')})
-    sbscrptions:EList[SubscriptChannelArg]=EList()
+    sbscrptions:ChannelSubscriptionsList[SubscriptChannelArg]=ChannelSubscriptionsList()
     ws_clients:EList(WSClient)=EList()
     HTTPServer=setHTTPServer(httpParams, Data(globals.users,channel_base, sbscrptions, ws_clients))
     DBInterface=db_interface.DBInterface(globals.DB_TYPE, globals.DB_PARAMS)

@@ -153,14 +153,10 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 for arg in jsonData['data']:
                     channel_id, argument=parse_attr_params(arg)
                     channel=self.application.data.channelBase.get(channel_id)
-                    exist_subs=self.application.data.subsriptions.exist({'channel':channel, 'argument':argument})
-                    if exist_subs:
-                         subscription=exist_subs
-                    else:
-                        subscription=SubscriptChannelArg(channel, argument)
-                    self.application.data.subsriptions.append_subscription(subscription)
+                    new_subscription=SubscriptChannelArg(channel, argument)
+                    subscription=self.application.data.subsriptions.add_subscription(new_subscription)
                     self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
-                print (f'in ws:{self.application.data.subsriptions}')
+                # print (f'in ws:{self.application.data.subsriptions}')
             elif jsonData['type']=="msg":
                 logger.debug (f"ws_message: {jsonData['data']}")
             else:

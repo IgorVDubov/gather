@@ -9,16 +9,8 @@ class EList(UserList):
     def __init__(self, *args, **kwargs):
         self.members=dict()
         super(EList, self).__init__(*args, **kwargs)
-    # def __eq__(self, other):
-    #     assert isinstance(other, EList)
-    #     return self.x == other.x
-    def remove_(self,member):
-        self.data=[m for m in self if m!=member]
-
     def get_by_attr(self,attr_name, attr_val):
         return next((i for i in self if getattr(i, attr_name) == attr_val), None)
-    # def index(self,member):
-    #     return super().index(member)
     def exist(self, filters:dict):
         result=False
         result=0
@@ -70,7 +62,7 @@ class WSClient():
         self.subscriptions=[]
 
 @dataclass
-class SubscriptChannelArg(object):
+class SubscriptChannelArg():
     def __init__(self,channel, channel_arg:str) -> None:
         self.argument:str=channel_arg
         self.channel:Channel=channel
@@ -79,13 +71,34 @@ class SubscriptChannelArg(object):
     @property
     def value(self):
         return self.channel.get_arg(self.argument)  
+    def __eq__(self, other) -> int:
+        if isinstance(other, (SubscriptChannelArg)):
+            return hash(self)==hash(other)
+        else:
+            return False
     def __hash__(self) -> int:
-        return hash(self)
+        if isinstance(self.channel, Channel):
+            channel_hash=hash(self.channel.id)
+        else:
+            channel_hash=hash(0)
+        return hash(self.argument)^hash(channel_hash)
     def to_dict(self):
         return {str(self.channel.id)+'.'+self.argument:self.value}
     def __repr__(self) -> str:
         return f'{self.channel.id}.{self.argument}'
 
+class ChannelSubscriptionsList(EList):
+    def add_subscription(self, new_subscription):
+        try:
+            index=self.index(new_subscription)
+        except ValueError:
+            index=None
+        if index!=None:
+                subscription=self[index]
+        else:
+            subscription=new_subscription
+        self.append_subscription(subscription)
+        return subscription
 
 @dataclass
 class Data():
