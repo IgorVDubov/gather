@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utrack Idle service</title>
+
+    <link rel="stylesheet" type="text/css" href="/css/header_main_footer.css"/>
+    <link rel="stylesheet" type="text/css" href="/css/mycsslib.css"/>
+    <script src="/js/moment-with-locales.min.js" ></script> 
+    <style>  /*new style*/
+        body{
+          background-color:rgb(227, 227, 236);
+          /* background-color:black; */
+        }
+        .pageSection1{
+          /* width: 100%;
+          height:100%; */
+          width: 99.6%;
+          display:flex;
+          align-items:center;
+          flex-direction:column;
+        }
+        .mainContainer{
+          font-family: "Segoe UI", "Segoe WP", Arial, sans-serif;
+          /* margin: 10px; */
+          max-width:700px;
+          max-width:700px;
+          height:100%;
+          display:flex;
+          flex-wrap: wrap;
+          /* flex-direction:column; */
+          align-items:center;
+          justify-content: space-evenly;
+          /* justify-content: space-between; */
+        }
+        .flexH{
+          display:flex;
+          flex-direction:row;
+          justify-content: space-evenly;
+    
+        }
+        .w100{
+          width:100%;
+          min-width:300px;
+          margin:5px;
+        }
+        .singleW50{
+          min-width:300px;
+          margin:5px;
+        }
+        .w50{
+          flex:1 300px;
+          min-width:300px;
+          margin:5px;
+        }
+        .h50{
+              min-height: 50px;
+            }
+        .h100{
+              height: 100px;
+            }
+        .lowerFont{
+          font-size: 0.6em;
+          color:inherit;
+    
+        }
+        .centerPosWrapper{
+          width: 100%;
+          display:flex;
+          align-items:center;
+          flex-direction: column;
+        }
+        .headerbox{
+          /* flex:4; */
+          margin: 5px;
+          width: 100%;
+          height: 50px;
+          color: rgb(102, 103, 171);
+          /* color: whitesmoke; */
+          text-align: center;
+          font-weight: bold;
+          /* font-style: italic; */
+          font-size: 30px;
+        }
+        .databox{
+          /* background-color: rgb(93, 91, 162); */
+          background-color: rgb(102, 103, 171);
+          border-radius: 10px;
+          box-shadow: 2px 2px 5px 0px rgb(107, 107, 107);
+        }
+        .databox:hover{
+          background-color: rgb(82, 83, 163);
+        }
+        .dataCaption{
+          padding: 5px;
+          text-overflow: clip;
+          text-align: center;
+          font-size: 24px;
+          color:white;
+          height: 40%;
+          width: 100%;
+        }
+        .colorDataCaption{
+          padding: 5px;
+          text-overflow: clip;
+          text-align: center;
+          font-size: 24px;
+          color:rgb(3, 224, 3);
+          height: 40%;
+          width: 100%;
+        }
+        .dataLable{
+          text-align: center;
+          width:100%;
+          font-size: 32px;
+          font-weight: bold;
+          color:white;
+        }
+        .colorDataLable{
+          text-align: center;
+          width:100%;
+          font-size: 32px;
+          font-weight: bold;
+          color:rgb(3, 224, 3);
+        }
+    </style>
+</head>
+<body>
+    <header class="header" >
+        <span class="fnt_1_5 bold pl1"> <a  href="/">UTrack</a></span>
+        <span class="pl1 fnt_0_75"> учет рабочего времени оборудования</span>
+        <span class="userBlock fl_r pr1 ">
+            <span>{{ user }} </span>
+            <a href="/logout"> <img class="img_invert s1em" src="/images/icon-exit.png"> </a>
+        </span>
+      </header>
+      <main class="main">
+        <section class=pageSection1 id=container></section>
+        <!-- <div id="container"></div> -->
+        </main>  
+        <footer class='footer'>
+          <span class ="pl1"> Статус: </span> </span>
+          <span class ="pl0_5" id="wsStatus"> </span>
+          <span class ="pl0_5" id="wsLight"> &bull; </span>
+          <a class="fl_r pr1" >v{{ version }}</a>
+          <a class="fl_r pr1" href="mailto:asu@alfa33.ru">Alfa <span class="fnt_0_6 pr1">решения в области промышленной автоматизации</span> 2023</a>
+      </footer> 
+      <div id="loader">
+          <script>const loader=document.getElementById("loader");</script>
+          <link rel="stylesheet" type="text/css" href="/css/loader.css"/>
+      </div>
+</body>
+<script>
+    moment.locale('ru');
+    const STATUS_LIGHT_COLORS=['#e6e6e6','#b4b4b4','#fff134','#03e003']
+    const STATUSES =['N/A', 'Откл', 'Простой', 'Работа']
+    const MACHINE_ID={{ machine }}
+    const WS_SERVER = '{{ wsserv }}';
+    {% autoescape None %}
+    const IDLE_COUSES={{  idle_couses  }}
+    const STATE_CHANNEL='{{state_channel}}'
+    const SUBSCRIBE_CHANNELS=[STATE_CHANNEL]
+    var currentState={{current_state}}
+    
+    console.log('start')  
+    
+    var statusElem
+    var statusTime
+    const wsStatus=document.getElementById("wsStatus")
+    const wsIndicator=document.getElementById("wsLight")
+    
+    class PerodicalCallback {
+        constructor(callback, delay) {
+          this.callback = callback;
+          this.delay=delay;
+          this.remaining = delay;
+          this.resume();
+        }
+        
+        pause() {
+          this.paused = true;
+          window.clearInterval(this.id);
+          this.remaining -= new Date() - this.start;
+        }
+        
+        restart() {
+          this.remaining = this.delay;
+          this.resume();
+        }
+        
+        resume() {
+          this.paused = false;
+          this.start = new Date();
+          window.clearInterval(this.id);
+          this.id = window.setInterval(this.callback, this.remaining);
+        }
+      }
+
+    const secondsTimer=new PerodicalCallback ("updateTime()", 1000);
+    
+    function wsConnect(WSServer){
+      let ws=new WebSocket(WSServer);
+      wsStatus.textContent='online'
+      wsIndicator.style.color='green'
+      return ws
+        // return new WebSocket(WSServer);
+    }
+
+    function flashIndicator(indicator, flashColor,afterColor, pause){
+      indicator.style.color=flashColor
+      setTimeout(function(){indicator.style.color=afterColor},pause)
+    }
+    function setStatus(elem,result){
+        elem.style.color=STATUS_LIGHT_COLORS[result];
+        elem.innerText=STATUSES[result];
+    }
+
+    function wsEvents(){
+      ws.onmessage = function(evt) {
+        let jsonMsg = JSON.parse(evt.data);
+        console.log(jsonMsg)
+        setStatus(stateElem,jsonMsg[0][STATE_CHANNEL])
+        statusTime=moment();
+        stateElem.dataset.stateTime=statusTime;
+        secondsTimer.restart()
+        switch (jsonMsg.type) {
+          //case "mb_data": 
+              //console.log("mb_data")
+              //console.log(jsonMsg)
+              //makeTable(jsonMsg.data)
+
+          // break; 
+          case "ch_data":
+              //console.log(jsonMsg.data)
+              setDataById(jsonMsg.data)
+              
+          break;
+          default:
+          flashIndicator(wsIndicator,'lightgreen','green',400);
+        }
+      };
+    
+      ws.onclose = function(evt) {
+          console.log(' Server close connection! No data!')
+          wsStatus.textContent='offline'
+          wsIndicator.style.color='Red'
+      };
+
+      ws.onopen = function(evt) {
+          console.log(' Connection ok, send subscribe msg: ' + SUBSCRIBE_CHANNELS)
+          wsSend(JSON.stringify({type:"subscribe",data:SUBSCRIBE_CHANNELS}))
+      };
+    } 
+
+    let wsSend = function(data) {
+          if(!ws.readyState){
+              setTimeout(function (){
+                  wsSend(data);
+              },1000);
+          }else{
+            ws.send(data);
+          }
+    };
+    function block(innerHTML=undefined, classes=[], id=undefined, ){
+        let block=document.createElement('div');
+        if (id !=undefined) block.id=id;
+        if (innerHTML !=undefined) block.innerHTML=innerHTML;
+        block.classList=classes;
+        return block;
+    }
+  
+    function labledDataBlock(label, blockClasses=[],labelClasses=[],dataClasses=[], blockID=undefined, labelID=undefined, dataID=undefined){
+        let container=block('',blockClasses,blockID);
+        container.append(block(label,labelClasses,labelID));
+        container.append(block('',dataClasses,dataID));
+        return container
+    }
+
+    function makePage(){
+        //console.log('shiftmode-',shiftMode)
+        let page= document.getElementById('container');
+        page.innerHTML='';
+        let container=document.createElement('div');
+        container.classList=['mainContainer'];
+        page.append(container);
+        container.append(labledDataBlock('состояние',['h100 w50 databox'],['dataCaption'],['dataLable'],'','','state_'+MACHINE_ID))
+       
+    }
+    function updateTime(){
+        let d=moment.duration(moment().diff(statusTime),'ms')
+        document.getElementById('time_'+parseInt(MACHINE_ID)).innerText=  d.hours() + ':' + d.minutes() + ':'+d.seconds()
+    }
+    function init(){
+        makePage()
+        stateElem=document.getElementById('state_'+parseInt(MACHINE_ID))
+        stateElem.innerHTML=STATUSES[currentState.state]+' '+'<span class="timeTxt lowerFont" id="time_'+parseInt(MACHINE_ID)+'"></span>';
+        stateElem.dataset.stateTime=moment(currentState.begin_time);
+        stateElemTime=document.getElementById('state_'+parseInt(MACHINE_ID))
+        statusTime=stateElem.dataset.stateTime;
+        secondsTimer.restart()
+        ws=wsConnect(WS_SERVER);
+        wsEvents();
+
+    }
+    
+    init()
+</script>
+</html>

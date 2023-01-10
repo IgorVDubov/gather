@@ -14,7 +14,9 @@ CHECK_AUTORIZATION=True
 users=[
     {'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'},
     {'id': 2, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div1', 'pass': '123'},
+    {'id': 3, 'first_name': '5001', 'middle_name': '', 'second_name': '', 'login': 'm_5001', 'pass': 'm777'},
     ]
+idle_causes={1:"Авария", 2:"Нет сырья", 3:"Нет задания", 4:"Плановый простой"}
 
 DB_PERIOD=3    #период опроса очереди сообщений для БД DBQuie
 

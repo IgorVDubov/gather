@@ -22,7 +22,8 @@ import db_interface
 from channels.channelbase import channel_base_init
 from exchangeserver import MBServerAdrMapInit, ModbusExchangeServer
 from mainpool import MainPool
-from mutualcls import Data, EList, SubscriptChannelArg, WSClient, ChannelSubscriptionsList
+from mutualcls import (ChannelSubscriptionsList, Data, EList,
+                       SubscriptChannelArg, WSClient)
 from sourcepool import SourcePool
 from webserver.webconnector import setHTTPServer
 

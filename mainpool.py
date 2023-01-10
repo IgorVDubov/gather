@@ -124,7 +124,7 @@ class MainPool():
                 delay=globals.CHANNELBASE_CALC_PERIOD-(time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channel_base.channels)} channels ')
-                print(f'in mail loop:{self.sbscrptions}')
+                # print(f'in mail loop:{self.sbscrptions}')
                 # print(f'{change_subscriptions=}')
                 for ws_client in self.ws_clients:
                     for_send=[]
