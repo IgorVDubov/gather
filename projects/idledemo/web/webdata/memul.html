@@ -68,7 +68,7 @@
    
 
     async function channelGetRequest(chId){
-        let response = await fetch('/request', {
+        let response = await fetch('/merequest', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({type: 'get_ch', id:chId})
@@ -76,7 +76,7 @@
         return await response.json()
     }
     async function channelGetArgRequest(chId, chArg){
-        let response = await fetch('/request', {
+        let response = await fetch('/merequest', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({type: 'get_ch_arg', id:chId, arg:chArg})
@@ -84,7 +84,7 @@
         return await response.json()
     }
     async function channelSetRequest(chId, chArg, argValue){
-        let response = await fetch('/request', {
+        let response = await fetch('/merequest', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({type: 'set_ch', id:chId, arg:chArg, value:argValue})
@@ -119,12 +119,12 @@
       }
     const secondsTimer=new PerodicalCallback ("updateTime()", 1000);
     const dataUpdaterTimer=new PerodicalCallback ("dataUpdater()", 1000);
+    
     console.log('start')  
     
     
     function wsConnect(WSServer){
       console.log('Socket opening');
-    //   return new WebSocket("{{ wsserv }}?"+ProjectKey+"="+ProjectID);
       return new WebSocket(WSServer);
     }
 
