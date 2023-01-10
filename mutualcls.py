@@ -3,9 +3,9 @@ from typing import Any, List
 
 from channels.channelbase import ChannelsBase
 from channels.channels import Channel, parse_attr_params
-from collections import UserList
 
-class EList(UserList):
+
+class EList(list):
     def __init__(self, *args, **kwargs):
         self.members=dict()
         super(EList, self).__init__(*args, **kwargs)
@@ -35,7 +35,7 @@ class EList(UserList):
             refs-=1
             self.members[id(member)]=refs
             if refs<=0:
-                self.data.remove(member)
+                self.remove(member)
                 self.members.__delitem__(id(member))
             return member
         else:
