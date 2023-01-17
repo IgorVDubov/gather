@@ -60,6 +60,9 @@ class WSClient():
     def __init__(self, ws_client) -> None:
         self.client=ws_client
         self.subscriptions=[]
+    
+    def write_message(self,data):
+        self.client.write_message(data)
 
 @dataclass
 class SubscriptChannelArg():
