@@ -29,6 +29,7 @@
           max-width:700px;
           height:100%;
           display:flex;
+          flex-direction: column;
           flex-wrap: wrap;
           /* flex-direction:column; */
           align-items:center;
@@ -84,6 +85,27 @@
           /* font-style: italic; */
           font-size: 30px;
         }
+        @keyframes changeColor {
+          0% {
+            background-color: rgb(102, 103, 171);
+          }
+          
+          50% {
+            background-color: rgb(236, 82, 11);
+          }
+          
+          100% {
+            background-color: rgb(102, 103, 171);
+          }
+        }
+
+        .flashBackground {
+            background-color: rgb(236, 82, 11);
+            animation: changeColor ease;
+            animation-iteration-count: infinite;
+            animation-duration: 0.5s;
+            animation-fill-mode: both;
+            }
         .databox{
           /* background-color: rgb(93, 91, 162); */
           background-color: rgb(102, 103, 171);
@@ -126,6 +148,12 @@
           color:rgb(3, 224, 3);
         }
     </style>
+    <style>
+      .statusContainer{
+        display:flex;
+
+      }
+    </style>
 </head>
 <body>
     <header class="header" >
@@ -162,12 +190,25 @@
     const IDLE_COUSES={{  idle_couses  }}
     const STATE_CHANNEL='{{state_channel}}'
     const SUBSCRIBE_CHANNELS=[STATE_CHANNEL]
+    const WORK_STATE=3
+    const STAND_STATE=2
+    const OFF_STATE=1
+    const NA_STATE=1
     var currentState={{current_state}}
     
     console.log('start')  
     
-    var statusElem
-    var statusTime
+    var stateElem
+    var stateTimeElem
+    var causeStatusElem
+    var state
+    var stateTime
+    var currentCause
+    var currentCauseTime
+
+    const FlashColor='rgb(255, 0, 0)'
+    var FlashBackgroundColor
+
     const wsStatus=document.getElementById("wsStatus")
     const wsIndicator=document.getElementById("wsLight")
     
@@ -198,8 +239,39 @@
         }
       }
 
-    const secondsTimer=new PerodicalCallback ("updateTime()", 1000);
     
+    function block(innerHTML=undefined, classes=[], id=undefined, ){
+      let block=document.createElement('div');
+      if (id !=undefined) block.id=id;
+      if (innerHTML !=undefined) block.innerHTML=innerHTML;
+      block.classList=classes;
+      return block;
+    }
+    function labledDataBlock(label, blockClasses=[],labelClasses=[],dataClasses=[], blockID=undefined, labelID=undefined, dataID=undefined){
+        let container=block('',blockClasses,blockID);
+        container.append(block(label,labelClasses,labelID));
+        container.append(block('',dataClasses,dataID));
+        return container
+    }
+    function labled2DataBlock(label, blockClasses=[],labelClasses=[],data1Classes=[], data2Classes=[], blockID=undefined, labelID=undefined, data1ID=undefined, data2ID=undefined, flexDirection='row'){
+        let container=block('',blockClasses,blockID);
+        container.append(block(label,labelClasses,labelID));
+        let flexCls=(flexDirection=='row') ? 'flex_milldle_row':'flex_milldle_col'
+        let dataContainer=block('',[flexCls],'');
+        data1=block('',data1Classes,data1ID)
+        data2=block('',data2Classes,data2ID)
+        dataContainer.append(data1);
+        dataContainer.append(data2);
+        container.append(dataContainer);
+        return container
+    }
+    function flashIndicator(indicator, flashColor,afterColor, pause){
+      indicator.style.color=flashColor
+      setTimeout(function(){indicator.style.color=afterColor},pause)
+    }
+    
+    const secondsTimer=new PerodicalCallback ("updateTime()", 1000);
+
     function wsConnect(WSServer){
       let ws=new WebSocket(WSServer);
       wsStatus.textContent='online'
@@ -208,39 +280,44 @@
         // return new WebSocket(WSServer);
     }
 
-    function flashIndicator(indicator, flashColor,afterColor, pause){
-      indicator.style.color=flashColor
-      setTimeout(function(){indicator.style.color=afterColor},pause)
-    }
-    function setStatus(elem,result){
-        elem.style.color=STATUS_LIGHT_COLORS[result];
-        elem.innerText=STATUSES[result];
-    }
-
     function wsEvents(){
       ws.onmessage = function(evt) {
         let jsonMsg = JSON.parse(evt.data);
         console.log(jsonMsg)
-        setStatus(stateElem,jsonMsg[0][STATE_CHANNEL])
-        statusTime=moment();
-        stateElem.dataset.stateTime=statusTime;
-        secondsTimer.restart()
-        switch (jsonMsg.type) {
-          //case "mb_data": 
-              //console.log("mb_data")
-              //console.log(jsonMsg)
-              //makeTable(jsonMsg.data)
-
-          // break; 
-          case "ch_data":
+        switch (jsonMsg.cmd) {
+          case "reload":
               //console.log(jsonMsg.data)
-              setDataById(jsonMsg.data)
-              
+              location.reload()
           break;
           default:
-          flashIndicator(wsIndicator,'lightgreen','green',400);
         }
+        currentState=jsonMsg[0][STATE_CHANNEL]
+        setStatus(stateElem,currentState)
+        stateTime=moment();                                   //todo взять из запроса
+        setCauseStatusContDisplay(currentState)
+        if (currentState==WORK_STATE){
+          currentCause=undefined;
+          stopFlashIdleBox()
+        }
+        // stateElem.dataset.stateTime=statusTime;
+        //secondsTimer.restart()
+        switch (jsonMsg.type) {
+          //case "mb_data": 
+          //console.log("mb_data")
+          //console.log(jsonMsg)
+          //makeTable(jsonMsg.data)
+          
+          // break; 
+          case "ch_data":
+            //console.log(jsonMsg.data)
+            setDataById(jsonMsg.data)
+            
+          break;
+          // default:
+        }
+        flashIndicator(wsIndicator,'lightgreen','green',400);
       };
+        
     
       ws.onclose = function(evt) {
           console.log(' Server close connection! No data!')
@@ -263,19 +340,38 @@
             ws.send(data);
           }
     };
-    function block(innerHTML=undefined, classes=[], id=undefined, ){
-        let block=document.createElement('div');
-        if (id !=undefined) block.id=id;
-        if (innerHTML !=undefined) block.innerHTML=innerHTML;
-        block.classList=classes;
-        return block;
+
+
+    function setStatus(elem,result){
+        elem.style.color=STATUS_LIGHT_COLORS[result];
+        elem.innerText=STATUSES[result];
     }
-  
-    function labledDataBlock(label, blockClasses=[],labelClasses=[],dataClasses=[], blockID=undefined, labelID=undefined, dataID=undefined){
-        let container=block('',blockClasses,blockID);
-        container.append(block(label,labelClasses,labelID));
-        container.append(block('',dataClasses,dataID));
-        return container
+    
+    function startFlashIdleBox(){
+      causeStatusContElem.classList.add('flashBackground')
+    }
+    function stopFlashIdleBox(){
+      causeStatusContElem.classList.remove('flashBackground')
+    }
+    function clickHandler(event){
+      let couseID=event.target.dataset.id;
+      stopFlashIdleBox();
+      causeStatusElem.innerText=IDLE_COUSES[couseID]
+    }
+
+    function setCauseStatus(cause,causeTime){
+      causeStatusElem
+    }
+    function setCauseStatusContDisplay(state){
+      if (state!=NA_STATE && state!=WORK_STATE){
+          causeStatusContElem.style.display='block'
+          if (currentCause==undefined){
+            startFlashIdleBox();
+          }
+          
+        } else {
+          causeStatusContElem.style.display='none'
+        }
     }
 
     function makePage(){
@@ -285,20 +381,39 @@
         let container=document.createElement('div');
         container.classList=['mainContainer'];
         page.append(container);
-        container.append(labledDataBlock('состояние',['h100 w50 databox'],['dataCaption'],['dataLable'],'','','state_'+MACHINE_ID))
+        const statusContainer = block('',['statusContainer'],'');
+        container.append(statusContainer);
+        statusContainer.append(labled2DataBlock('состояние',['h100 w100 databox'],['dataCaption'],['dataLable'],['dataLable'],'','','state_'+MACHINE_ID,'stateTime_'+MACHINE_ID, 'row'))
+        statusContainer.append(labled2DataBlock('простой',['h100 w100 databox'],['dataCaption'],['dataLable'],['dataLable'],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row'))
+        const buttonsContainer = block('',[],'buttonsContainer');
+        for (i=0; i<Object.keys(IDLE_COUSES).length;i++){
+          let id=Object.keys(IDLE_COUSES)[i]
+          let cause=IDLE_COUSES[id]
+          button=block(cause,['h100 w100 flex_center databox dataLable '],'buttonsContainer');
+          button.dataset.id=id
+          button.addEventListener('click', clickHandler);
+          buttonsContainer.append(button)
+        }
+        container.append(buttonsContainer);
        
     }
     function updateTime(){
-        let d=moment.duration(moment().diff(statusTime),'ms')
-        document.getElementById('time_'+parseInt(MACHINE_ID)).innerText=  d.hours() + ':' + d.minutes() + ':'+d.seconds()
+        let d=moment.duration(moment().diff(stateTime),'ms')
+        stateTimeElem.innerText=  d.hours() + ':' + d.minutes() + ':'+d.seconds()
     }
     function init(){
         makePage()
         stateElem=document.getElementById('state_'+parseInt(MACHINE_ID))
-        stateElem.innerHTML=STATUSES[currentState.state]+' '+'<span class="timeTxt lowerFont" id="time_'+parseInt(MACHINE_ID)+'"></span>';
-        stateElem.dataset.stateTime=moment(currentState.begin_time);
-        stateElemTime=document.getElementById('state_'+parseInt(MACHINE_ID))
-        statusTime=stateElem.dataset.stateTime;
+        stateTimeElem=document.getElementById('stateTime_'+parseInt(MACHINE_ID))
+        causeStatusContElem=document.getElementById('causeStatus')
+        causeStatusElem=document.getElementById('cause_'+parseInt(MACHINE_ID))
+        causeStatusTimeElem=document.getElementById('causeTime_'+parseInt(MACHINE_ID))
+        state=currentState.state
+        setStatus(stateElem,state);
+        stateTime=moment(currentState.begin_time);
+        currentCause=(state==OFF_STATE && state==STAND_STATE)?currentState.cause_id:undefined;
+        currencurrentCauseTimetCause=(state==OFF_STATE && state==STAND_STATE)?currentState.cause_time:undefined;
+        setCauseStatusContDisplay(state)
         secondsTimer.restart()
         ws=wsConnect(WS_SERVER);
         wsEvents();
