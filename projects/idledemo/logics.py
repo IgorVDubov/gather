@@ -34,6 +34,7 @@ class Idle():
     cause_time:datetime=None
 
 def current_idle_store(machine_id,state):
+    print('in current_idle_store')
     # begin_time=datetime.now().strftime(('%Y-%m-%dT%H:%M:%S'))
     begin_time=datetime.now()
     globals.machines_idle.update({machine_id:Idle(state,begin_time)})

@@ -95,6 +95,8 @@ channels_config={
                         }},
         {'id':13001,  'handler':handlers.day_sheduller,
                 'args':{'writeInit':False}},
+        {'id':17001,  'handler':handlers.idle,
+                'args':{}},
         
     ],
     'dbquie':[

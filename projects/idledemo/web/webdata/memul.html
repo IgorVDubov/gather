@@ -40,7 +40,11 @@
     </style>
 </head>
 <body>
-    <div>hello form UTrack gather, {{ user }}</div>
+    <div>UTrack machine emulator, {{ user }} 
+        <span   style='padding:2px; background-color:rgb(206, 206, 206)' 
+                onclick='sendReload()'>
+            reload
+        </span>
         <div class= 'machine'>
         <div class= 'brd l1_5 w6' id="result">-</div>
         <div class= 'brd l1_5 w12' id="time">-</div>
@@ -196,6 +200,9 @@
 
                     // setDataById(result.data);
                     });
+    }
+    function sendReload(){
+        wsSend(JSON.stringify({cmd:'ws_reload'}));
     }
     function updateTime(){
         let d=moment.duration(moment().diff(statusTime),'ms')
