@@ -32,19 +32,32 @@ class Idle():
     begin_time:datetime
     cause:int=None
     cause_time:datetime=None
+    length:int=0
 
-def current_idle_store(machine_id,state):
-    print('in current_idle_store')
-    # begin_time=datetime.now().strftime(('%Y-%m-%dT%H:%M:%S'))
+def current_idle_get(machine_id):
+    return globals.machines_idle.get(machine_id)
+
+def current_idle_set(machine_id,state):
+    print(f'set idle to {machine_id} with state {state}')
     begin_time=datetime.now()
     globals.machines_idle.update({machine_id:Idle(state,begin_time)})
 
+def current_idle_store(machine_id):
+    if  idle:=globals.machines_idle.get(machine_id):
+        globals.machines_idle.get(machine_id).length=(datetime.now()-idle.begin_time).total_seconds()
+        # idle.length=(datetime.now()-idle.begin_time).total_seconds()
+
+    print(f'Store machime {machine_id} Idle to DB: {idle.state}, length {idle.length}')
+    ... # store to DB here
+
 def current_idle_reset(machine_id):
+    print(f'reset idle {machine_id} ')
     globals.machines_idle.update({machine_id:None})
 
 def current_idle_add_cause(machine_id,cause_id,cause_time):
-    if globals.machines_idle.get(id):
-        globals.machines_idle.get(id).cause=cause_id
-        globals.machines_idle.get(id).cause_time=cause_time
+    if globals.machines_idle.get(machine_id):
+        print(f'add cause idle to {machine_id} cause:{cause_id}')
+        globals.machines_idle.get(machine_id).cause=cause_id
+        globals.machines_idle.get(machine_id).cause_time=cause_time
     else:
         raise KeyError(f'no machine {machine_id} in globals.machines_idle')

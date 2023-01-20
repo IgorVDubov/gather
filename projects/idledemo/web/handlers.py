@@ -135,6 +135,14 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 # print (f'in ws:{self.application.data.subsriptions}')
             elif jsonData['type']=="msg":
                 logger.debug (f"ws_message: {jsonData['data']}")
+            elif jsonData.get('type')=="set":
+                if arg:=jsonData.get('arg'):
+                    channel_id, argument=parse_attr_params(arg)
+                    channel=self.application.data.channelBase.get(channel_id)
+                    value=jsonData.get('val')
+                    channel.set_arg(argument, value)
+                    logger.debug (f"set arg: {jsonData.get('data')} to {value}")
+            
             else:
                 logger.debug('Unsupported ws message: '+message)        
  

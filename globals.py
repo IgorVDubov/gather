@@ -2,7 +2,7 @@ import os.path
 
 from consts import Consts
 
-machines_idle={} #временная замена БД словарь id_станка:текущая_Idle
+machines_idle=dict() #временная замена БД словарь id_станка:текущая_Idle
 # PROJECT={'name':'Empty','path':'empty','comment':''}
 PROJECT={'name':'Idle demo machines','path':'idledemo','comment':''}
 PATH_TO_PROJECT=os.path.join(os.path.dirname(__file__),'projects',
