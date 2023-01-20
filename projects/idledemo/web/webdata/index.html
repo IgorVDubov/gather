@@ -355,6 +355,7 @@
     }
     function clickHandler(event){
       let couseID=event.target.dataset.id;
+      wsSend(JSON.stringify({type:"set",arg:"17001.cause_id", val:couseID}))
       stopFlashIdleBox();
       causeStatusElem.innerText=IDLE_COUSES[couseID]
     }

@@ -65,6 +65,7 @@ def parse_attr_params(attrParam):
     '''
     if isinstance(attrParam, str):                                     #аттрибут - связь 
         s=''
+        i=0
         for i in range(0,len(attrParam)):
             if attrParam[i]=='.':
                 break
