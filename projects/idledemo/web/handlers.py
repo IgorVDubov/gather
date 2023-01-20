@@ -117,6 +117,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, message):
         try:
             jsonData = json.loads(message)
+            print(jsonData)
         except json.JSONDecodeError:
             logger.error ("json loads Error for message: {0}".format(message))
         else:
@@ -140,8 +141,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                     channel_id, argument=parse_attr_params(arg)
                     channel=self.application.data.channelBase.get(channel_id)
                     value=jsonData.get('val')
-                    channel.set_arg(argument, value)
-                    logger.debug (f"set arg: {jsonData.get('data')} to {value}")
+                    self.application.data.channelBase.get(channel_id).set_arg(argument, value)
+                    self.application.data.channelBase.get(channel_id).set_arg('args.set_cause_flag', True)
+                    logger.debug (f"set arg: {jsonData.get('arg')} to {value}")
             
             else:
                 logger.debug('Unsupported ws message: '+message)        
