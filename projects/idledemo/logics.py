@@ -14,7 +14,7 @@ def get_machine_from_user(user:str)->int:
     # except ValueError:
     #     raise ValueError
 
-def get_machine_causes(id:int)->dict[int:str]:               # TODO refact
+def get_machine_causes(id:int)->dict[int:str]:               # TODO refact with DB
     return globals.idle_causes
 
 def get_current_state(channel_base, id:int)->dict['machine':id, 'state':int, 'begin_time':str, 'couse_id':int]:
@@ -42,22 +42,22 @@ def current_idle_set(machine_id,state):
     begin_time=datetime.now()
     globals.machines_idle.update({machine_id:Idle(state,begin_time)})
 
-def current_idle_store(machine_id):
-    if  idle:=globals.machines_idle.get(machine_id):
-        globals.machines_idle.get(machine_id).length=(datetime.now()-idle.begin_time).total_seconds()
-        # idle.length=(datetime.now()-idle.begin_time).total_seconds()
-
-    print(f'Store machime {machine_id} Idle to DB: {idle.state}, length {idle.length}')
-    ... # store to DB here
-
-def current_idle_reset(machine_id):
-    print(f'reset idle {machine_id} ')
-    globals.machines_idle.update({machine_id:None})
-
-def current_idle_add_cause(machine_id,cause_id,cause_time):
+def current_idle_add_cause(machine_id, cause_id, cause_time):
     if globals.machines_idle.get(machine_id):
         print(f'add cause idle to {machine_id} cause:{cause_id}')
         globals.machines_idle.get(machine_id).cause=cause_id
         globals.machines_idle.get(machine_id).cause_time=cause_time
     else:
         raise KeyError(f'no machine {machine_id} in globals.machines_idle')
+
+def current_idle_reset(machine_id):
+    print(f'reset idle {machine_id} ')
+    globals.machines_idle.update({machine_id:None})
+
+def current_idle_store(machine_id):
+    if  idle:=globals.machines_idle.get(machine_id):
+        globals.machines_idle.get(machine_id).length=(datetime.now()-idle.begin_time).total_seconds()
+        print(f'Store machime {machine_id} Idle to DB: {idle.state}, cause: {globals.idle_causes.get(idle.cause,"Не подтверждена")}, length {idle.length}')
+        print(idle)
+        ... # store to DB here
+

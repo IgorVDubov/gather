@@ -19,15 +19,16 @@ def idle(vars):
             restore_idle_flag - текущая причина записывается с временной меткой и создается такаяже длящаяся далее
     '''
     idle=logics.current_idle_get(vars.machine_id)
-    
+    print(idle)
     if vars.set_cause_flag:
+        print(f'set cause flag to {vars.machine_id} to {vars.cause_id}')
         vars.set_cause_flag=False
-        logics.current_idle_add_cause(vars.machine_id, vars.cause_id, datetime.datetime.now())
+        logics.current_idle_add_cause(vars.machine_id, vars.cause_id, datetime.now())
     
     if vars.restore_idle_flag:
         vars.restore_idle_flag=False
         logics.current_idle_store(vars.machine_id)
-        logics.current_idle_add_cause(vars.machine_id, idle.cause_id, datetime.datetime.now())
+        logics.current_idle_add_cause(vars.machine_id, idle.cause_id, datetime.now())
     
     if vars.reset_idle_flag:
         vars.reset_idle_flag=False

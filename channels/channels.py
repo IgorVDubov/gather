@@ -115,6 +115,9 @@ class Channel(object):
         return f' Channel: id:{self.id}' + f'\n  args:\n{self.args}' if self.args else ''
     
     def addArg(self, name, value=None):
+        self.add_arg(name, value)
+    
+    def add_arg(self, name, value=None):
         if not self.args:
             self.args=Vars()
         self.args.addVar(name, value)
@@ -136,8 +139,14 @@ class Channel(object):
             self.args.addBindVar(name, obj, argName)
         else:
             self.args.bindObject(name, obj)
+    
     def set_arg(self, arg_name, value):
-        self.__setattr__(arg_name,value)
+        if arg_name[0:1]=='.':
+            arg_name=arg_name[1:]
+        if arg_name[:5]=='args.':
+            self.args.__setattr__(arg_name[5:], value)  
+        else:
+            self.__setattr__(arg_name,value)
     
     def toDictFull(self):
         return self.toDict()
