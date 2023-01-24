@@ -12,7 +12,7 @@ from mutualcls import WSClient, SubscriptChannelArg
 from channels.channels import parse_attr_params
 
 logics=importlib.import_module('projects.'+globals.PROJECT['path']+'.logics')
-project_settings=importlib.import_module('projects.'+globals.PROJECT['path']+'.settings')
+settings=importlib.import_module('projects.'+globals.PROJECT['path']+'.settings')
 
 RequestHandlerClass=tornado.web.RequestHandler
 StaticFileHandler=tornado.web.StaticFileHandler
@@ -58,21 +58,22 @@ class BaseHandler(RequestHandlerClass):
 class MainHtmlHandler(BaseHandler):
     @BaseHandler.check_user(CHECK_AUTORIZATION)
     def get(self):
-        print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
+        # print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
         try:
             machine_id=logics.get_machine_from_user(self.user.get('login'))
         except ValueError:
             logger.log('ERROR', f'wrong machine id in client login {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
             self.redirect("/login")
+       
         self.render('index.html', 
                     user=self.user.get('login'),
                     machine=machine_id,
-                    # idle_couses=json.dumps(logics.get_machine_couses(machine_id), default=str),
+                    state_channel=str(machine_id)+'.'+settings.STATE_ARG,
+                    causeid_arg= logics.get_causeid_arg(self.application.data.channelBase.get(machine_id)),
                     idle_couses=json.dumps(logics.get_machine_causes(machine_id), default=str),
                     current_state=logics.get_current_state(self.application.data.channelBase,machine_id),
-                    state_channel=str(machine_id)+'.'+project_settings.STATE_ARG,
                     wsserv=self.application.settings['wsParams'],
-                    version=project_settings.CLIENT_VERSION,
+                    version=settings.CLIENT_VERSION,
                     )
 
         
@@ -88,31 +89,11 @@ class RequestHtmlHandler(BaseHandler):
             self.write(json.dumps(self.application.data.channelBase.get(request.get('id')).toDict(), default=str))
 
 class WSHandler(tornado.websocket.WebSocketHandler):
-    # def initialize(self, clbk):
-    #     self.callback=clbk
-    # def __init__(self, *args, **kwargs):
-    #     self.id = None
-    #     super(WSHandler, self).__init__(*args, **kwargs)
-    
-    # def check_origin(self, origin: str) -> bool:
-        #print(f'origin:{origin}')
-        # сюда можно проверку хостов с которых запросы
-        #return self.current_user != None  #ws запросы только если кто-то залогинился перед этим
-        # return True
-        #return super().check_origin(origin)
-
     def open(self):
             logger.info(f'Web Socket open, IP:{self.request.remote_ip} ')
-            # if self.request.headers['User-Agent'] != 'UTHMBot':  #не логгируем запросы от бота и не включаем его в список ws рассылки
-            #     #if tornado.escape.xhtml_escape(self.get_secure_cookie("user")) in [_ for _ in allUsers(users)]:
             if self not in [client.client for client in self.application.data.ws_clients]:
                 self.application.data.ws_clients.append(WSClient(self))
                 logger.info(f'add, websocket IP:{self.request.remote_ip} Online {len(self.application.data.ws_clients)} clients')
-            #         user=[user for user in globals.users if user['id']==int(tornado.escape.xhtml_escape(self.get_secure_cookie("user")))][0]
-            #         logger.info(f'Web Socket open, IP:{self.request.remote_ip},  user:{user.get("login")}, Online {len(globals.wss)} clients')
-            #     else:
-            #         logger.log ('LOGIN',f'websocket user {tornado.escape.xhtml_escape(self.get_secure_cookie("user"))} not autirized , IP:{self.request.remote_ip}')
-            #         self.close()
         
     def on_message(self, message):
         try:
@@ -133,7 +114,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                     new_subscription=SubscriptChannelArg(channel, argument)
                     subscription=self.application.data.subsriptions.add_subscription(new_subscription)
                     self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
-                # print (f'in ws:{self.application.data.subsriptions}')
             elif jsonData['type']=="msg":
                 logger.debug (f"ws_message: {jsonData['data']}")
             elif jsonData.get('type')=="set":
@@ -149,9 +129,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 logger.debug('Unsupported ws message: '+message)        
  
     def on_close(self):
-        # if self.request.headers['User-Agent'] != 'UTHMBot':  #не логгируем запросы от бота
-        #     user=[user for user in globals.users if user['id']==int(tornado.escape.xhtml_escape(self.get_secure_cookie("user")))][0]
-        #     logger.info(f' User {user.get("login")} close WebSocket. Online {len(self.application.wsC_cients)-1} clients')
         if client:=self.application.data.ws_clients.get_by_attr('client',self):
             for subscr in client.subscriptions:
                 self.application.data.subsriptions.del_subscription(subscr)

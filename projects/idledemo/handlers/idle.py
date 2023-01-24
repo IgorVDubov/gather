@@ -19,7 +19,7 @@ def idle(vars):
             restore_idle_flag - текущая причина записывается с временной меткой и создается такаяже длящаяся далее
     '''
     idle=logics.current_idle_get(vars.machine_id)
-    print(idle)
+    # print(idle)
     if vars.set_cause_flag:
         print(f'set cause flag to {vars.machine_id} to {vars.cause_id}')
         vars.set_cause_flag=False
@@ -35,7 +35,7 @@ def idle(vars):
         logics.current_idle_reset(vars.machine_id)
 
     if vars.state in settings.IDLE_STATES:
-        if idle:             # простой зафиксирован 
+        if idle:             # простой уже зафиксирован 
             if not idle.cause: #но еще нет причины
                 if (datetime.now()-idle.begin_time).total_seconds() >=settings.CAUSE_CHECK_TIMEOUT:
                     ...      # нe указана причина за отведенное время

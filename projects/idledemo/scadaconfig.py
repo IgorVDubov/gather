@@ -85,6 +85,7 @@ channels_config={
                         'timeDB':0,
                         'init':True,
                         'dbQuie':'12001',
+                        'idle_handler_id':17001,
                         }},
     ],
     'programms':[

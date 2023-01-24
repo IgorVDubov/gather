@@ -17,6 +17,7 @@ import importlib
 import globals
 
 scada_config=importlib.import_module('projects.'+globals.PROJECT['path']+'.scadaconfig')
+project_init=importlib.import_module('projects.'+globals.PROJECT['path']+'.init')
 import channels.channels
 import db_interface
 from channels.channelbase import channel_base_init
@@ -37,6 +38,7 @@ def init():
     else:
         sourcePool=None 
     channel_base=channel_base_init(scada_config.channels_config, dbQuie)
+    project_init.init(channel_base)
     newAddrMap, exchangeBindings = MBServerAdrMapInit(channel_base,scada_config.MBServerAdrMap)
     ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'],loop=loop)
     httpParams=globals.HTTPServerParams

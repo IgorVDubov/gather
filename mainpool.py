@@ -2,6 +2,7 @@ import asyncio
 import json
 from time import time
 from typing import List
+from datetime import datetime
 
 import channels.channels
 import globals
@@ -130,7 +131,9 @@ class MainPool():
                     for_send=[]
                     for subscr in ws_client.subscriptions:
                         if subscr in change_subscriptions:
-                            for_send.append(subscr.to_dict())
+                            send_data=subscr.to_dict()
+                            send_data.update({'time':(datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')})
+                            for_send.append(send_data)
                     if len(for_send):
                         print(f'!!!!!!!!!!!!!!!!!!!{for_send}')
                         ws_client.client.write_message(json.dumps(for_send, default=str))
