@@ -189,22 +189,47 @@
     {% autoescape None %}
     const IDLE_COUSES={{  idle_couses  }}
     const STATE_CHANNEL='{{state_channel}}'
+    const CAUSEID_ARG='{{ causeid_arg }}'
     const SUBSCRIBE_CHANNELS=[STATE_CHANNEL]
     const WORK_STATE=3
     const STAND_STATE=2
     const OFF_STATE=1
-    const NA_STATE=1
-    var currentState={{current_state}}
+    const NA_STATE=0
+    var initState={{current_state}}
+    var firstWsMessageFlag=true;    //при инициализации приходит сообщение о статусе и затирает ранее полученный, его пропускаем
+    var currentState=Object()
+      currentState.state=initState.state;
+      currentState.stateTime = (initState.begin_time!='None')?initState.begin_time:undefined;
+      currentState.cause = (initState.cause_id!='None')?initState.cause_id:undefined;
+      currentState.causeTime = (initState.cause_time!='None')?initState.cause_time:undefined;
+        
+
+
+    currentState = new Proxy(currentState, {
+      set(target, property, value){
+        console.log(property, '=',value)
+        if (value=='None'){
+          value==undefined;
+        } 
+        target[property]=value;
+        if (property=='state'){
+            changeState()
+        }
+        if (property=='cause'){
+            changeCause()
+        }
+        return true
+      }
+      });
     
-    console.log('start')  
     
     var stateElem
     var stateTimeElem
     var causeStatusElem
-    var state
-    var stateTime
-    var currentCause
-    var currentCauseTime
+    var causeStatusTimeElem
+    
+    var ws
+
 
     const FlashColor='rgb(255, 0, 0)'
     var FlashBackgroundColor
@@ -238,7 +263,6 @@
           this.id = window.setInterval(this.callback, this.remaining);
         }
       }
-
     
     function block(innerHTML=undefined, classes=[], id=undefined, ){
       let block=document.createElement('div');
@@ -291,29 +315,11 @@
           break;
           default:
         }
-        currentState=jsonMsg[0][STATE_CHANNEL]
-        setStatus(stateElem,currentState)
-        stateTime=moment();                                   //todo взять из запроса
-        setCauseStatusContDisplay(currentState)
-        if (currentState==WORK_STATE){
-          currentCause=undefined;
-          stopFlashIdleBox()
-        }
-        // stateElem.dataset.stateTime=statusTime;
-        //secondsTimer.restart()
-        switch (jsonMsg.type) {
-          //case "mb_data": 
-          //console.log("mb_data")
-          //console.log(jsonMsg)
-          //makeTable(jsonMsg.data)
-          
-          // break; 
-          case "ch_data":
-            //console.log(jsonMsg.data)
-            setDataById(jsonMsg.data)
-            
-          break;
-          // default:
+        if (firstWsMessageFlag){
+          firstWsMessageFlag=false
+        } else {
+          currentState.state=jsonMsg[0][STATE_CHANNEL]
+          currentState.stateTime=jsonMsg[0].time;                                   //todo взять из запроса
         }
         flashIndicator(wsIndicator,'lightgreen','green',400);
       };
@@ -341,42 +347,78 @@
           }
     };
 
+    function changeState(){
+      setStatus(currentState.state)
+      if (currentState.state==WORK_STATE){
+        currentState.cause=undefined;
+        currentState.causeTime=undefined;
+        stopFlashIdleBox();
+        hideCauseStatusContainer();
+      } else{
+        showCauseStatusContainer();
+        if (currentState.cause==undefined){ 
+          startFlashIdleBox();
+        } 
+      }
+    }
 
-    function setStatus(elem,result){
-        elem.style.color=STATUS_LIGHT_COLORS[result];
-        elem.innerText=STATUSES[result];
+    function changeCause(){
+      console.log('            in changeCause')
+      if (currentState.cause!=undefined){  
+        stopFlashIdleBox();
+        sendCause(currentState.cause);
+        let causeTime = (currentState.causeTime==undefined) ?  moment() : currentState.causeTime
+        setCauseStatus(currentState.cause, causeTime)
+      } else{
+        setWaitCauseStatus();
+        startFlashIdleBox();
+      }
+    }
+
+    function setStatus(result){
+      stateElem.style.color=STATUS_LIGHT_COLORS[result];
+      stateElem.innerText=STATUSES[result];
+    }
+
+    function setCauseStatus(couseID,causeTime){
+      causeStatusElem.innerText=IDLE_COUSES[couseID]
+      causeStatusTimeElem.innerText=causeTime
     }
     
+    function setWaitCauseStatus(couseID,causeTime){
+      causeStatusElem.innerText='-'
+      causeStatusTimeElem.innerText=''
+    }
+    
+    function sendCause(couseID){
+      wsSend(JSON.stringify({type:"set",arg:CAUSEID_ARG, val:parseInt(couseID)}))
+    }
+    
+    function showCauseStatusContainer(){
+      causeStatusContElem.style.display='block'
+    }
+    function hideCauseStatusContainer(){
+      causeStatusContElem.style.display='none'
+    }
+
     function startFlashIdleBox(){
       causeStatusContElem.classList.add('flashBackground')
     }
     function stopFlashIdleBox(){
       causeStatusContElem.classList.remove('flashBackground')
     }
+    
     function clickHandler(event){
-      let couseID=event.target.dataset.id;
-      wsSend(JSON.stringify({type:"set",arg:"17001.args.cause_id", val:parseInt(couseID)}))
-      stopFlashIdleBox();
-      causeStatusElem.innerText=IDLE_COUSES[couseID]
+      currentState.cause=event.target.dataset.id;
     }
-
-    function setCauseStatus(cause,causeTime){
-      causeStatusElem
+    
+    function changeCauseclickHandler(){
+      currentState.cause=undefined;
+      currentState.causeTime=undefined;
+      
     }
-    function setCauseStatusContDisplay(state){
-      if (state!=NA_STATE && state!=WORK_STATE){
-          causeStatusContElem.style.display='block'
-          if (currentCause==undefined){
-            startFlashIdleBox();
-          }
-          
-        } else {
-          causeStatusContElem.style.display='none'
-        }
-    }
-
+    
     function makePage(){
-        //console.log('shiftmode-',shiftMode)
         let page= document.getElementById('container');
         page.innerHTML='';
         let container=document.createElement('div');
@@ -385,7 +427,7 @@
         const statusContainer = block('',['statusContainer'],'');
         container.append(statusContainer);
         statusContainer.append(labled2DataBlock('состояние',['h100 w100 databox'],['dataCaption'],['dataLable'],['dataLable'],'','','state_'+MACHINE_ID,'stateTime_'+MACHINE_ID, 'row'))
-        statusContainer.append(labled2DataBlock('простой',['h100 w100 databox'],['dataCaption'],['dataLable'],['dataLable'],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row'))
+        statusContainer.append(labled2DataBlock('простой',['h100 w100 databox'],['dataCaption'],['dataLable, fnt_1_5'],['dataLable, fnt_1_5'],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row'))
         const buttonsContainer = block('',[],'buttonsContainer');
         for (i=0; i<Object.keys(IDLE_COUSES).length;i++){
           let id=Object.keys(IDLE_COUSES)[i]
@@ -396,29 +438,39 @@
           buttonsContainer.append(button)
         }
         container.append(buttonsContainer);
-       
+        let changeCauseButton=block('изменить причину простоя',['h100 w100 databox dataLable flex_center'],'')
+        changeCauseButton.addEventListener('click', changeCauseclickHandler);
+        container.append(changeCauseButton);
     }
+
     function updateTime(){
-        let d=moment.duration(moment().diff(stateTime),'ms')
+        let d=moment.duration(moment().diff(currentState.stateTime),'ms')
         stateTimeElem.innerText=  d.hours() + ':' + d.minutes() + ':'+d.seconds()
+    }
+    function firstCurrentStateInit(){
+      currentState.state=currentState.state;
+      if (currentState.cause!=undefined){  
+        stopFlashIdleBox();
+        let causeTime = (currentState.causeTime==undefined) ?  moment() : currentState.causeTime
+        setCauseStatus(currentState.cause, causeTime)
+      } else{
+        setWaitCauseStatus();
+        startFlashIdleBox();
+      }
     }
     function init(){
         makePage()
+        console.log('start')  
         stateElem=document.getElementById('state_'+parseInt(MACHINE_ID))
         stateTimeElem=document.getElementById('stateTime_'+parseInt(MACHINE_ID))
         causeStatusContElem=document.getElementById('causeStatus')
         causeStatusElem=document.getElementById('cause_'+parseInt(MACHINE_ID))
         causeStatusTimeElem=document.getElementById('causeTime_'+parseInt(MACHINE_ID))
-        state=currentState.state
-        setStatus(stateElem,state);
         stateTime=moment(currentState.begin_time);
-        currentCause=(state==OFF_STATE && state==STAND_STATE)?currentState.cause_id:undefined;
-        currencurrentCauseTimetCause=(state==OFF_STATE && state==STAND_STATE)?currentState.cause_time:undefined;
-        setCauseStatusContDisplay(state)
         secondsTimer.restart()
+        firstCurrentStateInit();
         ws=wsConnect(WS_SERVER);
         wsEvents();
-
     }
     
     init()
