@@ -133,7 +133,7 @@ def r_level_timeout(vars):
             #vars.lengthDB=1                    #отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
             vars.dbQuie.put({'questType':Consts.INSERT,
             'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
-            ,'params': (vars.channel.id, vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), vars.statusDB, int(vars.lengthDB))
+            ,'params': (vars.channel.id, vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), vars.statusDB, int(round(vars.lengthDB)))
             })
             # print(f'Put ti dbquire id={vars.channel.id}, time={vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")}, status={vars.statusDB}, length={int(vars.lengthDB)}')
             

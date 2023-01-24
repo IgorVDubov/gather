@@ -196,7 +196,7 @@
     const OFF_STATE=1
     const NA_STATE=0
     var initState={{current_state}}
-    var firstWsMessageFlag=true;    //при инициализации приходит сообщение о статусе и затирает ранее полученный, его пропускаем
+    var firstWsMessageFlag=false;    //при инициализации приходит сообщение о статусе и затирает ранее полученный, его пропускаем
     var currentState=Object()
       currentState.state=initState.state;
       currentState.stateTime = (initState.begin_time!='None')?initState.begin_time:undefined;
@@ -207,7 +207,6 @@
 
     currentState = new Proxy(currentState, {
       set(target, property, value){
-        console.log(property, '=',value)
         if (value=='None'){
           value==undefined;
         } 
@@ -227,12 +226,13 @@
     var stateTimeElem
     var causeStatusElem
     var causeStatusTimeElem
+    var causeButtonsContainerElem
+    var changeCauseButtonElem
     
     var ws
 
 
     const FlashColor='rgb(255, 0, 0)'
-    var FlashBackgroundColor
 
     const wsStatus=document.getElementById("wsStatus")
     const wsIndicator=document.getElementById("wsLight")
@@ -295,6 +295,7 @@
     }
     
     const secondsTimer=new PerodicalCallback ("updateTime()", 1000);
+    secondsTimer.pause();
 
     function wsConnect(WSServer){
       let ws=new WebSocket(WSServer);
@@ -354,32 +355,45 @@
         currentState.causeTime=undefined;
         stopFlashIdleBox();
         hideCauseStatusContainer();
+        hideCauseButtons();
+        hideChangeCauseButton();
       } else{
         showCauseStatusContainer();
         if (currentState.cause==undefined){ 
           startFlashIdleBox();
+          showCauseButtons();
         } 
       }
     }
 
     function changeCause(){
-      console.log('            in changeCause')
-      if (currentState.cause!=undefined){  
-        stopFlashIdleBox();
-        sendCause(currentState.cause);
-        let causeTime = (currentState.causeTime==undefined) ?  moment() : currentState.causeTime
-        setCauseStatus(currentState.cause, causeTime)
-      } else{
-        setWaitCauseStatus();
-        startFlashIdleBox();
-      }
+      // if (currentState.state!=WORK_STATE){
+        if (currentState.cause!=undefined){  
+          setCause();
+          sendCause(currentState.cause);
+        } else{
+          waitCause()
+        }
+      // }
     }
 
     function setStatus(result){
       stateElem.style.color=STATUS_LIGHT_COLORS[result];
       stateElem.innerText=STATUSES[result];
     }
-
+    function setCause(){
+      stopFlashIdleBox();
+      let causeTime = (currentState.causeTime==undefined) ?  moment() : currentState.causeTime
+      setCauseStatus(currentState.cause, causeTime);
+      hideCauseButtons();
+      showChangeCauseButton();
+    }
+    function waitCause(){
+      startFlashIdleBox();
+      showCauseButtons();
+      hideChangeCauseButton();
+      setWaitCauseStatus();
+    }
     function setCauseStatus(couseID,causeTime){
       causeStatusElem.innerText=IDLE_COUSES[couseID]
       causeStatusTimeElem.innerText=causeTime
@@ -394,13 +408,26 @@
       wsSend(JSON.stringify({type:"set",arg:CAUSEID_ARG, val:parseInt(couseID)}))
     }
     
+
     function showCauseStatusContainer(){
       causeStatusContElem.style.display='block'
     }
     function hideCauseStatusContainer(){
       causeStatusContElem.style.display='none'
     }
-
+    function showCauseButtons(){
+      causeButtonsContainerElem.style.display='block'
+    }
+    function hideCauseButtons(){
+      causeButtonsContainerElem.style.display='none'
+    }
+    function showChangeCauseButton(){
+      changeCauseButtonElem.style.display='block'
+    }
+    function hideChangeCauseButton(){
+      changeCauseButtonElem.style.display='none'
+    }
+    
     function startFlashIdleBox(){
       causeStatusContElem.classList.add('flashBackground')
     }
@@ -427,18 +454,18 @@
         const statusContainer = block('',['statusContainer'],'');
         container.append(statusContainer);
         statusContainer.append(labled2DataBlock('состояние',['h100 w100 databox'],['dataCaption'],['dataLable'],['dataLable'],'','','state_'+MACHINE_ID,'stateTime_'+MACHINE_ID, 'row'))
-        statusContainer.append(labled2DataBlock('простой',['h100 w100 databox'],['dataCaption'],['dataLable, fnt_1_5'],['dataLable, fnt_1_5'],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row'))
-        const buttonsContainer = block('',[],'buttonsContainer');
+        statusContainer.append(labled2DataBlock('причина',['h100 w100 databox'],['dataCaption'],['dataLable, fnt_1_5'],['dataLable, fnt_1_5'],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row'))
+        const causeButtonsContainer = block('',[],'causeButtonsContainer');
         for (i=0; i<Object.keys(IDLE_COUSES).length;i++){
           let id=Object.keys(IDLE_COUSES)[i]
           let cause=IDLE_COUSES[id]
           button=block(cause,['h100 w100 flex_center databox dataLable '],'buttonsContainer');
           button.dataset.id=id
           button.addEventListener('click', clickHandler);
-          buttonsContainer.append(button)
+          causeButtonsContainer.append(button)
         }
-        container.append(buttonsContainer);
-        let changeCauseButton=block('изменить причину простоя',['h100 w100 databox dataLable flex_center'],'')
+        container.append(causeButtonsContainer);
+        let changeCauseButton=block('изменить причину простоя',['h100 w100 databox dataLable flex_center'],'changeCauseButton')
         changeCauseButton.addEventListener('click', changeCauseclickHandler);
         container.append(changeCauseButton);
     }
@@ -449,15 +476,15 @@
     }
     function firstCurrentStateInit(){
       currentState.state=currentState.state;
-      if (currentState.cause!=undefined){  
-        stopFlashIdleBox();
-        let causeTime = (currentState.causeTime==undefined) ?  moment() : currentState.causeTime
-        setCauseStatus(currentState.cause, causeTime)
-      } else{
-        setWaitCauseStatus();
-        startFlashIdleBox();
+      if (currentState.state!=WORK_STATE){
+        if (currentState.cause!=undefined){  
+          setCause();
+        } else{
+          waitCause();
+        }
       }
-    }
+    };
+
     function init(){
         makePage()
         console.log('start')  
@@ -466,6 +493,9 @@
         causeStatusContElem=document.getElementById('causeStatus')
         causeStatusElem=document.getElementById('cause_'+parseInt(MACHINE_ID))
         causeStatusTimeElem=document.getElementById('causeTime_'+parseInt(MACHINE_ID))
+        causeButtonsContainerElem=document.getElementById('causeButtonsContainer')
+        changeCauseButtonElem=document.getElementById('changeCauseButton')
+
         stateTime=moment(currentState.begin_time);
         secondsTimer.restart()
         firstCurrentStateInit();
