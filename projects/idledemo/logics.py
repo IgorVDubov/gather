@@ -39,6 +39,7 @@ def load_machines_idle():
                                         datetime.strptime(data.get('begin_time'), '%Y-%m-%dT%H:%M:%S') if data.get('begin_time') else None, 
                                         data.get('cause'),
                                         datetime.strptime(data.get('cause_time'), '%Y-%m-%dT%H:%M:%S') if data.get('cause_time') else None, 
+                                        datetime.strptime(data.get('cause_set_time'), '%Y-%m-%dT%H:%M:%S') if data.get('cause_set_time') else None, 
                                         data.get('length')
                         )}
                 project_globals.machines_idle.update(rec)
@@ -54,6 +55,7 @@ def save_machines_idle():
                             'begin_time':idle.begin_time.strftime('%Y-%m-%dT%H:%M:%S') if idle.begin_time else None,
                             'cause':idle.cause,
                             'cause_time':idle.cause_time.strftime('%Y-%m-%dT%H:%M:%S') if idle.cause_time else None,
+                            'cause_set_time':idle.cause_set_time.strftime('%Y-%m-%dT%H:%M:%S') if idle.cause_set_time else None,
                             'length':idle.length})
                 file.write(json.dumps(data))
 
@@ -77,11 +79,13 @@ def get_current_state(channel_base, machine_id:int)->dict['machine':id, 'state':
         saved_state_time= idle.begin_time.strftime('%Y-%m-%dT%H:%M:%S') if idle.begin_time else None
         saved_current_cause= idle.cause
         saved_current_cause_time= idle.cause_time.strftime('%Y-%m-%dT%H:%M:%S') if idle.cause_time else None
+        saved_current_cause_set_time= idle.cause_set_time.strftime('%Y-%m-%dT%H:%M:%S') if idle.cause_set_time else None
     else:
         saved_state=None
         saved_state_time=None
         saved_current_cause=None
         saved_current_cause_time=None
+        saved_current_cause_set_time=None
     state=channel.get_arg(settings.STATE_ARG)
     # if state==saved_state:
     if state in settings.IDLE_STATES and idle:
@@ -89,20 +93,23 @@ def get_current_state(channel_base, machine_id:int)->dict['machine':id, 'state':
         begin_time=saved_state_time
         cause_id=saved_current_cause
         cause_time=saved_current_cause_time
+        cause_set_time=saved_current_cause_set_time
     else:
         begin_time=channel.get_arg(settings.STATE_TIME_ARG).strftime('%Y-%m-%dT%H:%M:%S')
         cause_id=str(None)
         cause_time=str(None)
+        cause_set_time=str(None)
 
-    return {'machine':machine_id, 'state':state, 'begin_time':begin_time, 'cause_id':cause_id, 'cause_time':cause_time}
+    return {'machine':machine_id, 'state':state, 'begin_time':begin_time, 'cause_id':cause_id, 'cause_time':cause_time, 'cause_set_time':cause_set_time}
 
 @dataclass
 class Idle():
-    state:int
-    begin_time:datetime
-    cause:int=None
-    cause_time:datetime=None
-    length:int=0
+    state:int                       # текущее состояние
+    begin_time:datetime             # начало текущего состояния
+    cause:int=None                  # причина простоя
+    cause_time:datetime=None        # начало действия причины (может быть не равно begin_time если сменв причины без смены состояния)
+    cause_set_time:datetime=None    # время установки причины
+    length:int=0                    # длительность нахождения в текущей причине простоя
 
 def current_idle_get(machine_id):
     return project_globals.machines_idle.get(machine_id)
@@ -113,11 +120,19 @@ def current_idle_set(machine_id,state):
     project_globals.machines_idle.update({machine_id:Idle(state,begin_time)})
     save_machines_idle()
 
-def current_idle_add_cause(machine_id, cause_id, cause_time):
-    if project_globals.machines_idle.get(machine_id):
+def current_idle_add_cause(machine_id, cause_id, cause_set_time):
+    
+    if current_idle:=project_globals.machines_idle.get(machine_id):
+        if current_idle.cause:
+            print(f'change cause idle to {machine_id} from {current_idle.cause} to {cause_id}')
+            current_idle_store(machine_id)
+            project_globals.machines_idle.get(machine_id).cause_time=datetime.now()
+        else:
+            project_globals.machines_idle.get(machine_id).cause_time=current_idle.begin_time
+
         print(f'add cause idle to {machine_id} cause:{cause_id}')
         project_globals.machines_idle.get(machine_id).cause=cause_id
-        project_globals.machines_idle.get(machine_id).cause_time=cause_time
+        project_globals.machines_idle.get(machine_id).cause_set_time=cause_set_time
         save_machines_idle()
     else:
         raise KeyError(f'no machine {machine_id} in project globals.machines_idle')
@@ -129,7 +144,7 @@ def current_idle_reset(machine_id):
 
 def current_idle_store(machine_id):
     if  idle:=project_globals.machines_idle.get(machine_id):
-        project_globals.machines_idle.get(machine_id).length=(datetime.now()-idle.begin_time).total_seconds()
+        project_globals.machines_idle.get(machine_id).length=int(round((datetime.now()-idle.cause_time).total_seconds()))
         print(f'Store machime {machine_id} Idle to DB: {idle.state}, cause: {project_globals.idle_causes.get(idle.cause,"Не подтверждена")}, length {idle.length}')
         print(idle)
         ... # store to DB here
