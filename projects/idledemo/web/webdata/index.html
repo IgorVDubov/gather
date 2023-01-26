@@ -154,6 +154,24 @@
 
       }
     </style>
+    <style> /* progress bar */
+      .progressBar {
+        border: solid, gray, 2px;
+        border-radius: 3px;
+        padding-left: 1em;
+        padding-right: 1em;
+        width: 100%;
+        height: 1.5em;
+        text-align: center;
+        color: white;
+        font-size: 1em;
+      }
+      .progress {
+        background-color :aquamarine;
+        width: 0%;
+        height: 100%;
+      }
+    </style>
 </head>
 <body>
     <header class="header" >
@@ -190,13 +208,16 @@
     const IDLE_COUSES={{  idle_couses  }}
     const STATE_CHANNEL='{{state_channel}}'
     const CAUSEID_ARG='{{ causeid_arg }}'
+    const TECH_IDLE_LENGTH={{ tech_idle }}
     const SUBSCRIBE_CHANNELS=[STATE_CHANNEL]
     const WORK_STATE=3
     const STAND_STATE=2
     const OFF_STATE=1
     const NA_STATE=0
+    const TECH_IDLE_ID=-1
     var initState={{current_state}}
     var firstWsMessageFlag=false;    //при инициализации приходит сообщение о статусе и затирает ранее полученный, его пропускаем
+    var idleTime
     var currentState=Object()
       currentState.state=initState.state;
       currentState.stateTime = (initState.begin_time!='None')?initState.begin_time:undefined;
@@ -228,6 +249,8 @@
     var causeStatusTimeElem
     var causeButtonsContainerElem
     var changeCauseButtonElem
+    var progressBarElem
+    var progressElem
     
     var ws
 
@@ -238,11 +261,11 @@
     const wsIndicator=document.getElementById("wsLight")
     
     class PerodicalCallback {
-        constructor(callback, delay) {
+        constructor(callback, delay, start=true) {
           this.callback = callback;
           this.delay=delay;
           this.remaining = delay;
-          this.resume();
+          if (start) this.resume();
         }
         
         pause() {
@@ -294,8 +317,8 @@
       setTimeout(function(){indicator.style.color=afterColor},pause)
     }
     
-    const secondsTimer=new PerodicalCallback ("updateTime()", 1000);
-    secondsTimer.pause();
+    const secondsTimer=new PerodicalCallback ("updateStatusTime()", 1000,false);
+    const techIdleTimer=new PerodicalCallback ("updateTechIdle()", 250,false);
 
     function wsConnect(WSServer){
       let ws=new WebSocket(WSServer);
@@ -415,6 +438,10 @@
     function hideCauseStatusContainer(){
       causeStatusContElem.style.display='none'
     }
+    function updateStatusTime(){
+        let d=moment.duration(moment().diff(currentState.stateTime),'ms')
+        stateTimeElem.innerText=  d.hours() + ':' + d.minutes() + ':'+d.seconds()
+    }
     function showCauseButtons(){
       causeButtonsContainerElem.style.display='block'
     }
@@ -435,6 +462,24 @@
       causeStatusContElem.classList.remove('flashBackground')
     }
     
+    function setProgress(progress,value){
+      progressElem.style.width=progress.toString()+'%'
+      //progressBarElem.innerText = value
+    }
+    function updateTechIdle(){
+      idleTime= idleTime - 0.250;
+      
+      if (idleTime==0){
+        var idleTime=TECH_IDLE_LENGTH;
+        //techIdleTimer.pause()
+        return
+      } 
+      if (TECH_IDLE_LENGTH%idleTime==0){
+        var seconds=idleTime
+      } 
+      setProgress(100*idleTime/TECH_IDLE_LENGTH, seconds)
+
+    }
     function clickHandler(event){
       currentState.cause=event.target.dataset.id;
     }
@@ -442,7 +487,6 @@
     function changeCauseclickHandler(){
       currentState.cause=undefined;
       currentState.causeTime=undefined;
-      
     }
     
     function makePage(){
@@ -451,10 +495,14 @@
         let container=document.createElement('div');
         container.classList=['mainContainer'];
         page.append(container);
-        const statusContainer = block('',['statusContainer'],'');
-        container.append(statusContainer);
-        statusContainer.append(labled2DataBlock('состояние',['h100 w100 databox'],['dataCaption'],['dataLable'],['dataLable'],'','','state_'+MACHINE_ID,'stateTime_'+MACHINE_ID, 'row'))
-        statusContainer.append(labled2DataBlock('причина',['h100 w100 databox'],['dataCaption'],['dataLable, fnt_1_5'],['dataLable, fnt_1_5'],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row'))
+        container.append(labled2DataBlock('состояние',['h100 w100 databox'],['dataCaption'],['dataLable'],['dataLable'],'','','state_'+MACHINE_ID,'stateTime_'+MACHINE_ID, 'row'))
+        let causeBlock=labled2DataBlock('причина',['h100 w100 databox'],['dataCaption'],['dataLable, fnt_1_5'],['dataLable, fnt_1_5'],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row')
+        container.append(causeBlock)
+        let progressBar=block('',['progressBar'],'causeProgressBar')
+        let progress=block('',['progress'],'causeProgress');
+        progressBar.append(progress)
+        causeBlock.append(progressBar)
+
         const causeButtonsContainer = block('',[],'causeButtonsContainer');
         for (i=0; i<Object.keys(IDLE_COUSES).length;i++){
           let id=Object.keys(IDLE_COUSES)[i]
@@ -470,10 +518,6 @@
         container.append(changeCauseButton);
     }
 
-    function updateTime(){
-        let d=moment.duration(moment().diff(currentState.stateTime),'ms')
-        stateTimeElem.innerText=  d.hours() + ':' + d.minutes() + ':'+d.seconds()
-    }
     function firstCurrentStateInit(){
       currentState.state=currentState.state;
       if (currentState.state!=WORK_STATE){
@@ -495,9 +539,12 @@
         causeStatusTimeElem=document.getElementById('causeTime_'+parseInt(MACHINE_ID))
         causeButtonsContainerElem=document.getElementById('causeButtonsContainer')
         changeCauseButtonElem=document.getElementById('changeCauseButton')
-
+        progressBarElem=document.getElementById('causeProgressBar');
+        progressElem=document.getElementById('causeProgress');
         stateTime=moment(currentState.begin_time);
-        secondsTimer.restart()
+        secondsTimer.restart();
+        idleTime=TECH_IDLE_LENGTH;
+        techIdleTimer.restart();
         firstCurrentStateInit();
         ws=wsConnect(WS_SERVER);
         wsEvents();

@@ -4,7 +4,7 @@ import pickle
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
-import channels.channelbase
+from channels.channelbase import ChannelsBase
 import globals
 from channels.channels import Channel
 
@@ -46,7 +46,6 @@ def load_machines_idle():
 
 
 def save_machines_idle():
-
     with open('idles.txt', 'w') as file:
         for machine_id, idle in project_globals.machines_idle.items():
             if idle:
@@ -69,7 +68,12 @@ def get_causeid_arg(machine_ch:Channel)->int:
     return str(machine_ch.get_arg(settings.IDLE_HANDLERID_ARG)) + '.' + settings.CAUSEID_ARG
 
 def get_machine_causes(id:int)->dict[int:str]:               # TODO refact with DB
-    return settings.IDLE_CAUSES
+    return [{id:cause} for id,cause in settings.IDLE_CAUSES.items() if id>0]   #пока так, отделяем зарезервированные причины (id < 0 ) от доступных
+
+@convert_none_2_str
+def get_channel_arg(channel_base:ChannelsBase, machine_id:int, arg:str):
+    result= channel_base.get(machine_id).get_arg(arg)
+    return result
 
 @convert_none_2_str
 def get_current_state(channel_base, machine_id:int)->dict['machine':id, 'state':int, 'begin_time':str, 'couse_id':int]:

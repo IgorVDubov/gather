@@ -59,7 +59,7 @@ class Vars:
                 and isinstance( name, str)):
             raise ConfigException(f'Wrong argument type adding binding, args: {name=}, {obj=}, {objAttrName=}')
         if not hasattr(obj, objAttrName):
-            raise ConfigException(f'Instance {obj.channelType} id:{obj.id} has no attribute {objAttrName}')
+            raise ConfigException(f'Instance {obj}  has no attribute {objAttrName}')
 
         fget = lambda self: self._getProperty( name )
         fset = lambda self, value: self._setProperty( name, value )

@@ -69,6 +69,7 @@ class MainHtmlHandler(BaseHandler):
                     user=self.user.get('login'),
                     machine=machine_id,
                     state_channel=str(machine_id)+'.'+settings.STATE_ARG,
+                    tech_idle=logics.get_channel_arg(self.application.data.channelBase,machine_id,settings.TECH_IDLE_ARG),
                     causeid_arg= logics.get_causeid_arg(self.application.data.channelBase.get(machine_id)),
                     idle_couses=json.dumps(logics.get_machine_causes(machine_id), default=str),
                     current_state=logics.get_current_state(self.application.data.channelBase,machine_id),
