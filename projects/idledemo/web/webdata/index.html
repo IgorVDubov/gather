@@ -156,20 +156,22 @@
     </style>
     <style> /* progress bar */
       .progressBar {
-        border: solid, gray, 2px;
+        border: solid, rgb(70, 68, 68), 5px;
         border-radius: 3px;
         padding-left: 1em;
         padding-right: 1em;
         width: 100%;
         height: 1.5em;
         text-align: center;
-        color: white;
-        font-size: 1em;
-      }
+        }
       .progress {
         background-color :aquamarine;
         width: 0%;
         height: 100%;
+      }
+      .progressValue{
+        color: rgb(201, 23, 23);
+        font-size: 1em;
       }
     </style>
 </head>
@@ -217,7 +219,7 @@
     const TECH_IDLE_ID=-1
     var initState={{current_state}}
     var firstWsMessageFlag=false;    //при инициализации приходит сообщение о статусе и затирает ранее полученный, его пропускаем
-    var idleTime
+    var idleTime=TECH_IDLE_LENGTH;
     var currentState=Object()
       currentState.state=initState.state;
       currentState.stateTime = (initState.begin_time!='None')?initState.begin_time:undefined;
@@ -242,7 +244,6 @@
       }
       });
     
-    
     var stateElem
     var stateTimeElem
     var causeStatusElem
@@ -251,6 +252,7 @@
     var changeCauseButtonElem
     var progressBarElem
     var progressElem
+    var progressValElem
     
     var ws
 
@@ -374,6 +376,9 @@
     function changeState(){
       setStatus(currentState.state)
       if (currentState.state==WORK_STATE){
+        if (currentState.cause==TECH_IDLE_ID){
+          resetTechIdle();
+        }
         currentState.cause=undefined;
         currentState.causeTime=undefined;
         stopFlashIdleBox();
@@ -383,8 +388,12 @@
       } else{
         showCauseStatusContainer();
         if (currentState.cause==undefined){ 
-          startFlashIdleBox();
-          showCauseButtons();
+          if (TECH_IDLE_LENGTH>0) {
+            currentState.cause=TECH_IDLE_ID;
+          } else {
+            startFlashIdleBox();
+            showCauseButtons();
+          }
         } 
       }
     }
@@ -392,6 +401,9 @@
     function changeCause(){
       // if (currentState.state!=WORK_STATE){
         if (currentState.cause!=undefined){  
+          if (currentState.cause==TECH_IDLE_ID){
+          setTechIdle();
+        }
           setCause();
           sendCause(currentState.cause);
         } else{
@@ -431,6 +443,12 @@
       wsSend(JSON.stringify({type:"set",arg:CAUSEID_ARG, val:parseInt(couseID)}))
     }
     
+    function showTechIdleProgress(){
+      progressBarElem.style.display='block';
+    }
+    function hideTechIdleProgress(){
+      progressBarElem.style.display='none';
+    }
 
     function showCauseStatusContainer(){
       causeStatusContElem.style.display='block'
@@ -464,27 +482,39 @@
     
     function setProgress(progress,value){
       progressElem.style.width=progress.toString()+'%'
-      //progressBarElem.innerText = value
+      progressValElem.innerText = value
+    }
+    function resetTechIdle(){
+      hideTechIdleProgress()
+      techIdleTimer.pause();
+
+    }
+    function setTechIdle(){
+      idleTime=TECH_IDLE_LENGTH;
+      showTechIdleProgress();
+      techIdleTimer.restart();
+
+    }
+    function storeTechIdle(){
+
     }
     function updateTechIdle(){
       idleTime= idleTime - 0.250;
-      
       if (idleTime==0){
-        var idleTime=TECH_IDLE_LENGTH;
-        //techIdleTimer.pause()
-        return
-      } 
-      if (TECH_IDLE_LENGTH%idleTime==0){
-        var seconds=idleTime
-      } 
-      setProgress(100*idleTime/TECH_IDLE_LENGTH, seconds)
+        resetTechIdle();
+        changeCauseclickHandler();
+        
+        techIdleTimer.pause();
 
+      } 
+      setProgress(100*idleTime/TECH_IDLE_LENGTH, Math.floor(idleTime)+1)
     }
     function clickHandler(event){
       currentState.cause=event.target.dataset.id;
     }
     
     function changeCauseclickHandler(){
+      if (currentState.cause==TECH_IDLE_ID) hideTechIdleProgress()
       currentState.cause=undefined;
       currentState.causeTime=undefined;
     }
@@ -500,12 +530,17 @@
         container.append(causeBlock)
         let progressBar=block('',['progressBar'],'causeProgressBar')
         let progress=block('',['progress'],'causeProgress');
+        let valElem=document.createElement('span')
+        valElem.id='causeProgressVal'
+        valElem.classList=['progressValue']
         progressBar.append(progress)
+        progressBar.append(valElem)
         causeBlock.append(progressBar)
 
         const causeButtonsContainer = block('',[],'causeButtonsContainer');
         for (i=0; i<Object.keys(IDLE_COUSES).length;i++){
           let id=Object.keys(IDLE_COUSES)[i]
+          if (id<=0) continue;          //пока так, отделяем зарезервированные причины (id < 0 ) от доступных
           let cause=IDLE_COUSES[id]
           button=block(cause,['h100 w100 flex_center databox dataLable '],'buttonsContainer');
           button.dataset.id=id
@@ -541,15 +576,14 @@
         changeCauseButtonElem=document.getElementById('changeCauseButton')
         progressBarElem=document.getElementById('causeProgressBar');
         progressElem=document.getElementById('causeProgress');
+        progressValElem=document.getElementById('causeProgressVal');
         stateTime=moment(currentState.begin_time);
         secondsTimer.restart();
-        idleTime=TECH_IDLE_LENGTH;
-        techIdleTimer.restart();
         firstCurrentStateInit();
         ws=wsConnect(WS_SERVER);
         wsEvents();
     }
     
     init()
-</script>
+  </script>
 </html>

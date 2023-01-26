@@ -68,7 +68,7 @@ def get_causeid_arg(machine_ch:Channel)->int:
     return str(machine_ch.get_arg(settings.IDLE_HANDLERID_ARG)) + '.' + settings.CAUSEID_ARG
 
 def get_machine_causes(id:int)->dict[int:str]:               # TODO refact with DB
-    return [{id:cause} for id,cause in settings.IDLE_CAUSES.items() if id>0]   #пока так, отделяем зарезервированные причины (id < 0 ) от доступных
+    return settings.IDLE_CAUSES  #пока так, отделяем зарезервированные причины (id < 0 ) от доступных
 
 @convert_none_2_str
 def get_channel_arg(channel_base:ChannelsBase, machine_id:int, arg:str):
