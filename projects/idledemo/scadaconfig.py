@@ -100,10 +100,12 @@ channels_config={
                 'args':{
                     'state':'5001.args.currentState',
                     'machine_id':5001,
+                    'machine_tech_idle':'5001.args.minLength',
                     'cause_id':None,
                     'reset_idle_flag':False,
                     'set_cause_flag':False,
                     'restore_idle_flag':False,
+
                 }},
         
     ],
