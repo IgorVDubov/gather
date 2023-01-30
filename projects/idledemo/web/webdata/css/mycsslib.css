@@ -20,6 +20,15 @@
     .fnt_1_5{
       font-size: 1.5em;
     }
+    .fnt_r2{
+      font-size: 2rem;
+    }
+    .fnt_r5{
+      font-size: 5rem;
+    }
+    .fnt_r3{
+      font-size: 3rem;
+    }
     .fnt_0_75{
       font-size: 0.75em;
     }
@@ -48,5 +57,8 @@
     .s1em{
       width: 1em;
       height: 1em;
+    }
+    .cWhite{
+      color:white;
     }
     

@@ -40,7 +40,7 @@ def idle(vars):
                 if (datetime.now()-idle.begin_time).total_seconds() >=settings.CAUSE_CHECK_TIMEOUT:
                     ...      # нe указана причина за отведенное время
         else:                # появился новый простой
-            logics.current_idle_set(vars.machine_id,vars.state)
+            logics.current_idle_set(vars.machine_id,vars.state, vars.machine_tech_idle)
     else:
         if idle:             # если был простой и переход в работу
             if idle.cause:      # если указана причина
