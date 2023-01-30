@@ -74,6 +74,7 @@ class MainHtmlHandler(BaseHandler):
                     idle_couses=json.dumps(logics.get_machine_causes(machine_id), default=str),
                     current_state=logics.get_current_state(self.application.data.channelBase,machine_id),
                     wsserv=self.application.settings['wsParams'],
+                    server_time=logics.get_server_time(),
                     version=settings.CLIENT_VERSION,
                     )
 

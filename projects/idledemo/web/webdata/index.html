@@ -7,7 +7,7 @@
     <title>Utrack Idle service</title>
 
     <link rel="stylesheet" type="text/css" href="/css/header_main_footer.css"/>
-    <link rel="stylesheet" type="text/css" href="/css/mycsslib.css"/>
+    <!-- <link rel="stylesheet" type="text/css" href="/css/mycsslib.css"/> -->
     <script src="/js/moment-with-locales.min.js" ></script> 
     <style>  /*new style*/
         body{
@@ -17,7 +17,8 @@
         .pageSection1{
           /* width: 100%;
           height:100%; */
-          width: 99.6%;
+          width: 97vw;
+          height: 92vh;
           display:flex;
           align-items:center;
           flex-direction:column;
@@ -26,42 +27,15 @@
           font-family: "Segoe UI", "Segoe WP", Arial, sans-serif;
           /* margin: 10px; */
           max-width:700px;
-          max-width:700px;
           height:100%;
           display:flex;
           flex-direction: column;
-          flex-wrap: wrap;
+          /* flex-wrap: wrap; */
           /* flex-direction:column; */
           align-items:center;
           justify-content: space-evenly;
           /* justify-content: space-between; */
         }
-        .flexH{
-          display:flex;
-          flex-direction:row;
-          justify-content: space-evenly;
-    
-        }
-        .w100{
-          width:100%;
-          min-width:300px;
-          margin:5px;
-        }
-        .singleW50{
-          min-width:300px;
-          margin:5px;
-        }
-        .w50{
-          flex:1 300px;
-          min-width:300px;
-          margin:5px;
-        }
-        .h50{
-              min-height: 50px;
-            }
-        .h100{
-              height: 100px;
-            }
         .lowerFont{
           font-size: 0.6em;
           color:inherit;
@@ -107,8 +81,12 @@
             animation-fill-mode: both;
             }
         .databox{
-          /* background-color: rgb(93, 91, 162); */
           background-color: rgb(102, 103, 171);
+          border-radius: 10px;
+          box-shadow: 2px 2px 5px 0px rgb(107, 107, 107);
+        }
+        .buttonBox{
+          background-color: rgb(102, 140, 171);
           border-radius: 10px;
           box-shadow: 2px 2px 5px 0px rgb(107, 107, 107);
         }
@@ -119,7 +97,7 @@
           padding: 5px;
           text-overflow: clip;
           text-align: center;
-          font-size: 24px;
+          font-size: inherit;
           color:white;
           height: 40%;
           width: 100%;
@@ -128,7 +106,7 @@
           padding: 5px;
           text-overflow: clip;
           text-align: center;
-          font-size: 24px;
+          font-size: inherit;
           color:rgb(3, 224, 3);
           height: 40%;
           width: 100%;
@@ -136,16 +114,21 @@
         .dataLable{
           text-align: center;
           width:100%;
-          font-size: 32px;
+          font-size: inherit;
           font-weight: bold;
           color:white;
         }
         .colorDataLable{
           text-align: center;
           width:100%;
-          font-size: 32px;
+          font-size: inherit;
           font-weight: bold;
           color:rgb(3, 224, 3);
+        }
+        .grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          grid-template-rows: 1fr 1fr;
         }
     </style>
     <style>
@@ -153,6 +136,86 @@
         display:flex;
 
       }
+    </style>
+    <style> /* my style lib*/
+        .flex_milldle_row{
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          flex-wrap: nowrap;
+        }
+        .flex_milldle_col{
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex-wrap: nowrap;
+        }
+        .flex_center{
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: nowrap;
+        }
+        .flexH{
+          display:flex;
+          flex-direction:row;
+          justify-content: space-evenly;
+        }
+        .flex1{flex:1;}
+        .flex2{flex:2;}
+        .flex3{flex:3;}
+
+        .h_v80{height: 80vh;}
+        .h_v30{height: 30vh;}
+        .h_v20{height: 20vh;}
+        .w_v80{width:  80vw;}
+        .w100{
+          width:100%;
+          min-width:300px;
+          margin:5px;
+        }
+
+        .al_l{text-align: left;}
+        .al_r{text-align: right;}
+        .al_c{text-align: center;}
+
+        .h50{min-height: 50px;}
+        .h100{height: 100px;}
+        .fnt_0_5{font-size: 0.5em;}
+        .fnt_0_75{font-size: 0.75em;}
+        .fnt_1_25{font-size: 1.25em;}
+        .fnt_1_5{font-size: 1.5em;}
+        .fnt_2{font-size: 2em;}
+        .fnt_3{font-size: 3em;}
+        .fnt_4{font-size: 4em;}
+        .fnt_5{font-size: 5em;}
+        .fnt_r0_75{font-size: 0.75rem;}
+        .fnt_r1_25{font-size: 1.25rem;}
+        .fnt_r1_5{font-size: 1.5rem;}
+        .fnt_r2{font-size: 2rem;}
+        .fnt_r3{font-size: 3rem;}
+        .fnt_r4{font-size: 4rem;}
+        .fnt_r5{font-size: 5rem;}
+
+        .bold{font-weight: bold;}
+
+        .pl1{padding-left: 1em;}
+        .pl2{padding-left: 2em;}
+        .pl3{padding-left: 3em;}
+        .pl0_5{padding-left: 0.5em;}
+        .pr1{padding-right: 1em;}
+        .pr2{padding-right: 2em;}
+        .pr3{padding-right: 3em;}
+        
+        .img_invert {-webkit-filter: invert(1); filter: invert(1);}
+        .fl_r{float: right;}
+        .fl_l{float: left;}
+        .s1em{width: 1em;height: 1em;
+        }
+        .cWhite{
+          color:white;
+        }
+    
     </style>
     <style> /* progress bar */
       .progressBar {
@@ -180,6 +243,7 @@
         <span class="fnt_1_5 bold pl1"> <a  href="/">UTrack</a></span>
         <span class="pl1 fnt_0_75"> учет рабочего времени оборудования</span>
         <span class="userBlock fl_r pr1 ">
+            <span class='bold fnt_1_25 pr1' id="serverTime"></span>
             <span>{{ user }} </span>
             <a href="/logout"> <img class="img_invert s1em" src="/images/icon-exit.png"> </a>
         </span>
@@ -203,7 +267,7 @@
 <script>
     moment.locale('ru');
     const STATUS_LIGHT_COLORS=['#e6e6e6','#b4b4b4','#fff134','#03e003']
-    const STATUSES =['N/A', 'Откл', 'Простой', 'Работа']
+    const STATES =['N/A', 'Откл', 'Простой', 'Работа']
     const MACHINE_ID={{ machine }}
     const WS_SERVER = '{{ wsserv }}';
     {% autoescape None %}
@@ -218,6 +282,7 @@
     const NA_STATE=0
     const TECH_IDLE_ID=-1
     var initState={{current_state}}
+    var serverTime=moment('{{server_time}}');
     var firstWsMessageFlag=false;    //при инициализации приходит сообщение о статусе и затирает ранее полученный, его пропускаем
     var idleTime=TECH_IDLE_LENGTH;
     var currentState=Object()
@@ -225,27 +290,12 @@
       currentState.stateTime = (initState.begin_time!='None')?initState.begin_time:undefined;
       currentState.cause = (initState.cause_id!='None')?initState.cause_id:undefined;
       currentState.causeTime = (initState.cause_time!='None')?initState.cause_time:undefined;
-        
-
-
-    currentState = new Proxy(currentState, {
-      set(target, property, value){
-        if (value=='None'){
-          value==undefined;
-        } 
-        target[property]=value;
-        if (property=='state'){
-            changeState()
-        }
-        if (property=='cause'){
-            changeCause()
-        }
-        return true
-      }
-      });
     
-    var stateElem
+    var stateBlockElem
+    var stateValueElem
+    var stateTimerElem
     var stateTimeElem
+    var flashWaitWarning
     var causeStatusElem
     var causeStatusTimeElem
     var causeButtonsContainerElem
@@ -253,6 +303,7 @@
     var progressBarElem
     var progressElem
     var progressValElem
+    var serverTimeElem
     
     var ws
 
@@ -288,7 +339,24 @@
           this.id = window.setInterval(this.callback, this.remaining);
         }
       }
-    
+
+    function isVisible(elem){
+      if (window.getComputedStyle(elem).display!='none') {
+        return true
+      } else {
+         return false
+      }
+    }
+    function storeAndSetStyle(elem, param, value){
+      elem.dataset['saved'+param]=window.getComputedStyle(elem)[param]
+      elem.style[param]=value
+      }
+    function restoreStyle(elem, param){
+      elem.style[param]=elem.dataset['saved'+param]
+      }
+
+      
+
     function block(innerHTML=undefined, classes=[], id=undefined, ){
       let block=document.createElement('div');
       if (id !=undefined) block.id=id;
@@ -319,7 +387,7 @@
       setTimeout(function(){indicator.style.color=afterColor},pause)
     }
     
-    const secondsTimer=new PerodicalCallback ("updateStatusTime()", 1000,false);
+    const secondsTimer=new PerodicalCallback ("updateTime()", 1000,false);
     const techIdleTimer=new PerodicalCallback ("updateTechIdle()", 250,false);
 
     function wsConnect(WSServer){
@@ -327,7 +395,6 @@
       wsStatus.textContent='online'
       wsIndicator.style.color='green'
       return ws
-        // return new WebSocket(WSServer);
     }
 
     function wsEvents(){
@@ -336,7 +403,6 @@
         console.log(jsonMsg)
         switch (jsonMsg.cmd) {
           case "reload":
-              //console.log(jsonMsg.data)
               location.reload()
           break;
           default:
@@ -348,6 +414,7 @@
           currentState.stateTime=jsonMsg[0].time;                                   //todo взять из запроса
         }
         flashIndicator(wsIndicator,'lightgreen','green',400);
+        return true;
       };
         
     
@@ -373,33 +440,54 @@
           }
     };
 
+    function updateTime(){
+      updateServerTime();
+      updateStatusTime();
+    }
+    function updateServerTime(){
+      serverTime.add(1,'s');
+      serverTimeElem.innerText=  serverTime.format('HH:mm:ss')
+    }
+
+    currentState = new Proxy(currentState, {
+      set(target, property, value){
+        if (value=='None'){
+          value==undefined;
+        } 
+        target[property]=value;
+        if (property=='state'){
+            changeState()
+        }
+        if (property=='cause'){
+            changeCause()
+        }
+        return true
+      }
+      });
+
     function changeState(){
-      setStatus(currentState.state)
+      setStatus(currentState.state, moment(currentState.stateTime).format('DD.MM.YY HH:mm:ss'))
       if (currentState.state==WORK_STATE){
         if (currentState.cause==TECH_IDLE_ID){
           resetTechIdle();
         }
         currentState.cause=undefined;
         currentState.causeTime=undefined;
-        stopFlashIdleBox();
-        hideCauseStatusContainer();
-        hideCauseButtons();
-        hideChangeCauseButton();
+        displayWorkMode();
       } else{
-        showCauseStatusContainer();
+        displayIdleMode();
         if (currentState.cause==undefined){ 
-          if (TECH_IDLE_LENGTH>0) {
+          if (TECH_IDLE_LENGTH>0 && 
+              moment.duration(serverTime.diff(currentState.stateTime,'seconds')).seconds()<TECH_IDLE_LENGTH) {
             currentState.cause=TECH_IDLE_ID;
           } else {
-            startFlashIdleBox();
-            showCauseButtons();
+            displayWaitCauseMode()
           }
         } 
       }
     }
 
     function changeCause(){
-      // if (currentState.state!=WORK_STATE){
         if (currentState.cause!=undefined){  
           if (currentState.cause==TECH_IDLE_ID){
           setTechIdle();
@@ -407,35 +495,27 @@
           setCause();
           sendCause(currentState.cause);
         } else{
-          waitCause()
+          displayWaitCauseMode()
         }
-      // }
     }
 
-    function setStatus(result){
-      stateElem.style.color=STATUS_LIGHT_COLORS[result];
-      stateElem.innerText=STATUSES[result];
+    function setStatus(result, time){
+      stateValueElem.style.color=STATUS_LIGHT_COLORS[result];
+      stateValueElem.innerText=STATES[result];
+      stateTimeElem.innerText=time;
     }
     function setCause(){
-      stopFlashIdleBox();
-      let causeTime = (currentState.causeTime==undefined) ?  moment() : currentState.causeTime
+      let causeTime = (currentState.causeTime==undefined) ?  serverTime : currentState.causeTime
       setCauseStatus(currentState.cause, causeTime);
-      hideCauseButtons();
-      showChangeCauseButton();
-    }
-    function waitCause(){
-      startFlashIdleBox();
-      showCauseButtons();
-      hideChangeCauseButton();
-      setWaitCauseStatus();
+      displayIdleMode();
     }
     function setCauseStatus(couseID,causeTime){
       causeStatusElem.innerText=IDLE_COUSES[couseID]
-      causeStatusTimeElem.innerText=causeTime
+      causeStatusTimeElem.innerText=moment(causeTime).format('DD.MM.YY HH:mm:ss')
     }
     
     function setWaitCauseStatus(couseID,causeTime){
-      causeStatusElem.innerText='-'
+      causeStatusElem.innerText=''
       causeStatusTimeElem.innerText=''
     }
     
@@ -444,40 +524,42 @@
     }
     
     function showTechIdleProgress(){
-      progressBarElem.style.display='block';
+      restoreStyle(progressBarElem, 'display')
     }
     function hideTechIdleProgress(){
-      progressBarElem.style.display='none';
+      if (isVisible(progressBarElem)){
+          storeAndSetStyle(progressBarElem, 'display', 'none')}
     }
 
     function showCauseStatusContainer(){
-      causeStatusContElem.style.display='block'
+      restoreStyle(causeStatusBlockElem, 'display')
     }
     function hideCauseStatusContainer(){
-      causeStatusContElem.style.display='none'
+      if (isVisible(causeStatusBlockElem)) {storeAndSetStyle(causeStatusBlockElem, 'display', 'none')}
     }
     function updateStatusTime(){
-        let d=moment.duration(moment().diff(currentState.stateTime),'ms')
-        stateTimeElem.innerText=  d.hours() + ':' + d.minutes() + ':'+d.seconds()
+        let d=moment.duration(serverTime.diff(currentState.stateTime),'ms')
+        stateTimerElem.innerText=  d.days()*24 + d.hours() + ':' + d.minutes() + ':'+d.seconds()
     }
+
     function showCauseButtons(){
-      causeButtonsContainerElem.style.display='block'
+      restoreStyle(causeButtonsContainerElem, 'display')
     }
     function hideCauseButtons(){
-      causeButtonsContainerElem.style.display='none'
+      if (isVisible(causeButtonsContainerElem)) {storeAndSetStyle(causeButtonsContainerElem, 'display', 'none')}
     }
     function showChangeCauseButton(){
-      changeCauseButtonElem.style.display='block'
+      restoreStyle(changeCauseButtonElem, 'display')
     }
     function hideChangeCauseButton(){
-      changeCauseButtonElem.style.display='none'
+      if (isVisible(changeCauseButtonElem)) {storeAndSetStyle(changeCauseButtonElem, 'display', 'none')}
     }
-    
-    function startFlashIdleBox(){
-      causeStatusContElem.classList.add('flashBackground')
+
+    function showFlashWaitWarning(){
+      restoreStyle(flashWaitWarning, 'display')
     }
-    function stopFlashIdleBox(){
-      causeStatusContElem.classList.remove('flashBackground')
+    function hideFlashWaitWarning(){
+      if (isVisible(flashWaitWarning)) {storeAndSetStyle(flashWaitWarning, 'display', 'none')}
     }
     
     function setProgress(progress,value){
@@ -487,36 +569,72 @@
     function resetTechIdle(){
       hideTechIdleProgress()
       techIdleTimer.pause();
-
     }
     function setTechIdle(){
       idleTime=TECH_IDLE_LENGTH;
       showTechIdleProgress();
       techIdleTimer.restart();
-
-    }
-    function storeTechIdle(){
-
     }
     function updateTechIdle(){
-      idleTime= idleTime - 0.250;
-      if (idleTime==0){
-        resetTechIdle();
-        changeCauseclickHandler();
-        
-        techIdleTimer.pause();
-
+      idleTime= idleTime - 0.25;
+      if (idleTime<1){
+        resetCause();
       } 
-      setProgress(100*idleTime/TECH_IDLE_LENGTH, Math.floor(idleTime)+1)
+      setProgress(100*idleTime/TECH_IDLE_LENGTH, Math.floor(idleTime))
     }
-    function clickHandler(event){
-      currentState.cause=event.target.dataset.id;
+
+    function setCauseID(id){
+      currentState.cause=id;
     }
-    
-    function changeCauseclickHandler(){
-      if (currentState.cause==TECH_IDLE_ID) hideTechIdleProgress()
+
+    function resetCause(){
+      if (currentState.cause==TECH_IDLE_ID) {
+        resetTechIdle();
+      }
+      sendCause(0);
       currentState.cause=undefined;
       currentState.causeTime=undefined;
+    }
+
+    function displayWorkMode(){
+      hideFlashWaitWarning();
+      hideCauseButtons();
+      hideCauseStatusContainer();
+      hideChangeCauseButton();
+      stateBlockElem.classList.remove('h_v20')
+      stateBlockElem.classList.remove('fnt_3')
+      stateBlockElem.classList.add('h_v80')
+      stateBlockElem.classList.add('fnt_5')
+    }
+    function displayIdleMode(){
+      hideFlashWaitWarning();
+      hideCauseButtons();
+      stateBlockElem.classList.remove('h_v80')
+      stateBlockElem.classList.remove('fnt_5')
+      stateBlockElem.classList.add('h_v20')
+      stateBlockElem.classList.add('fnt_3')
+      showCauseStatusContainer();
+      showChangeCauseButton();
+    }
+    
+    function displayWaitCauseMode(){
+      stateBlockElem.classList.remove('h_v80')
+      stateBlockElem.classList.remove('fnt_5')
+      stateBlockElem.classList.add('h_v20')
+      stateBlockElem.classList.add('fnt_3')
+      hideCauseStatusContainer();
+      hideChangeCauseButton();
+      showFlashWaitWarning();
+      showCauseButtons();
+    }
+
+
+    
+    function clickHandler(event){
+      setCauseID(event.target.dataset.id);
+    }
+    function changeCauseclickHandler(){
+      resetCause();
     }
     
     function makePage(){
@@ -525,9 +643,27 @@
         let container=document.createElement('div');
         container.classList=['mainContainer'];
         page.append(container);
-        container.append(labled2DataBlock('состояние',['h100 w100 databox'],['dataCaption'],['dataLable'],['dataLable'],'','','state_'+MACHINE_ID,'stateTime_'+MACHINE_ID, 'row'))
-        let causeBlock=labled2DataBlock('причина',['h100 w100 databox'],['dataCaption'],['dataLable, fnt_1_5'],['dataLable, fnt_1_5'],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row')
+        //        state block
+        let stateBlock=block('',['databox w_v80 grid'],'stateBlock');
+        // let stateCaption=block('состояние', ['dataCaption '])
+        // let stateData=block('', ['flex_milldle_row'])
+        let stateValue=block('', ['dataLable '], 'state_'+MACHINE_ID)
+        let stateTimerValue=block('', ['dataLable '], 'stateTimer_'+MACHINE_ID)
+        // stateData.append(stateValue , stateTimerValue)
+        let stateTimeValue=block('', ['dataLable fnt_0_5 '], 'stateTime_'+MACHINE_ID)
+
+        // stateBlock.append( stateData, stateTimeValue)
+        stateBlock.append( stateValue, stateTimerValue, stateTimeValue)
+        container.append(stateBlock)
+        
+        //      Cause block
+        //let causeBlock=block('',['databox w_v80'],'causeStatus')
+        //let 
+
+        let causeBlock=labled2DataBlock('причина простоя',['databox w_v80'],['dataCaption fnt_2'],['dataLable fnt_3'],['dataLable '],'causeStatus','','cause_'+MACHINE_ID,'causeTime_'+MACHINE_ID, 'row')
         container.append(causeBlock)
+        let flashWaitWarning=block('Необходимо указать причину простоя',['databox flex_center w_v80 h_v20 fnt_2 bold cWhite flashBackground'],'flashWaitWarning')
+        container.append(flashWaitWarning)
         let progressBar=block('',['progressBar'],'causeProgressBar')
         let progress=block('',['progress'],'causeProgress');
         let valElem=document.createElement('span')
@@ -548,7 +684,7 @@
           causeButtonsContainer.append(button)
         }
         container.append(causeButtonsContainer);
-        let changeCauseButton=block('изменить причину простоя',['h100 w100 databox dataLable flex_center'],'changeCauseButton')
+        let changeCauseButton=block('изменить причину простоя',['buttonBox flex_center w_v80 h_v20 fnt_3 bold cWhite'],'changeCauseButton')
         changeCauseButton.addEventListener('click', changeCauseclickHandler);
         container.append(changeCauseButton);
     }
@@ -559,7 +695,7 @@
         if (currentState.cause!=undefined){  
           setCause();
         } else{
-          waitCause();
+          displayWaitCauseMode();
         }
       }
     };
@@ -567,9 +703,13 @@
     function init(){
         makePage()
         console.log('start')  
-        stateElem=document.getElementById('state_'+parseInt(MACHINE_ID))
+        serverTimeElem=document.getElementById('serverTime')
+        stateBlockElem=document.getElementById('stateBlock')
+        stateValueElem=document.getElementById('state_'+parseInt(MACHINE_ID))
+        stateTimerElem=document.getElementById('stateTimer_'+parseInt(MACHINE_ID))
         stateTimeElem=document.getElementById('stateTime_'+parseInt(MACHINE_ID))
-        causeStatusContElem=document.getElementById('causeStatus')
+        flashWaitWarning=document.getElementById('flashWaitWarning')
+        causeStatusBlockElem=document.getElementById('causeStatus')
         causeStatusElem=document.getElementById('cause_'+parseInt(MACHINE_ID))
         causeStatusTimeElem=document.getElementById('causeTime_'+parseInt(MACHINE_ID))
         causeButtonsContainerElem=document.getElementById('causeButtonsContainer')
@@ -579,8 +719,8 @@
         progressValElem=document.getElementById('causeProgressVal');
         stateTime=moment(currentState.begin_time);
         secondsTimer.restart();
-        firstCurrentStateInit();
         ws=wsConnect(WS_SERVER);
+        firstCurrentStateInit();
         wsEvents();
     }
     
