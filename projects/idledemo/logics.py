@@ -63,6 +63,9 @@ def save_machines_idle():
                             'length':idle.length})
                 file.write(json.dumps(data))
 
+def addCause(new_cause):
+    settings.IDLE_CAUSES.update({max(settings.IDLE_CAUSES.keys())+1:new_cause})
+
 def get_machine_from_user(user:str)->int:
     # try:
         return int(user[2:])
