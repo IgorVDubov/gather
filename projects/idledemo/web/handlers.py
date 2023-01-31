@@ -112,9 +112,21 @@ class AdmRequestHtmlHandler(BaseHandler):
         self.set_header("Content-Type", "application/json")
         request=json.loads(self.request.body)
         print (request)
-        if request.get('type')=='get_ch':
-            logger.log('MESSAGE',f'client {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
-            self.write(json.dumps(self.application.data.channelBase.get(request.get('id')).toDict(), default=str))
+        if request.get('type')=='addCause':
+            new_cause=request.get("cause")
+            if new_cause and new_cause!='' and new_cause!='underfined':
+                logics.addCause(new_cause)
+                logger.log('MESSAGE',f'client {self.user.get("login")} from ip:{self.request.remote_ip} add cause {new_cause}.')
+                self.write(json.dumps(200, default=str))
+            else:
+                self.write(json.dumps(400, default=str))
+        elif request.get('type')=='cmd':
+            cmd=request.get('cmd')
+            if cmd and cmd!='' and cmd!='underfined':
+                logger.log ('MESSAGE', f'{self.user.get("login")} send command {cmd} from ip:{self.request.remote_ip}')
+                if cmd=='resetClient':
+                    for client in self.application.data.ws_clients:
+                        client.write_message(json.dumps({'cmd':'reload'}))
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     def open(self):
