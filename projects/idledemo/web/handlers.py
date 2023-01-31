@@ -77,10 +77,36 @@ class MainHtmlHandler(BaseHandler):
                     server_time=logics.get_server_time(),
                     version=settings.CLIENT_VERSION,
                     )
+class AdminHtmlHandler(BaseHandler):
+    @BaseHandler.check_user(CHECK_AUTORIZATION)
+    def get(self):
+        # print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
+        # try:
+        #     machine_id=logics.get_machine_from_user(self.user.get('login'))
+        # except ValueError:
+        #     logger.log('ERROR', f'wrong machine id in client login {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
+        #     self.redirect("/login")
+       
+        self.render('idleadm.html', 
+                    user=self.user.get('login'), 
+                    project=2,
+                    idle_couses=json.dumps(logics.get_causes(), default=str),
+                    version=0.1,
+                    )
 
         
     
 class RequestHtmlHandler(BaseHandler):
+    @BaseHandler.check_user(CHECK_AUTORIZATION)
+    def post(self):
+        self.set_header("Content-Type", "application/json")
+        request=json.loads(self.request.body)
+        print (request)
+        if request.get('type')=='get_ch':
+            logger.log('MESSAGE',f'client {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
+            self.write(json.dumps(self.application.data.channelBase.get(request.get('id')).toDict(), default=str))
+
+class AdmRequestHtmlHandler(BaseHandler):
     @BaseHandler.check_user(CHECK_AUTORIZATION)
     def post(self):
         self.set_header("Content-Type", "application/json")
@@ -284,6 +310,8 @@ print( 'in handlers full '+os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata
 handlers=[
         (r"/", MainHtmlHandler),
         (r"/request",RequestHtmlHandler),
+        (r"/adm",AdminHtmlHandler),
+        (r"/arequest",AdmRequestHtmlHandler),
         (r'/ws', WSHandler),
         (r"/me", MEmulHtmlHandler),
         (r"/me1", MEmul1HtmlHandler),
