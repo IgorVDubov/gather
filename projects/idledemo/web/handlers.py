@@ -75,6 +75,7 @@ class MainHtmlHandler(BaseHandler):
                     current_state=logics.get_current_state(self.application.data.channelBase,machine_id),
                     wsserv=self.application.settings['wsParams'],
                     server_time=logics.get_server_time(),
+                    techidle_id=settings.TECH_IDLE_ID,
                     version=settings.CLIENT_VERSION,
                     )
 class AdminHtmlHandler(BaseHandler):
@@ -160,7 +161,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                     channel=self.application.data.channelBase.get(channel_id)
                     value=jsonData.get('val')
                     self.application.data.channelBase.get(channel_id).set_arg(argument, value)
-                    self.application.data.channelBase.get(channel_id).set_arg('args.set_cause_flag', True)
+                    if argument==settings.CAUSEID_ARG:
+                        self.application.data.channelBase.get(channel_id).set_arg('args.set_cause_flag', True)
                     logger.debug (f"set arg: {jsonData.get('arg')} to {value}")
             
             else:

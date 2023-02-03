@@ -156,6 +156,8 @@
         }
         .gCause{
           grid-column: 1/3;
+          width: 100%;
+
         }
         .gCTimer{align-self: center;}
         .gCTime{align-self: center;}
@@ -264,13 +266,12 @@
         border-radius: 3px;
         padding-left: 1em;
         padding-right: 1em;
-        width: 100%;
         height: 1.5em;
         text-align: center;
         }
+
       .progress {
         background-color :aquamarine;
-        width: 0%;
         height: 100%;
       }
       .progressValue{
@@ -297,6 +298,7 @@
           <span class ="pl1"> Статус: </span> </span>
           <span class ="pl0_5" id="wsStatus"> </span>
           <span class ="pl0_5" id="wsLight"> &bull; </span>
+          <span class ="pl0_5" id="info"> </span>
           <a class="fl_r pr1" >v{{ version }}</a>
           <a class="fl_r pr1" href="mailto:asu@alfa33.ru">Alfa <span class="fnt_0_6 pr1">решения в области промышленной автоматизации</span> 2023</a>
       </footer> 
@@ -321,7 +323,7 @@
     const STAND_STATE=2
     const OFF_STATE=1
     const NA_STATE=0
-    const TECH_IDLE_ID=-1
+    const TECH_IDLE_ID={{techidle_id}}
     var initState={{current_state}}
     var serverTime=moment('{{server_time}}');
     var firstWsMessageFlag=false;    //при инициализации приходит сообщение о статусе и затирает ранее полученный, его пропускаем
@@ -331,7 +333,8 @@
       currentState.stateTime = (initState.begin_time!='None')?initState.begin_time:undefined;
       currentState.cause = (initState.cause_id!='None')?initState.cause_id:undefined;
       currentState.causeTime = (initState.cause_time!='None')?initState.cause_time:undefined;
-    
+      currentState.pred
+    var progressBar
     var stateBlockElem
     var stateValueElem
     var stateTimerElem
@@ -345,6 +348,7 @@
     var progressBarElem
     var progressElem
     var serverTimeElem
+    var infoElem
     
     var ws
 
@@ -380,7 +384,68 @@
           this.id = window.setInterval(this.callback, this.remaining);
         }
       }
-
+    
+    class TimeoutProgressBar {
+      constructor(timeout, container, progressBarClasses, rogressClasses) {
+        this.timeout=timeout;
+        let progressBar=document.createElement('div')
+        progressBar.classList=[progressBarClasses];
+        progressBar.style.display='none';
+        let progress=document.createElement('div')
+        progressBar.append(progress)
+        this.progress=progress;
+        progress.classList=[rogressClasses];
+        this.addKeyframesStyle()
+        progress.style.animation='changeWidth linear'
+        container.append(progressBar)
+        this.progressBar = progressBar;
+      }
+      show(){
+        this.progressBar.style.display='block';
+        if (document.getElementById('prStyle')){
+          this.removeStyle(this.progress, 'prStyle')
+          this.addKeyframesStyle()
+        }
+        this.set()
+      }
+      removeStyle(elem, id){
+        let stdStyle=document.getElementById(id);
+        if (stdStyle){
+        elem.removeChild(stdStyle); 
+        }
+      }
+      addKeyframesStyle(){
+        let styleElem = document.createElement('style');
+        styleElem.id='stdStyle'
+        styleElem.innerHTML='@keyframes changeWidth {from {width: 100%;} to {width: 0%;}}'
+        this.progress.appendChild(styleElem)
+      }
+      showFromPercent(percent){
+        this.progressBar.style.display='block';
+        this.removeStyle(this.progress, 'stdStyle')
+        let styleElem = document.createElement('style');
+        styleElem.id='prStyle'
+        styleElem.innerHTML='@keyframes changeWidth {from {width: '+parseInt((Math.round(100*percent)))+'%;} to {width: 0%;}}'
+        this.progress.style.animationDuration=parseInt(Math.round(this.timeout*percent))+'s'
+        this.progress.appendChild(styleElem)
+      }
+      hide(){
+        this.progressBar.style.display='none';
+        this.reset()
+      }
+      
+      set(){
+        this.progress.style.animationDuration=this.timeout+'s';
+      }
+      reset(){
+        this.progress.style.animationDuration='0s';
+      }
+      isVisible(){
+        if (window.getComputedStyle(this.progressBar).display!='none') { return true } 
+        else { return false }
+      }
+    }
+    
     function isVisible(elem){
       if (window.getComputedStyle(elem).display!='none') {
         return true
@@ -430,6 +495,7 @@
     
     const secondsTimer=new PerodicalCallback ("updateTime()", 1000,false);
     const techIdleTimer=new PerodicalCallback ("updateTechIdle()", 250,false);
+    //const progressBar= new TimeoutProgressBar();
 
     function wsConnect(WSServer){
       let ws=new WebSocket(WSServer);
@@ -451,8 +517,8 @@
         if (firstWsMessageFlag){
           firstWsMessageFlag=false
         } else {
-          currentState.state=jsonMsg[0][STATE_CHANNEL]
           currentState.stateTime=jsonMsg[0].time;                                   //todo взять из запроса
+          currentState.state=jsonMsg[0][STATE_CHANNEL]
         }
         flashIndicator(wsIndicator,'lightgreen','green',400);
         return true;
@@ -533,14 +599,15 @@
     }
 
     function changeCause(){
-        if (currentState.cause!=undefined){  
-          if (currentState.cause==TECH_IDLE_ID){
-          setTechIdle();
-        }
-          setCause();
-          sendCause(currentState.cause);
-        } else{
-          displayWaitCauseMode()
+        switch (currentState.cause){
+          case undefined: 
+          case 0: displayWaitCauseMode();
+          break
+          case TECH_IDLE_ID: setTechIdle();
+          default: {
+            setCause();
+            sendCause(currentState.cause);
+          }
         }
     }
 
@@ -552,12 +619,16 @@
     function setCause(){
       let causeTime = (currentState.causeTime==undefined) ?  serverTime : currentState.causeTime
       currentState.causeTime=moment(causeTime).format('YYYY-MM-DDTHH:mm:ss');
-      setCauseStatus(currentState.cause, causeTime);
+      displayCauseStatus();
       displayIdleMode();
     }
-    function setCauseStatus(couseID,causeTime){
-      causeStatusElem.innerText=IDLE_COUSES[couseID]
-      causeTimeElem.innerText=moment(causeTime).format('DD.MM.YY HH:mm:ss')
+    function displayCauseStatus(){
+      if (currentState.cause!=undefined){
+        causeStatusElem.innerText=IDLE_COUSES[currentState.cause]
+      }
+      if (currentState.causeTime!=undefined){
+        causeTimeElem.innerText=moment(currentState.causeTime).format('DD.MM.YY HH:mm:ss')
+      }
     }
     
     function setWaitCauseStatus(couseID,causeTime){
@@ -569,12 +640,24 @@
       wsSend(JSON.stringify({type:"set",arg:CAUSEID_ARG, val:parseInt(couseID)}))
     }
     
+    function resetCause(){
+      if (currentState.cause==TECH_IDLE_ID) {
+        resetTechIdle();
+      }
+      sendCause(0);
+      currentState.cause=0;
+      currentState.causeTime=moment(serverTime).format('YYYY-MM-DDTHH:mm:ss');
+    }
+
+    function setCauseID(id){
+      currentState.cause=id;
+    }
+
     function showTechIdleProgress(){
-      restoreStyle(progressBarElem, 'display')
+      progressBar.show()
     }
     function hideTechIdleProgress(){
-      if (isVisible(progressBarElem)){
-          storeAndSetStyle(progressBarElem, 'display', 'none')}
+        progressBar.hide()
     }
 
     function showCauseStatusContainer(){
@@ -614,7 +697,6 @@
     
     function setProgress(progress,value){
       progressElem.style.width=progress.toString()+'%'
-      //progressValElem.innerText = value
     }
     function resetTechIdle(){
       hideTechIdleProgress()
@@ -628,24 +710,14 @@
     function updateTechIdle(){
       idleTime= idleTime - 0.25;
       if (idleTime<1){
-        //idleTime= TECH_IDLE_LENGTH;
-        resetCause();
-      } 
-      setProgress(100*idleTime/TECH_IDLE_LENGTH, Math.floor(idleTime))
-    }
-
-    function setCauseID(id){
-      currentState.cause=id;
-    }
-
-    function resetCause(){
-      if (currentState.cause==TECH_IDLE_ID) {
         resetTechIdle();
-      }
-      sendCause(0);
-      currentState.cause=undefined;
-      currentState.causeTime=undefined;
+        currentState.cause=0;
+        currentState.causeTime=moment(serverTime).format('YYYY-MM-DDTHH:mm:ss');
+        //resetCause();
+      } 
     }
+
+
 
     function displayWorkMode(){
       hideFlashWaitWarning();
@@ -708,10 +780,11 @@
         let causeBlock=block('',['databox w_v80 gridCauseBlock '],'causeStatus');
         let causeContainer=block('',['gCause'],'')
         let causeStatus=block('', ['dataLable  fnt_3'], 'cause_'+MACHINE_ID)
-        let progressBar=block('',['progressBar gCProgress'],'causeProgressBar')
-        let progress=block('',['progress'],'causeProgress');
-        progressBar.append(progress)
-        causeContainer.append(causeStatus, progressBar);
+        // let progressBar=block('',['progressBar gCProgress'],'causeProgressBar')
+        // let progress=block('',['progress'],'causeProgress');
+        // progressBar.append(progress)
+        causeContainer.append(causeStatus);
+        progressBar=new TimeoutProgressBar(TECH_IDLE_LENGTH,causeContainer,'progressBar gCProgress', 'progress' )
         let causeTimerValue=block('', ['dataLable gCTimer fnt_3'], 'causeTimer_'+MACHINE_ID)
         let causeTimeValue=block('', ['dataLable gCTime fnt_1_5 '], 'causeTime_'+MACHINE_ID)
         
@@ -743,18 +816,35 @@
     function firstCurrentStateInit(){
       currentState.state=currentState.state;
       if (currentState.state!=WORK_STATE){
-        if (currentState.cause!=undefined){  
-          setCause();
-        } else{
-          displayWaitCauseMode();
+        switch(currentState.cause) {
+          case 0 :
+          case undefined : displayWaitCauseMode()
+          break
+          case TECH_IDLE_ID : {
+            let timeDelta=serverTime.diff(currentState.stateTime,'seconds')
+            if (timeDelta>TECH_IDLE_LENGTH){
+                          resetTechIdle();
+                          currentState.cause=undefined
+                          currentState.causeTime=undefined
+                          displayWaitCauseMode();
+                        }else{
+                          displayCauseStatus();
+                          displayIdleMode();
+                          idleTime=TECH_IDLE_LENGTH-timeDelta;
+                          techIdleTimer.restart();
+                          progressBar.showFromPercent((TECH_IDLE_LENGTH-timeDelta)/TECH_IDLE_LENGTH)
+                        }
+                      }
+          break
+          default : setCause();
         }
-        if (currentState.cause==0) {displayWaitCauseMode();}
       }
-    };
+    }
 
     function init(){
         makePage()
         console.log('start')  
+        infoElem=document.getElementById('info')
         serverTimeElem=document.getElementById('serverTime')
         stateBlockElem=document.getElementById('stateBlock')
         stateValueElem=document.getElementById('state_'+parseInt(MACHINE_ID))
@@ -767,8 +857,8 @@
         causeTimerElem=document.getElementById('causeTimer_'+parseInt(MACHINE_ID))
         causeButtonsContainerElem=document.getElementById('causeButtonsContainer')
         changeCauseButtonElem=document.getElementById('changeCauseButton')
-        progressBarElem=document.getElementById('causeProgressBar');
-        progressElem=document.getElementById('causeProgress');
+        // progressBarElem=document.getElementById('causeProgressBar');
+        // progressElem=document.getElementById('causeProgress');
         stateTime=moment(currentState.begin_time);
         secondsTimer.restart();
         ws=wsConnect(WS_SERVER);

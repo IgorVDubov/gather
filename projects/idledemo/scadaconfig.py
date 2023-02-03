@@ -8,10 +8,6 @@ import handlerslib
 from consts import AI, DI
 from handlerslib.bitstoword import bits_to_word
 
-grWork=30
-grStand=1
-dostTimeout=5
-minLength=5
 
 '''
 Список опрашиваемых модулей
@@ -57,7 +53,7 @@ channels_config={
                         'grWork':30,
                         'grStand':1,
                         'dostTimeout':5,
-                        'minLength':5,
+                        'minLength':10,
                     }
         },
     ],
@@ -100,7 +96,7 @@ channels_config={
                 'args':{
                     'state':'5001.args.currentState',
                     'machine_id':5001,
-                    'machine_tech_idle':'5001.args.minLength',
+                    'techidle_lenhth':'5001.args.minLength',
                     'cause_id':None,
                     'reset_idle_flag':False,
                     'set_cause_flag':False,

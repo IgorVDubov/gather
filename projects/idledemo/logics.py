@@ -63,7 +63,7 @@ def save_machines_idle():
                             'length':idle.length})
                 file.write(json.dumps(data))
 
-def addCause(new_cause):
+def addCause(new_cause):        #добавляем новую причину в список возможных
     settings.IDLE_CAUSES.update({max(settings.IDLE_CAUSES.keys())+1:new_cause})
 
 def get_machine_from_user(user:str)->int:
@@ -130,10 +130,10 @@ class Idle():
 def current_idle_get(machine_id):
     return project_globals.machines_idle.get(machine_id)
 
-def current_idle_set(machine_id, state, tech_idle):
+def current_idle_set(machine_id, state, tech_idle, cause=None, cause_time=None, cause_set_time=None):
     print(f'set idle to {machine_id} with state {state}')
     begin_time=datetime.now() 
-    project_globals.machines_idle.update({machine_id:Idle(state, tech_idle, begin_time, )})
+    project_globals.machines_idle.update({machine_id:Idle(state, tech_idle, begin_time, cause, cause_time, cause_set_time)})
     save_machines_idle()
 
 def current_idle_add_cause(machine_id, cause_id, cause_set_time):
@@ -141,7 +141,7 @@ def current_idle_add_cause(machine_id, cause_id, cause_set_time):
     if current_idle:=project_globals.machines_idle.get(machine_id):
         if current_idle.cause!=None: 
             print(f'change cause idle to {machine_id} from {current_idle.cause} to {cause_id}')
-            if current_idle.cause!=0:   #если причина была сброшена через causeid=0 время причины оставляем от сосента сброса
+            if current_idle.cause!=0:   #если причина была сброшена через causeid=0 время причины оставляем от момента сброса
                 current_idle_store(machine_id)
                 project_globals.machines_idle.get(machine_id).cause_time = datetime.now() 
             elif current_idle.cause==settings.TECH_IDLE_ID:
