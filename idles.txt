@@ -1,1 +1,1 @@
-{"id": 5001, "state": 1, "tech_idle": 10, "begin_time": "2023-02-03T12:55:42", "cause": 0, "cause_time": "2023-02-03T12:55:52", "cause_set_time": "2023-02-03T12:55:52", "length": 10}
+{"id": 5001, "state": 2, "tech_idle": 10, "begin_time": "2023-02-08T17:53:32", "cause": 0, "cause_time": "2023-02-08T17:53:44", "cause_set_time": "2023-02-08T17:53:44", "length": 11}

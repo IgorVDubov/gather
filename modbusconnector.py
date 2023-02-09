@@ -3,10 +3,9 @@ from typing import Any
 from pymodbus.client.tcp import AsyncModbusTcpClient as ModbusClient
 import myexceptions
 
-from consts import AI,DI
+from consts import AI,DI,LIST
 from logger import logger
-from modbus_emulator import TestAsyncModbusClient
-from bpacker import unpackCDABToFloat
+from bpacker import unpackCDABToFloat, unpackABCDToFloat
 from abc import ABC, abstractmethod
 
 class AsyncBaseModbusClient(ABC):
@@ -30,23 +29,22 @@ class AsyncModbusClient(AsyncBaseModbusClient):
         self.ip=ip
         self.port=port
         self.loop=loop
-        self.start()
-    
+        self.connection = ModbusClient(self.ip, self.port)
     
 
-    def start(self):
-        if not self.loop:
-            self.loop = asyncio.get_event_loop()
-            asyncio.set_event_loop(self.loop)
-        if self.ip[:4].lower()=='test':
-            loop, self.connection = TestAsyncModbusClient(schedulers.ASYNC_IO, host=self.ip, port=self.port,loop=self.loop)
-        else:
-            loop, self.connection = ModbusClient(schedulers.ASYNC_IO, host=self.ip, port=self.port,loop=self.loop)
-        
+    async def start(self):
+            await self.connection.connect()
+            logger.info(f'Client ip={self.ip}:{self.port} starts? Connection {self.connection.connected}')
+    
+    async def close(self):
+            await self.connection.close()
+            logger.info(f'Client ip={self.ip}:{self.port} starts? Connection {self.connection.connected}')
+       
 
     @property
     def connected(self):
-        return self.connection.connected
+        if self.connection:
+            return self.connection.connected
     async def readInputRegisters_F4(self, address:int, regCount:int, unit:int):
         return await self.connection.read_input_registers(address, regCount, unit=self.unit)
     async def readHoldingRegisters_F3(address:int, regCount:int, unit:int):...
@@ -63,8 +61,9 @@ class AsyncModbusConnection(AsyncModbusClient):
     """
     AI=1
     DI=2
+    LIST=0
     
-    def __init__(self,ip,port,unit,address,count,format,function=None,loop=None):
+    def __init__(self,client,unit,address,count,format,function=None,loop=None):
         self.address=address
         self.regCount=count
         self.unit=unit
@@ -72,23 +71,33 @@ class AsyncModbusConnection(AsyncModbusClient):
             self.format=self.AI
         elif format==DI:
             self.format=self.DI
+        elif format==LIST:
+            self.format=self.LIST
+        self.client=client
         self.function=function
 
         self.error=None
-        logger.debug(f"try connection to client ip:{ self.ip} addr:{address}")
-        super().__init__(ip,port)
-        logger.debug(f"Client ip:{ self.ip}, addr:{address} connection:{self.connection.connected} ")
+        self.connection=client.connection
+        #logger.debug(f"Client ip:{ self.ip}, addr:{address} connection:{self.connection.connected} ")
 
     def __str__(self):
-        return f'ip:{self.ip}, port:{self.port}, unit:{self.unit}, address:{self.address}, regCount:{self.regCount}, function:{self.function}'
+        return f'ip:{self.client.ip}, port:{self.client.port}, unit:{self.unit}, address:{self.address}, regCount:{self.regCount}, function:{self.function}'
+    
+    async def start(self):
+        await self.connection.connect()
+        
+    async def close(self):
+        await self.connection.close()
 
     async def read(self):
         connection=self.connection.protocol
         result=[]
         try:
             if self.function==4:
-                readResult = await connection.read_input_registers(self.address, self.regCount, unit=self.unit)
+                readResult = await connection.read_input_registers(self.address, self.regCount, self.unit)
                 if not(readResult.isError()):
+                    if self.format==self.LIST:
+                        result=readResult.registers
                     if self.format==self.DI:
                         result=[reg for reg in readResult.registers]
                     elif self.format==self.AI:
@@ -98,34 +107,82 @@ class AsyncModbusConnection(AsyncModbusClient):
                     self.error=readResult
                     raise myexceptions.ModbusException(readResult)
             elif self.function==3:
-                readResult = await connection.read_holding_registers(self.address, self.regCount, unit=self.unit)
+                readResult = await connection.read_holding_registers(self.address, self.regCount, self.unit)
                 if not(readResult.isError()):
-                    result=[reg for reg in readResult.registers]
+                    if self.format==self.LIST:
+                        result=readResult.registers
+                    if self.format==self.DI:
+                        result=[reg for reg in readResult.registers]
+                    if self.format==self.AI:
+                        # result=[unpackCDABToFloat (readResult.registers,2)]
+                        result=[unpackABCDToFloat (readResult.registers,2)]
                 else:
                     # print ('*'*20,f'raise error:{readResult}')
                     self.error=readResult
                     raise myexceptions.ModbusException(readResult)
             elif self.function==2:
-                readResult = await connection.read_discrete_inputs(self.address, self.regCount, unit=self.unit)
+                readResult = await connection.read_discrete_inputs(self.address, self.regCount, self.unit)
                 if not(readResult.isError()):
                     result = readResult.bits
                 else:
                     self.error=readResult
                     # print ('*'*20,f'raise error:{readResult}')
                     raise myexceptions.ModbusException(readResult)
+        except TimeoutError:
+            self.error='Timeout Error '
+            print(f'Timeout Error reading {self.client.ip}:{self.client.port}, addr={self.address}')
+            result=None
         except AttributeError:
             self.error='Connection error'
             result=None
             # raise ModbusExceptions.ConnectionException(result)
-        #print(result)
+        # print(f'from reader: {result}')
         lock = asyncio.Lock()
         async with lock:
             self.result=result
+        
         return result
 
     async def writeRegister(self,reg:int,value):
         ...
 
-# if __name__ == '__main__':
-#    startModbusLoop(diModules)
-   
+async def run():
+    # import logging
+    # FORMAT = ('%(asctime)-15s %(threadName)-15s'
+    #         ' %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
+    # logging.basicConfig(format=FORMAT)
+    # log = logging.getLogger()
+    # log.setLevel(logging.DEBUG)
+    from time import time
+    from pymodbus.constants import Defaults
+    Defaults.Timeout = 10
+    begin=time()
+    r=100
+    с=AsyncModbusClient('192.168.1.200',503)
+    client1= AsyncModbusConnection(с,0x0,1,2,AI,function=3)
+    client3= AsyncModbusConnection(с,0x0,2,1,DI,function=3)
+    print (client1)
+    await client1.start()
+    print (client1.connected)
+    client2= AsyncModbusConnection(AsyncModbusClient('192.168.1.200',502),0x1,1,1,DI,function=3)
+    print (client2)
+    await client2.start()
+    print (client2.connected)
+    for _ in range(r):
+        try:
+            print(await client1.read())
+            print(await client2.read())
+            print(await client3.read())
+        except Exception as e:
+            print(e)
+    # finally:
+    print ('closing client')
+    await client1.connection.close()
+    await client2.connection.close()
+    end1=time()-begin
+
+    
+    print(f'{end1=}, ')
+
+if __name__ == '__main__':
+    asyncio.run(run(), debug=True)    

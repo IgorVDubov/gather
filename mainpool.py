@@ -84,6 +84,10 @@ class MainPool():
                 print('HTTP_server stop')
                 self.HTTP_server.stop()
                 asyncio.run(self.HTTP_server.close_all_connections())
+                if self.source_pool:
+                    print('Moddbus close_sources')
+                    asyncio.run(self.source_pool.close_sources())
+                    # self.loop.run_until_complete(self.source_pool.close_sources())
             self.loop.stop()
             print ('************* main loop close *******************')
 
