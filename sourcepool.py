@@ -17,20 +17,30 @@ class BaseSource(ABC):
     def read(self):...
 
 class Source(BaseSource):
-    def __init__(self,module,loop):
+    def __init__(self,module, exist_clients:dict[modbusconnector.AsyncModbusClient], loop):
         self.id=module['id']
         self.period=module['period']
         self.result=None
         self.format=module['format']
+        use_exist_client=False
         if module['type']=='ModbusTcp':
-            self.connection = modbusconnector.AsyncModbusConnection(module['ip'],module['port'],module['unit'],
+            for client in exist_clients:
+                if module['ip']==client.ip and module['port']==client.port:             #TODO если будут использоваться НЕ только TCP клиенты поменять алгоритм поиска существующего клиента
+                    new_client=client
+                    use_exist_client=True
+                    break
+            if not use_exist_client:
+                    new_client=modbusconnector.AsyncModbusClient(module['ip'],module['port'])
+            self.connection = modbusconnector.AsyncModbusConnection(new_client, module['unit'],
                                                                 module['address'],module['regCount'],module['format'],
                                                                 None if module.get('function')==(None or '') else module.get('function'),
                                                                 loop=loop)
         else:
             raise myexceptions.ConfigException (f'No class for type {module["type"]}')
-        self.dost=self.connection.connected
     
+    def get_client(self):
+        return self.connection.client
+
     async def read(self):
         try:
             self.dost=self.connection.connected
@@ -41,20 +51,40 @@ class Source(BaseSource):
         return self.result
     
     def __str__(self):
-        return f' {id(self)}    id:{self.id}, data format:{self.format}, period:{self.period}s, {self.connection.__str__()} {"-OK" if self.dost else "-N/A"}'
+        return f' {id(self)}    id:{self.id}, format:{self.format}, period:{self.period}s, conn_id:{id(self.connection.client)} {self.connection.__str__()} {"-OK" if self.connection.connected else "-N/A"}'
 
 class SourcePool(object):
     def __init__(self,modules,loop=None):
+        self.clients=[]
         self.sources=[]
         #self.results=[]
         for module in modules:
-            self.sources.append(Source(module,loop))             #TODO помещать сюда только если успешный инит клиента и тест чтения по адресу
+            source=Source(module, self.clients, loop)
+            client=source.get_client()
+            if client and client not in self.clients:
+                self.clients.append(client)
+            self.sources.append(source)             #TODO ????? помещать сюда только если успешный инит клиента и тест чтения по адресу
         if loop ==None:
             self.loop = asyncio.get_event_loop()
         else:
             self.loop=loop
+        self.loop.run_until_complete(self.start_sources())
         self.setTasks()
+        
+    async def start_sources(self):
+        for client in self.clients:
+            await client.start()
     
+    async def close_sources(self):
+        for client in self.clients:
+            await client.close()
+
+    def str_clients(self):
+        s=''
+        for client in self.clients:
+            s+=f'{id(client)}  host: {client.ip}:{client.port}'+'\n'
+        return s[:-1]
+
     def __str__(self):
         s=''
         for source in self.sources:
@@ -88,7 +118,9 @@ class SourcePool(object):
                     logger.warning(f'Not enough time for source read, source id:{source.id}')
                 await asyncio.sleep(delay)
             except asyncio.CancelledError:
-                print("Got CancelledError")
+                print(f"Got CancelledError close client connection{id(source.connection)}")
+                if source.connection.connected:
+                    await source.connection.close()
                 break
     
     def readAllOneTime(self):
