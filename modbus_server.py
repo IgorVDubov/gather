@@ -12,26 +12,34 @@ import struct
 from threading import Thread
 
 from pymodbus.datastore import (ModbusSequentialDataBlock, ModbusServerContext,
-                                ModbusSlaveContext, ModbusSparseDataBlock)
+                                ModbusSlaveContext)
+
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.server.async_io import ModbusTcpServer#, _serverList
 from pymodbus.version import version
+from pymodbus.constants import Defaults
 
 from myexceptions import ConfigException, ModbusExchangeServerException
+from consts import FLOAT, INT, LIST, BYTE
 
 #from pymodbus.transaction import ModbusRtuFramer, ModbusBinaryFramer
 # --------------------------------------------------------------------------- #
 # configure the service logging
 # --------------------------------------------------------------------------- #
-# import logging
-# FORMAT = ('%(asctime)-15s %(threadName)-15s'
-#           ' %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
-# logging.basicConfig(format=FORMAT)
-# log = logging.getLogger()
-# log.setLevel(logging.DEBUG)
+import logging
+FORMAT = ('%(asctime)-15s %(threadName)-15s'
+          ' %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
+logging.basicConfig(format=FORMAT)
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+
+CI=1
+DI=2
+HR=3
+IR=4
 
 
-def packFloatTo2WordsCDAB(f):
+def packFloatTo2WordsCDAB(f)-> list[int]:
     b=[i for i in struct.pack('<f',f)]
     return [b[i+1]*256+b[i] for i in range(0,len(b),2)]
 
@@ -39,49 +47,77 @@ def packFloatTo2WordsCDAB(f):
 class MBServer(ModbusTcpServer):
     def __init__(self,addrMap,serverParams,**kwargs):
         self.loop=kwargs.get("loop") or asyncio.get_event_loop()
-        self.addrMap=addrMap
+        self.addrMap:list=addrMap
         self.serverParams=serverParams
-        self.context=self.addrContextInit(addrMap)
-        self.idMap=self.idAddrMapDictInit(addrMap)
+        # Defaults.ZeroMode=True
+        self.context:ModbusServerContext=self.addrContextInit(addrMap)
+        self.id_map:dict=self.idAddrMapDictInit(addrMap)
         super().__init__(self.context,address=(self.serverParams['host'],self.serverParams['port']))
 
         
     def idAddrMapDictInit(self,addrMap):
         '''
-        makes dict {id:(unut,adr,length,type)}
+        Convert addresMap to id map
+        return dict {id:(unut,adr,length,type)}
+        takes MBServerAdrMap=[
+                {'unit':0x1, 
+                    'map':{
+                        'di':[{'id':4207,'addr':1,'len':2},
+                            {'id':4208,'addr':3,'len':2}],
+                        'hr':[{'id':4209,'addr':0,'type':'int'},
+                            {'id':4210,'addr':1,'type':'float'}]
+                    }
+                }]
         '''
-        idMap={}
+        id_map={}
         for unit in addrMap:
+            ci=unit['map'].get('ci',None)
+            if ci:
+                for device in ci:
+                    id_map[device['id']]=(CI, unit['unit'],device['addr'],1,bool)
             di=unit['map'].get('di',None)
             if di:
                 for device in di:
-                    idMap[device['id']]=(unit['unit'],device['addr'],device['len'],'bits')
+                    id_map[device['id']]=(DI, unit['unit'],device['addr'],device['length'],BYTE)
             hr=unit['map'].get('hr',None)
             if hr:
                 for device in hr:
-                    valLength=2 if device['type']=='float' else 1
-                    idMap[device['id']]=(unit['unit'],device['addr'],valLength,device['type'])
+                    valLength=1
+                    if device['type']==FLOAT:
+                        valLength=2    
+                    elif device['type']==INT:
+                        valLength=1    
+                    elif device['type']==LIST:
+                        valLength=device.get('length',1)    
+                    id_map[device['id']]=(HR, unit['unit'],device['addr'],valLength, device['type'])
             ir=unit['map'].get('ir',None)
             if ir:
                 for device in ir:
-                    valLength=2 if device['type']=='float' else 1
-                    idMap[device['id']]=(unit['unit'],device['addr'],valLength,device['type'])
-            # print(idMap)
-        return idMap
+                    valLength=1
+                    if device['type']==FLOAT:
+                        valLength=2    
+                    elif device['type']==INT:
+                        valLength=1    
+                    elif device['type']==LIST:
+                        valLength=device.get('length',1)
+                    id_map[device['id']]=(IR, unit['unit'],device['addr'],valLength,device['type'])
+            # print(id_map)
+        return id_map
 
     def addrContextInit(self,addrMap:dict):
         '''
         MBServerAdrMap=[
             {'unit':0x1, 
                 'map':{
-                    'di':[{'id':4207,'addr':1,'len':2},
-                          {'id':4208,'addr':3,'len':2}],
+                    'di':[{'id':4207,'addr':1,'lenght':2},
+                          {'id':4208,'addr':3,'lenght':2}],
                     'hr':[{'id':4209,'addr':0,'type':'int'},
                           {'id':4210,'addr':1,'type':'float'}]
                 }
             }]
         returns ModbusServerContext
         '''
+        start_addr=0x01
         slaves={}
         #context=None
         for unit in addrMap:
@@ -94,16 +130,16 @@ class MBServer(ModbusTcpServer):
             if ci:
                 maxAddr=0
                 length=1
-                for device in di:
+                for device in ci:
                     if device['addr']>maxAddr:
                         maxAddr=device['addr']
-                        length=device['len']
+                        length=device['lenght']
                     else:
-                        length=device['len']
+                        length=device['lenght']
                 ciLength=maxAddr+length
             else:
                 ciLength=1
-            ciDataBlock=ModbusSequentialDataBlock(1,[0]*ciLength) 
+            ciDataBlock=ModbusSequentialDataBlock(start_addr,[0]*ciLength) 
             slaveContext.register(1,'c',ciDataBlock) 
             if di:
                 maxAddr=0
@@ -111,41 +147,49 @@ class MBServer(ModbusTcpServer):
                 for device in di:
                     if device['addr']>maxAddr:
                         maxAddr=device['addr']
-                        length=device['len']
+                        length=device['length']
                     else:
-                        length=device['len']
+                        length=device['length']
                 diLength=maxAddr+length
             else:
                 diLength=1
-            diDataBlock=ModbusSequentialDataBlock(1,[0]*diLength) 
+            diDataBlock=ModbusSequentialDataBlock(start_addr,[0]*diLength) 
             slaveContext.register(2,'d',diDataBlock) 
             if hr:
                 maxAddr=0
-                length=0
+                length=1
                 for device in hr:
                     if device['addr']>maxAddr:
                         maxAddr=device['addr']
-                        length=2 if device['type']=='float' else 1
-                    else:
-                        length=2 if device['type']=='float' else 1
+                    if device['type']==FLOAT:
+                        length=2    
+                    elif device['type']==INT:
+                        length=1    
+                    elif device['type']==LIST:
+                        length=device.get('length',1)
                 hrLength=maxAddr+length
             else:
                 hrLength=1
-            hrDataBlock=ModbusSequentialDataBlock(1,[0]*hrLength) 
+            hrDataBlock=ModbusSequentialDataBlock(start_addr,[0]*hrLength) 
             slaveContext.register(3,'h',hrDataBlock)
             if ir:
                 maxAddr=0
-                length=1
+                length=2
                 for device in ir:
                     if device['addr']>maxAddr:
                         maxAddr=device['addr']
-                        length=2 if device['type']=='float' else 1
-                    else:
-                        length=2 if device['type']=='float' else 1
+                    if device['addr']>maxAddr:
+                        maxAddr=device['addr']
+                    if device['type']==FLOAT:
+                        length=2    
+                    elif device['type']==INT:
+                        length=1    
+                    elif device['type']==LIST:
+                        length=device.get('length',2)
                 irLength=maxAddr+length
             else:
                 irLength=1
-            irDataBlock=ModbusSequentialDataBlock(1,[0]*irLength)
+            irDataBlock=ModbusSequentialDataBlock(start_addr,[0]*irLength)
             slaveContext.register(4,'i',irDataBlock)
             # if len(addrMap)==1:
             #     context=ModbusServerContext(slaves=slaveContext, single=True)
@@ -183,11 +227,19 @@ class MBServer(ModbusTcpServer):
 
     def setInt(self,unit,addr,val):
         # print('setInt')
-        self.context[unit].setValues(3,addr,[val])
+        self.context[unit].setValues(3,addr,val)
+    
+    def set_func_3(self,unit,addr,val):
+        # print('setInt')
+        self.context[unit].setValues(3,addr,val)
+
+    def set_func_4(self,unit:int, addr:int, vals:list):
+        # print('setFloat')
+        self.context[unit].setValues(4,addr,vals)     
 
     def setFloat(self,unit,addr,val):
         # print('setFloat')
-        self.context[unit].setValues(4,addr,packFloatTo2WordsCDAB(val))
+        self.context[unit].setValues(4,addr,packFloatTo2WordsCDAB(val))     # уточнить метод упаковки
     
     def setValue(self,id,val):
         '''
@@ -199,34 +251,52 @@ class MBServer(ModbusTcpServer):
              float or int as float if HR type float
         '''
         try:
-            unit,addr,length,valType=self.idMap.get(id,None)
+            reg_type, unit,addr,length,val_type=self.id_map.get(id,None)
         except TypeError:
             raise ConfigException(f'ModBus server[setValue]: cant get mnapping for id:{id}')
+        #print(f'{id=} {addr=} {length=} {val=}')
         if addr==None or val==None:                                                             
             # raise ModbusExchangeServerException('modbusServer setValue no such ID in map')
             return
         else:
-            if valType=='bits':
+            if reg_type==DI:
                 if type(val)==list:
-                    val=val[:length]            #обрезаем результат в соответствии с заданной длиной записи
+                    val=val[:length]            #обрезаем результат в соответствии с заданной длиной записи         &&&&&&&&&&  ?????????????????????????
                     self.setDI(unit,addr,val)
                 else:
                     raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not list type')
-            elif valType=='coil':
+            elif reg_type==CI:
                 if type(val)==bool:
                     self.setCI(unit,addr,val)
                 else:
                     raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not bool type')
-            elif valType=='int':
-                if type(val)==int:
-                    self.setInt(unit,addr,val)
-                else:
-                    raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not int type')
-            elif valType=='float':
-                if type(val) in (int,float):
-                    self.setFloat(unit,addr,val)
-                else:
-                    raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not int or float type')
+            elif reg_type==HR:
+                if val_type==INT:
+                    if type(val)==int:
+                        self.set_func_3(unit,addr,[val])
+                    else:
+                        raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not int type')
+                elif val_type==LIST:
+                    if type(val)==list:
+                        self.set_func_3(unit,addr,val)
+                    else:
+                        raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not list type')
+            elif reg_type==IR:
+                if val_type==FLOAT:
+                    if type(val) in (int,float):
+                        self.set_func_4(unit,addr,packFloatTo2WordsCDAB(val))     # уточнить метод упаковки
+                    else:
+                        raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not int or float type')
+                elif val_type==INT:
+                    if type(val)==int:
+                        self.set_func_4(unit,addr,[val])
+                    else:
+                        raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not int type')
+                elif val_type==LIST:
+                    if type(val)==list:
+                        self.set_func_4(unit,addr,val)
+                    else:
+                        raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not list type')
 
 
 
