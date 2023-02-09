@@ -1,6 +1,13 @@
 from pymodbus.interfaces import Singleton
-AI='ai'
-DI='di'
+AI=1
+DI=2
+LIST=0
+FLOAT=1
+INT=2
+BIT=3
+BYTE=4
+WORD=5
+
 class Consts(Singleton):
     MODBUS='ModBus'
     MYSQL='MySql'
