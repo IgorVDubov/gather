@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utrack idle admin</title>
-    <link rel="stylesheet" type="text/css" href="/css/header_main_footer.css"/>
-    <link rel="stylesheet" type="text/css" href="/css/mycsslib.css">
-    
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Utrack idle admin</title>
+        <link rel="stylesheet" type="text/css" href="/css/header_main_footer.css"/>
+        <link rel="stylesheet" type="text/css" href="/css/mycsslib.css">
+        
+        <style>
         body{
           background-color:rgb(244, 244, 245);
           font-family: "Segoe UI", "Segoe WP", Arial, sans-serif;
@@ -29,7 +29,6 @@
             flex-wrap: wrap
         }
         .scrollContainer{
-            height: 30vh;
             overflow:auto;
             overflow-x: hidden;
         }
@@ -107,10 +106,11 @@
         .h_v80{height: 80vh;}
         .h_v30{height: 30vh;}
         .h_v20{height: 20vh;}
+        .h_v15{height: 15vh;}
         .h_v10{height: 10vh;}
         .w_v70{width:  70vw;}
-        .w_v60{width:  60vw;}
         .w_v50{width:  50vw;}
+        .w_v60{width:  60vw;}
         .w100{
         width:100%;
         min-width:300px;
@@ -193,7 +193,7 @@
      </header>
     <main class="main">
         <h3> БД состояний оборудования</h3>
-        <div class="flexContainerCenterAl h_v30" id="dbStatesTable"> </div>
+        <div class="flexContainerCenterAl h_v20" id="dbStatesTable"> </div>
         <h3> БД причин простоев оборудования</h3>
         <div class="flexContainerCenterAl h_v30" id="dbCausesTable"> </div>
         <div class="flexContainerCenterAl h_v20 " id="OnlineElem">
@@ -256,6 +256,8 @@
 
     var stateTime
     var causeTime
+    var currentState
+    var currentCause
 
     const wsStatus=document.getElementById("wsStatus")
     const wsIndicator=document.getElementById("wsLight")
@@ -325,7 +327,7 @@
                 updateOnlineStatus(data[STATE_CHANNEL],data.time )
             }
             if (data[CAUSEID_ARG]!=undefined){
-                updateOnlineCause(data[CAUSEID_ARG],data.cause_time )
+                updateOnlineCause(data[CAUSEID_ARG],data.time )
 
             }
             
@@ -350,13 +352,23 @@
     } 
     function updateOnlineStatus(id,time) {
         statusElem.innerText=STATES[id]
+        statusElem.style.color=STATUS_LIGHT_COLORS[id]
+        currentState=id
+        if (id==3){
+            causeElem.innerText=''
+            causeTimeElem.innerText=''
+            cuaseTimer.pause()
+            causeTimerElem.innerText=''
+        }
         statusTimeElem.innerText=time
         stateTime=time
     }
     function updateOnlineCause(id,time) {
         causeElem.innerText=IDLE_COUSES[id]
+        currentCause=id
         causeTimeElem.innerText=time
         causeTime=time
+        cuaseTimer.restart()
     }
 
     let wsSend = function(data) {
@@ -447,13 +459,15 @@
         }
         headerTable.append(headerRow)
         let divDataScroll=document.createElement("div");
-        divDataScroll.classList.add('scrollContainer')
         let dataTable= document.createElement('table');
         switch (rowMaker) {
-                case makeStateRow: dataTable.id='statesTable'
-                break
-                case makeIdleRow: dataTable.id='idlesTable'
-            }
+            case makeStateRow: dataTable.id='statesTable'
+                                hClass='h_v15'
+            break
+            case makeIdleRow: dataTable.id='idlesTable'
+                                hClass='h_v20'
+        }
+        divDataScroll.classList.add('scrollContainer', hClass)
         dataTable.classList.add('tables');
         for (let i=0; i<data.length; i++){
             let row= rowMaker(data[i]);
@@ -469,16 +483,21 @@
     }
     const secondsTimer=new PerodicalCallback ("updateTime()", 1000,false);
     function updateTime(){
-      updateStatusTimer();
-      updateCauseTimer();
+        updateStatusTimer();
     }
+    const cuaseTimer=new PerodicalCallback ("updateCauseTimer()", 1000,false);
     function updateStatusTimer(){
         let d=moment.duration(moment().diff(moment(stateTime)),'ms')
         statusTimerElem.innerText=  d.days()*24 + d.hours() + ':' + d.minutes() + ':'+d.seconds()
     }
     function updateCauseTimer(){
         let d=moment.duration(moment().diff(moment(causeTime)),'ms')
-        causeTimerElem.innerText=  d.days()*24 + d.hours() + ':' + d.minutes() + ':'+d.seconds()
+        if (currentState!=3){
+            causeTimerElem.innerText=  d.days()*24 + d.hours() + ':' + d.minutes() + ':'+d.seconds()
+        }
+        else{
+            causeTimerElem.innerText=  ''
+        }
     }
 
     function init(){
