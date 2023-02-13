@@ -5,7 +5,7 @@ from loguru import logger
 from channels import channels
 from myexceptions import ChannelException, ConfigException
 
-CHANNELS_EXEC_ORDER=[channels.Node,channels.Channel,channels.Programm, channels.DBQuie]
+CHANNELS_EXEC_ORDER=[channels.Node,channels.Channel,channels.Programm, channels.DBQuie, channels.Message]
 
 class ChannelsBase():
     def __init__(self):
@@ -111,6 +111,8 @@ def channel_base_init(channelsConfig, dbQuie):
             dbQuieChannel=True
         elif chType==channels.DBconnector:
             cls=channels.DBQuie
+        elif chType==channels.Message:
+            cls=channels.Message
         else:
             raise ConfigException(f'no type in classes for {chType} {channelType}')
         for channelConfig in channelsConfig.get(channelType):
