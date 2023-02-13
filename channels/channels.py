@@ -169,6 +169,14 @@ class DBQuie(Channel):
    
     def put(self, data):
         self.dbQuie.put_nowait(data)
+class Message(Channel):
+    def __init__(self, id, args: Vars = None) -> None:
+        super().__init__(id, args)
+    def __str__(self):
+        return f'Message: id:{self.id}, result: {self.reuslt} '
+   
+    def put(self, data):
+        self.dbQuie.put_nowait(data)
 
 class DBConnector(Channel):
     def __init__(self, id, dbQuie, handler:callable, args: Vars = None) -> None:
@@ -271,7 +279,8 @@ CHANNELS_CLASSES={  'channels':'channels.Channel',           # соответс�
                     'nodes':'channels.Node', 
                     'programms':'channels.Programm', 
                     'dbquie':'channels.DBQuie',  
-                    'dbconnector':'channels.DBConnector'
+                    'dbconnector':'channels.DBConnector',
+                    'message':'channels.message',
                 } 
 
 def testVars():

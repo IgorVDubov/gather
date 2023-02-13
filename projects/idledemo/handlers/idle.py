@@ -40,8 +40,8 @@ def idle(vars):
             if idle.cause: # уже есть причина
                 if (idle.cause==settings.TECH_IDLE_ID) and ((datetime.now()-idle.cause_time).total_seconds() >= vars.techidle_lenhth): 
                     #если кончился техпростой - записываем, устанавливаем как "нет причины", устанавливаем флаг обновления причины на клиенте
-                    logics.current_idle_store(vars.machine_id)
-                    print ('store from backend')
+                    print (f'store from backend {(datetime.now()-idle.cause_time).total_seconds() >= vars.techidle_lenhth}')
+                    # logics.current_idle_store(vars.machine_id)
                     logics.current_idle_add_cause(vars.machine_id, settings.NOT_CHEKED_CAUSE, datetime.now())
             #else:            # простой зафиксирован и нет причины
             #    # здесь реакция если оператор не успел подтвердить простой за необходимое время
@@ -50,8 +50,8 @@ def idle(vars):
 
 
 
-        else:                # появился новый простой
-            logics.current_idle_set(vars.machine_id,vars.state, vars.techidle_lenhth, settings.TECH_IDLE_ID , datetime.now(), datetime.now())
+        else:                # появился новый простой - авто техпростой
+            logics.current_idle_set(vars.machine_id, vars.state, vars.techidle_lenhth, settings.TECH_IDLE_ID , datetime.now(), datetime.now())
     else:
         if idle:             # если был простой и переход в работу
             if idle.cause:      # если указана причина
@@ -61,4 +61,6 @@ def idle(vars):
             logics.current_idle_store(vars.machine_id)
             logics.current_idle_reset(vars.machine_id)
         else:                 # работа - выход  
-            return
+            pass
+    if idle:
+        vars.current_cause=idle.cause

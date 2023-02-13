@@ -13,6 +13,7 @@ from channels.channels import parse_attr_params
 
 logics=importlib.import_module('projects.'+globals.PROJECT['path']+'.logics')
 settings=importlib.import_module('projects.'+globals.PROJECT['path']+'.settings')
+project_globals=importlib.import_module('projects.'+globals.PROJECT['path']+'.projectglobals')
 
 RequestHandlerClass=tornado.web.RequestHandler
 StaticFileHandler=tornado.web.StaticFileHandler
@@ -90,8 +91,21 @@ class AdminHtmlHandler(BaseHandler):
        
         self.render('idleadm.html', 
                     user=self.user.get('login'), 
-                    project=2,
                     idle_couses=json.dumps(logics.get_causes(), default=str),
+                    version=settings.CLIENT_VERSION,
+                    )
+class ReportsHtmlHandler(BaseHandler):
+    @BaseHandler.check_user(CHECK_AUTORIZATION)
+    def get(self):
+        machine_id=logics.get_machine_from_user(self.user.get('login'))
+        self.render('reports.html', 
+                    user=self.user.get('login'), 
+                    machine=machine_id,
+                    wsserv=(self.application.settings['wsParams']+'_reps'),
+                    idle_couses=json.dumps(logics.get_machine_causes(machine_id), default=str),
+                    state_channel=str(machine_id)+'.'+settings.STATE_ARG,
+                    causeid_arg= logics.get_causeid_arg(self.application.data.channelBase.get(machine_id)),
+                    project=3,
                     version=0.1,
                     )
 
@@ -288,11 +302,62 @@ class MEWSHandler(tornado.websocket.WebSocketHandler):
             for subscr in client.subscriptions:
                 self.application.data.subsriptions.del_subscription(subscr)
             self.application.data.ws_clients.remove(client)
-
             
-        # if len(globals.wss)==0:
-            # print('No online users, callback stops')
-            # self.callback.stop()
+
+class ReportsWSHandler(tornado.websocket.WebSocketHandler):
+
+    def open(self):
+            logger.info(f'Web Socket open, IP:{self.request.remote_ip} ')
+            if self not in [client.client for client in self.application.data.ws_clients]:
+                self.application.data.ws_clients.append(WSClient(self))
+                logger.info(f'add, websocket IP:{self.request.remote_ip} Online {len(self.application.data.ws_clients)} clients')
+                project_globals.states_buffer=[]
+                project_globals.idles_buffer=[]
+
+        
+    def on_message(self, message):
+        try:
+            jsonData = json.loads(message)
+        except json.JSONDecodeError:
+            logger.error ("json loads Error for message: {0}".format(message))
+        else:
+            if jsonData.get('type')=="first_read":
+                data={'states':logics.db_get_all_states(jsonData.get('id')),
+                        'idles':logics.db_get_all_idles(jsonData.get('id'))}
+                msg = {'type':'first_read','data': data}
+                json_data = json.dumps(msg, default=str)
+                logger.debug (f"ws_message: first_read")
+                self.write_message(json_data)
+            elif jsonData.get('type')=="subscribe":
+                print(f'subscribe {jsonData["data"]}')
+                for arg in jsonData['data']:
+                    channel_id, argument=parse_attr_params(arg)
+                    channel=self.application.data.channelBase.get(channel_id)
+                    new_subscription=SubscriptChannelArg(channel, argument)
+                    subscription=self.application.data.subsriptions.add_subscription(new_subscription)
+                    self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
+            elif jsonData.get('type')=="update_data":
+                if len(project_globals.states_buffer)>0:
+                    logger.debug (f"update states{project_globals.states_buffer}")
+                    data=project_globals.states_buffer
+                    project_globals.states_buffer=[]
+                    msg = {'type':'update_states_db','data': data}
+                    json_data = json.dumps(msg, default=str)
+                    self.write_message(json_data)
+                if len(project_globals.idles_buffer)>0:
+                    logger.debug (f"update idles{project_globals.idles_buffer}")
+                    data=project_globals.idles_buffer
+                    project_globals.idles_buffer=[]
+                    msg = {'type':'update_idles_db','data': data}
+                    json_data = json.dumps(msg, default=str)
+                    self.write_message(json_data)
+
+            else:
+                logger.debug('Unsupported ws message: '+message)        
+ 
+    def on_close(self):
+        if client:=self.application.data.ws_clients.get_by_attr('client',self):
+            self.application.data.ws_clients.remove(client)
 
 
 class LoginHandler(BaseHandler):
@@ -325,6 +390,7 @@ handlers=[
         (r"/", MainHtmlHandler),
         (r"/request",RequestHtmlHandler),
         (r"/adm",AdminHtmlHandler),
+        (r"/reps",ReportsHtmlHandler),
         (r"/arequest",AdmRequestHtmlHandler),
         (r'/ws', WSHandler),
         (r"/me", MEmulHtmlHandler),
@@ -333,6 +399,7 @@ handlers=[
         (r"/login",LoginHandler),
         (r"/logout",LogoutHandler),
         (r'/ws_me', MEWSHandler),
+        (r'/ws_reps', ReportsWSHandler),
         (r"/static/(.*)", StaticFileHandler, {"path": os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata')}),
         (r'/js/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'js')}),
         (r'/css/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'css')}),

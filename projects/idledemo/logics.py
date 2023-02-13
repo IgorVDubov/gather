@@ -1,6 +1,6 @@
 import importlib
 import json
-import pickle
+# import pickle
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
@@ -9,8 +9,8 @@ import globals
 from channels.channels import Channel
 import colors
 
-project_globals=importlib.import_module('projects.'+globals.PROJECT['path']+'.projectglobals')
 settings=importlib.import_module('projects.'+globals.PROJECT['path']+'.settings')
+project_globals=importlib.import_module('projects.'+globals.PROJECT['path']+'.projectglobals')
 
 def convert_none_2_str(func):
     '''
@@ -62,6 +62,26 @@ def save_machines_idle():
                             'cause_set_time':idle.cause_set_time.strftime(settings.TIME_FORMAT) if idle.cause_set_time else None,
                             'length':idle.length})
                 file.write(json.dumps(data))
+
+def db_put_state(state_rec):
+    print (f'db_put_state {state_rec}')
+    if state_rec.get('length')>0:
+        project_globals.states_db.append(state_rec)
+        project_globals.states_buffer.append(state_rec)
+
+    ...
+def db_get_all_states(id):
+    # return [rec for rec in project_globals.states_db if (rec and rec.get('id')==id)]
+    return [rec for rec in project_globals.states_db ]
+
+def db_put_idle(rec):
+    print (f'db_put_idle {rec}')
+    project_globals.idles_db.append(rec)
+    project_globals.idles_buffer.append(rec)
+    ...
+def db_get_all_idles(id):
+    # return [rec for rec in project_globals.idles_db if (rec and rec.get('id')==id)]
+    return [rec for rec in project_globals.idles_db ]
 
 def addCause(new_cause):        #добавляем новую причину в список возможных
     settings.IDLE_CAUSES.update({max(settings.IDLE_CAUSES.keys())+1:new_cause})
@@ -130,10 +150,10 @@ class Idle():
 def current_idle_get(machine_id):
     return project_globals.machines_idle.get(machine_id)
 
-def current_idle_set(machine_id, state, tech_idle, cause=None, cause_time=None, cause_set_time=None):
+def current_idle_set(machine_id, state, tech_idle_length, cause=None, cause_time=None, cause_set_time=None):
     print(f'set idle to {machine_id} with state {state}')
     begin_time=datetime.now() 
-    project_globals.machines_idle.update({machine_id:Idle(state, tech_idle, begin_time, cause, cause_time, cause_set_time)})
+    project_globals.machines_idle.update({machine_id:Idle(state, tech_idle_length, begin_time, cause, cause_time, cause_set_time)})
     save_machines_idle()
 
 def current_idle_add_cause(machine_id, cause_id, cause_set_time):
@@ -145,6 +165,7 @@ def current_idle_add_cause(machine_id, cause_id, cause_set_time):
                 current_idle_store(machine_id)
                 project_globals.machines_idle.get(machine_id).cause_time = datetime.now() 
             elif current_idle.cause==settings.TECH_IDLE_ID:
+                current_idle_store(machine_id)
                 if (datetime.now()-current_idle.cause_time).seconds > current_idle.tech_idle:
                     project_globals.machines_idle.get(machine_id).cause_time = current_idle.cause_time + datetime.timedelta(0,current_idle.tech_idle)
         else:
@@ -168,5 +189,12 @@ def current_idle_store(machine_id):
         project_globals.machines_idle.get(machine_id).length=int(round((datetime.now()-idle.cause_time).total_seconds()))
         print(f'{colors.CGREENBG}Store machime {machine_id} Idle to DB: {settings.STATES[idle.state]}, cause: {settings.IDLE_CAUSES.get(idle.cause,0)}, length {idle.length} {colors.CEND}')
         print(idle)
+        store_dict={'id':machine_id}
+        store_dict.update(asdict(idle))
+        for key,val in store_dict.items():
+            if isinstance(store_dict[key],datetime):
+                store_dict.update({key:val.strftime('%Y-%m-%d %H:%M:%S')})
+
+        db_put_idle(store_dict)
         ... # store to DB here
 

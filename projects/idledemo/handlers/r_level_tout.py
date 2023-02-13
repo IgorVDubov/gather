@@ -1,7 +1,8 @@
 from datetime import datetime
-
+import importlib
 from consts import Consts
-
+import globals
+logics=importlib.import_module('projects.'+globals.PROJECT['path']+'.logics')
 
 def r_level_timeout(vars):
     '''
@@ -135,5 +136,10 @@ def r_level_timeout(vars):
             'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
             ,'params': (vars.channel.id, vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), vars.statusDB, int(round(vars.lengthDB)))
             })
+            logics.db_put_state({   'id':vars.channel.id, 
+                                    'time':vars.timeDB.strftime("%Y-%m-%d %H:%M:%S"),
+                                    'status':vars.statusDB,
+                                    'length':int(round(vars.lengthDB))
+                                    })
             # print(f'Put ti dbquire id={vars.channel.id}, time={vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")}, status={vars.statusDB}, length={int(vars.lengthDB)}')
             

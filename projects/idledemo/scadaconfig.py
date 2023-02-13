@@ -98,6 +98,7 @@ channels_config={
                     'machine_id':5001,
                     'techidle_lenhth':'5001.args.minLength',
                     'cause_id':None,
+                    'current_cause':None,
                     'reset_idle_flag':False,
                     'set_cause_flag':False,
                     'restore_idle_flag':False,
