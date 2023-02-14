@@ -351,7 +351,10 @@ class ReportsWSHandler(tornado.websocket.WebSocketHandler):
                     msg = {'type':'update_idles_db','data': data}
                     json_data = json.dumps(msg, default=str)
                     self.write_message(json_data)
-
+            elif jsonData.get('type')=='get_ch_arg':
+                logger.debug('MESSAGE',f'client {self.user.get("login")} do get_ch_arg from ip:{self.request.remote_ip}.')
+                print(f"result: {self.application.data.channelBase.get(jsonData.get('id')).get_arg(jsonData.get('arg'))}")
+                self.write(json.dumps(self.application.data.channelBase.get(jsonData.get('id')).get_arg(jsonData.get('arg')), default=str))
             else:
                 logger.debug('Unsupported ws message: '+message)        
  
