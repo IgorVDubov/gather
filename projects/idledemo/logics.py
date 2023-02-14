@@ -193,7 +193,7 @@ def current_idle_store(machine_id):
         store_dict.update(asdict(idle))
         for key,val in store_dict.items():
             if isinstance(store_dict[key],datetime):
-                store_dict.update({key:val.strftime('%Y-%m-%d %H:%M:%S')})
+                store_dict.update({key:val.strftime('%Y-%m-%dT%H:%M:%S')})
 
         db_put_idle(store_dict)
         ... # store to DB here

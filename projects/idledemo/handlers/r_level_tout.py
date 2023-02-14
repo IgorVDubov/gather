@@ -137,7 +137,7 @@ def r_level_timeout(vars):
             ,'params': (vars.channel.id, vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), vars.statusDB, int(round(vars.lengthDB)))
             })
             logics.db_put_state({   'id':vars.channel.id, 
-                                    'time':vars.timeDB.strftime("%Y-%m-%d %H:%M:%S"),
+                                    'time':vars.timeDB.strftime("%Y-%m-%dT%H:%M:%S"),
                                     'status':vars.statusDB,
                                     'length':int(round(vars.lengthDB))
                                     })

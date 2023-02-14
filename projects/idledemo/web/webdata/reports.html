@@ -163,6 +163,9 @@
         .cWhite{
         color:white;
         }
+        .cW{
+        color:#e6a01e;
+        }
     </style>
     <style> /*  grids  */
         .gridSatateBlock {
@@ -179,9 +182,32 @@
 
         }
     </style>
+    <style>  /*canvas*/
+        .dayChartCanvas{
+            width: 100%;
+            height: 100%;
+        }
+        .dayChartCanvasContainer{
+
+            width: 100%;
+            height: 85%;
+            margin: 10px;
+            background-color: aliceblue;
+        }
+    </style>
+    <style>
+        .box{
+            display: inline-block;
+            height: 0.75rem;
+            width: 1.5rem;
+            border: 1px solid gray;
+            border-radius: 3px;
+          }
+    </style>
 </head>
 <body>
     <script src="/js/moment-with-locales.min.js" ></script> 
+    <script src="/js/Chart.js"></script>
 
     <header class="header" >
         <span class="fnt_1_5 bold pl1"> <a  href="/">UTrack</a></span>
@@ -205,9 +231,20 @@
                 <div class= "fnt_1 pl0_5 bold" id="causeTimerElem">37:05</div>
                 <div class= "fnt_1 pr0_5" id="causeTimeElem">2023-01-26 10:37:05</div>
             </div>
-            <div class="databox h100 w_v70 m1em" id="dayChartElem"></div>
+            <div class="databox h100 w_v70 m1em flex_center" id="dayChartElem">
+                <div class="dayChartCanvasContainer">
+                    <canvas id="dayChartCanvasElem" class="dayChartCanvas" ></canvas>
+                </div>
+            </div>
         </div>
-        <div class="flexContainerCenterAl" id="charts"></div>
+        <div class="flexContainerCenterAl" >
+            <div class="ChartCanvasContainer">
+                <canvas id="chartCanvasElem1" class="ChartCanvas" ></canvas>
+            </div>
+            <div class="ChartCanvasContainer">
+                <canvas id="chartCanvasElem2" class="ChartCanvas" ></canvas>
+            </div>
+        </div>
     </main>
     <footer class='footer'>
         <span class ="pl1"> Статус: </span> </span>
@@ -230,6 +267,8 @@
     const CAUSEID_ARG='17001.args.current_cause'
     const SUBSCRIBE_CHANNELS=[STATE_CHANNEL, CAUSEID_ARG]
     const STATUS_LIGHT_COLORS=['#e6e6e6','#b4b4b4','#fff134','#03e003']
+     //{-1:'Технологический простой', 0:'Не подтверждена',,1:"Авария", 2:"Нет сырья", 3:"Нет задания", 4:"Плановый простой", 5:'Перерыв'}
+    const CAUSES_LIGHT_COLORS=['#b6e166', '#e6891f', '#ee4a0a', '#1f2ce6', '#c51ee6', '#1ee6c5', '#1ee661', '#7fe61e', '#e6a01e']
     const STATES =['N/A', 'Откл', 'Простой', 'Работа']
     const STATES_DB_HEADERS=['ID станка', 'статус', 'начало', 'длительность']
     const STATES_DB_HEADERS_WIDTH=[4, 8, 10, 8]
@@ -250,6 +289,12 @@
     const causeElem=document.getElementById('causeElem')
     const causeTimerElem=document.getElementById('causeTimerElem')
     const causeTimeElem=document.getElementById('causeTimeElem')
+    
+    const lineCanvasElem=document.getElementById('dayChartCanvasElem')
+    const chartCanvasElem1=document.getElementById('chartCanvasElem1')
+
+    var statesDb=[]
+    var causesDb=[]
 
     var statesTableElem
     var idlesTableElem
@@ -314,12 +359,17 @@
         switch (msg.type) {
           case "first_read":
               initTables(msg.data.states, msg.data.idles)
-          break;
-          case "update_idles_db":
-              updateIdles(msg.data)
+              statesDb.push(...msg.data.states)
+              causesDb.push(...msg.data.idles)
+              break;
+              case "update_idles_db":
+                  updateIdles(msg.data)
+                  causesDb.push(...msg.data)
           break;
           case "update_states_db":
               updateState(msg.data)
+              statesDb.push(...msg.data)
+
           break;
           default:
             data=msg[0]
@@ -332,6 +382,7 @@
             }
             
         };
+        updateCharts(statesDb, causesDb)
         flashIndicator(wsIndicator,'lightgreen','green',400);
         return true;
         }
@@ -350,6 +401,120 @@
           wsSend(JSON.stringify({type:"subscribe",data:SUBSCRIBE_CHANNELS}))
       };
     } 
+
+    function updateCharts(sArr, cArr){
+        updateLineChart(sArr, cArr)
+        updateGrChart(sArr, cArr)
+    }
+    const PADDING_SEC=15*60;  
+    const PADDING_BOTTOM=5;
+    const PADDING_TOP=5;
+    const C_PADDING_TOP=70;
+    const PADDING_TEXT=5;
+ 
+    function updateLineChart(statesDb, causesDb){
+        let canvasW=lineCanvasElem.width;
+        let canvasH=lineCanvasElem.height;
+        var ctx=lineCanvasElem.getContext('2d');
+        ctx.clearRect(0, 0, canvasW, canvasH);
+        let minSTime=moment('2100-01-01')
+        let maxSTime=moment('2000-01-01')
+        for (let i=0; i<statesDb.length;i++){
+            let time=moment(statesDb[i].time)
+            let timeLen=(moment(statesDb[i].time).clone()).add(statesDb[i]['length'],'s')
+            if (time.isBefore(minSTime)) 
+                {minSTime=time}
+            if (timeLen.isAfter(maxSTime)) 
+                {maxSTime=timeLen}
+        }
+        stateDeltaT=maxSTime.diff(minSTime, 's')
+
+        var k=canvasW/stateDeltaT
+        ctx.beginPath();
+        ctx.strokeStyle ="grey";
+        ctx.fillStyle="black";
+        ctx.lineWidth=1;
+        let time=minSTime
+        for (let i=0; i<statesDb.length;i++){
+            let rec=statesDb[i]
+            let len=rec.length
+            let start=moment(rec.time).diff(time,'s')
+            ctx.fillStyle=STATUS_LIGHT_COLORS[rec.status];
+            ctx.fillRect((start)*k,PADDING_TOP,(len)*k, canvasH-PADDING_BOTTOM-PADDING_TOP);
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle ="grey";
+        ctx.fillStyle="black";
+        ctx.lineWidth=1;
+        time=minSTime
+        for (let i=0; i<causesDb.length;i++){
+            let rec=causesDb[i]
+            let len=rec.length
+            let start=moment(rec.cause_time).diff(time,'s')
+            ctx.fillStyle=CAUSES_LIGHT_COLORS[rec.cause+1]; //!!!!!!!!!!!
+            ctx.fillRect((start)*k,C_PADDING_TOP,(len)*k, canvasH-PADDING_BOTTOM-C_PADDING_TOP);
+        }
+        ctx.stroke();
+
+
+    }
+    function updateGrChart(states, causes){
+        causesArr=new Array(Object.keys(IDLE_COUSES).length)
+        causesArr.fill(0)
+        let summ=0
+        for (let i=0; i<causes.length;i++){
+            causesArr[causes[i].cause+1]=causesArr[causes[i].cause+1] + causes[i]['length']
+            summ+=causes[i]['length'];
+        }
+        causesArr=causesArr.map(function(entry){return Math.floor(100*entry/summ)});
+        let grLables=[]
+        for (let i=-1; i<Object.keys(IDLE_COUSES).length-1;i++){
+            grLables.push(IDLE_COUSES[i])
+        }
+        let ctx=chartCanvasElem1.getContext('2d');
+    let  chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: grLables,
+            datasets: [{
+                //label: '',
+                backgroundColor: CAUSES_LIGHT_COLORS,
+                //borderColor: 'rgb(255, 99, 132)',
+                data: causesArr
+            }]
+        },
+        options: {
+                    legend:false,
+                //    responsive:false,
+                    aspectRatio:1,
+                    maintainAspectRatio: true,
+                    animation: {steps: 50, easing:"easeInOutQuart", scale: false}
+                }
+    });
+        let ctx2=chartCanvasElem2.getContext('2d');
+    let  chart2 = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: grLables,
+            datasets: [{
+                //label: '',
+                backgroundColor: CAUSES_LIGHT_COLORS,
+                //borderColor: 'rgb(255, 99, 132)',
+                data: causesArr
+            }]
+        },
+        options: {
+                    legend:false,
+                //    responsive:false,
+                    aspectRatio:1,
+                    maintainAspectRatio: true,
+                    animation: {steps: 50, easing:"easeInOutQuart", scale: false}
+                }
+    });
+    }
+
     function updateOnlineStatus(id,time) {
         statusElem.innerText=STATES[id]
         statusElem.style.color=STATUS_LIGHT_COLORS[id]
@@ -421,19 +586,21 @@
             let td= document.createElement('td');
             td.classList.add('cells')
             td.style.width=parseInt(widthArr[i])+'em'
-            td.innerText=data[i]
+            td.innerHTML=data[i]
             row.append(td)
         }
         return row
     }
     function makeIdleRow(data){
-        let dataToTable=[MACHINE_ID, '???', IDLE_COUSES[data.cause], data.cause_time, data.cause_set_time, data.length]
+        let colorElem = ' <span class="box" style="background:'+CAUSES_LIGHT_COLORS[data.cause+1]+'"></span>'
+        let dataToTable=[MACHINE_ID, '???', IDLE_COUSES[data.cause]+colorElem, data.cause_time, data.cause_set_time, data.length]
         // updateOnlineCause(data.cause, data.cause_time)
         // causeTime=data.cause_time
         return addRow(dataToTable, IDLES_DB_HEADERS_WIDTH)
     }
     function makeStateRow(data){
-        let dataToTable=[MACHINE_ID, STATES[data['status']], data['time'], data['length']]
+        let colorElem = ' <span class="box" style="background:'+STATUS_LIGHT_COLORS[data.status]+'"></span>'
+        let dataToTable=[MACHINE_ID, STATES[data['status']]+colorElem, data['time'], data['length']]
         // updateOnlineStatus(data.status,data.time)
         // stateTime=data.time
         return addRow(dataToTable, STATES_DB_HEADERS_WIDTH)
@@ -485,6 +652,33 @@
     function updateTime(){
         updateStatusTimer();
     }
+    const chartsUpdateTimer=new PerodicalCallback ("chartsUpdate()", 1000,false);
+    
+    function chartsUpdate(){
+        let stateRec=new Object
+        lastRec=statesDb[statesDb.length-1]
+        stateRec.status=currentState
+        bTime=moment(lastRec.time).add(lastRec['length'], 's')
+        stateRec.time=bTime.format('YYYY-MM-DDTHH:mm:ss')
+        stateRec.length=moment().diff(bTime,'s')
+        sArr=[]
+        sArr.push(...statesDb)
+        sArr.push(stateRec)
+        if (currentState==3){
+            updateLineChart(sArr, causesDb)
+            return
+        }
+        let causeRec=new Object
+        lastRec=causesDb[causesDb.length-1]
+        causeRec.cause=currentCause
+        bTime=moment(lastRec.cause_time).add(lastRec['length'], 's')
+        causeRec.cause_time=bTime.format('YYYY-MM-DDTHH:mm:ss')
+        causeRec.length=moment().diff(bTime,'s')
+        cArr=[]
+        cArr.push(...causesDb)
+        cArr.push(causeRec)
+        updateLineChart(sArr, cArr)
+    }
     const cuaseTimer=new PerodicalCallback ("updateCauseTimer()", 1000,false);
     function updateStatusTimer(){
         let d=moment.duration(moment().diff(moment(stateTime)),'ms')
@@ -501,7 +695,7 @@
     }
 
     function init(){
-        
+        // currentState=0
         makePage()
         ws=wsConnect(WS_SERVER);
         
@@ -509,6 +703,7 @@
         wsEvents();
         UpdateDBTimer.restart();
         secondsTimer.restart();
+        chartsUpdateTimer.restart();
     }
     
     init()
