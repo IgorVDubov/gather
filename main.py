@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import asyncio
 import os.path
@@ -39,8 +39,8 @@ def init():
         sourcePool=None 
     channel_base=channel_base_init(scada_config.channels_config, dbQuie)
     project_init.init(channel_base)
-    newAddrMap, exchangeBindings = MBServerAdrMapInit(channel_base,scada_config.MBServerAdrMap)
-    ModbusExchServer=ModbusExchangeServer(newAddrMap, globals.MBServerParams['host'], globals.MBServerParams['port'],loop=loop)
+    exchangeBindings = MBServerAdrMapInit(channel_base,scada_config.MBServerAdrMap)
+    ModbusExchServer=ModbusExchangeServer(scada_config.MBServerAdrMap, channel_base, globals.MBServerParams['host'], globals.MBServerParams['port'],loop=loop)
     httpParams=globals.HTTPServerParams
     httpParams.update({'path':os.path.join(os.path.dirname(__file__),'webserver', 'webdata')})
     sbscrptions:ChannelSubscriptionsList[SubscriptChannelArg]=ChannelSubscriptionsList()

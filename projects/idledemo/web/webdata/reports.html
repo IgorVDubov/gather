@@ -399,6 +399,8 @@
           console.log(' Connection ok, send subscribe msg: ' )
           wsSend(JSON.stringify({type:"first_read", id:MACHINE_ID}))
           wsSend(JSON.stringify({type:"subscribe",data:SUBSCRIBE_CHANNELS}))
+          wsSend(JSON.stringify({type:"get_ch_arg",id:17001, arg:'args.current_cause'}))
+          wsSend(JSON.stringify({type:"get_ch_arg",id:5001, arg:'args.currentState'}))
       };
     } 
 

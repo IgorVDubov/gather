@@ -57,11 +57,12 @@ def get_subobject_attr(obj:Type, attr:str):
 def parse_attr_params(attrParam):
     '''
     parse attribute Params\n
-    return obj, attribute\n
+    return cahnnel_id, attribute\n
     get Number return None, Value\n
     get str'channelID' return channelID:int , None\n
     get str'channelID.atrName' return channelID:int , 'atrName':str\n
     get str'channelID.atrName.var' return channelID:int , 'atrName.var':str'n
+    get str'atrName.var' return 'self' , 'atrName.var':str'n
     '''
     if isinstance(attrParam, str):                                     #аттрибут - связь 
         s=''
@@ -82,14 +83,14 @@ def parse_attr_params(attrParam):
                 attr=other
         except ValueError:
             BindChannelId='self'
-            # attr=attrParam
-            attr=other
+            attr=attrParam
+            # attr=other
         # print(f'{attrParam=}: {BindChannelId=},{attr=}')
         if attr == None:      # channelBinding
             return BindChannelId, None
         else:                # channel attr Binding
             return BindChannelId, attr
-    elif not(attrParam) or isinstance(attrParam, (int, float, bool)):   #аттрибут - число или None
+    elif not(attrParam) or isinstance(attrParam, (int, float, bool, type(None))):   #аттрибут - число или None
         return None, attrParam
 
 class Channel(object):
@@ -147,7 +148,11 @@ class Channel(object):
             self.args.__setattr__(arg_name[5:], value)  
         else:
             self.__setattr__(arg_name,value)
-    
+
+    def set_channel_arg_name(self, ch_arg_name, value):
+        ch_id, attr_name = parse_attr_params(ch_arg_name)
+        self.set_arg(attr_name, value)
+        
     def toDictFull(self):
         return self.toDict()
 
@@ -169,14 +174,14 @@ class DBQuie(Channel):
    
     def put(self, data):
         self.dbQuie.put_nowait(data)
-class Message(Channel):
-    def __init__(self, id, args: Vars = None) -> None:
-        super().__init__(id, args)
-    def __str__(self):
-        return f'Message: id:{self.id}, result: {self.reuslt} '
+# class Message(Channel):
+#     def __init__(self, id, args: Vars = None) -> None:
+#         super().__init__(id, args)
+#     def __str__(self):
+#         return f'Message: id:{self.id}, result: {self.reuslt} '
    
-    def put(self, data):
-        self.dbQuie.put_nowait(data)
+#     def put(self, data):
+#         self.dbQuie.put_nowait(data)
 
 class DBConnector(Channel):
     def __init__(self, id, dbQuie, handler:callable, args: Vars = None) -> None:
@@ -198,7 +203,7 @@ class Node(Channel):
         self.type=type
         self.sourceIndexList=sourceIndexList
         self.source=None
-        self.resultIn=None
+        self.result_in=None
         self.result=None # данные после обработки handler
         self.handler=handler
         self.args=args
@@ -214,7 +219,7 @@ class Node(Channel):
                 'type':self.type,
                 'sourceIndexList':self.sourceIndexList,
                 'source':self.source,
-                'resultIn':self.resultIn,
+                'result_in':self.result_in,
                 'result':self.result}
         if self.handler:
             result.update({'handler':self.handler.__name__})
@@ -231,16 +236,16 @@ class Node(Channel):
         if self.source:
             if self.source.result:
                 if self.source.format==consts.DI:
-                    self.resultIN=[self.source.result[i] for i in self.sourceIndexList]
+                    self.result_in=[self.source.result[i] for i in self.sourceIndexList]
                 elif self.source.format==consts.AI:
-                    self.resultIN=self.source.result[0]                                 # только 1-й элемент....  уточнить!!!!!!!!!!!!!!!!!!!!!!
+                    self.result_in=self.source.result[0]                                 # только 1-й элемент....  уточнить!!!!!!!!!!!!!!!!!!!!!!
             else:
                 print(f'No result in channel {self.id} source {self.source}')
             # print(f'result in channel {self.id} = {self.source.result}')
         if self.handler:
             self.handler(self.args)    
         else:
-            self.result=self.resultIN
+            self.result=self.result_in
         # else:
             # print (f'no source init for node id:{self.id}')
             # return
@@ -280,7 +285,7 @@ CHANNELS_CLASSES={  'channels':'channels.Channel',           # соответс�
                     'programms':'channels.Programm', 
                     'dbquie':'channels.DBQuie',  
                     'dbconnector':'channels.DBConnector',
-                    'message':'channels.message',
+                    # 'message':'channels.message',
                 } 
 
 def testVars():

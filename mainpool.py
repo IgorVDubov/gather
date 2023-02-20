@@ -43,7 +43,7 @@ class MainPool():
         if source_pool:       
             self.source_pool.readAllOneTime()                    #TODO  проверить как работает если нет доступа к source
                                                                 #       или заполнять Null чтобы первый раз сработало по изменению
-            for node in (channel for channel in self.channel_base.channels if isinstance(channel,channels.Node)):
+            for node in (channel for channel in self.channel_base.channels if isinstance(channel,channels.channels.Node)):
                 for source in self.source_pool.sources:
                     if source.id==node.sourceId:
                         node.source=source
@@ -119,8 +119,8 @@ class MainPool():
                             subscr_channel.prev_value = arg_value
 
                                     
-                for channelId, binding in self.exchange_bindings.items():           #set vaues for Modbus Excange Server
-                    self.exchange_server.setValue(channelId, binding.value)
+                for channelAttr, binding in self.exchange_bindings.items():           #set vaues for Modbus Excange Server
+                    self.exchange_server.setValue(channelAttr, binding.value)
                 
                 # if len(self.HTTP_server.request_callback.wsClients):
                 #     for wsClient in self.HTTP_server.request_callback.wsClients:

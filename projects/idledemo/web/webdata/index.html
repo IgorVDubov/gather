@@ -497,14 +497,9 @@
     const techIdleTimer=new PerodicalCallback ("updateTechIdle()", 250,false);
     //const progressBar= new TimeoutProgressBar();
 
-    function wsConnect(WSServer){
-      let ws=new WebSocket(WSServer);
-      wsStatus.textContent='online'
-      wsIndicator.style.color='green'
-      return ws
-    }
-
-    function wsEvents(){
+    function wsConnect(){
+      let ws=new WebSocket(WS_SERVER);
+      
       ws.onmessage = function(evt) {
         let jsonMsg = JSON.parse(evt.data);
         console.log(jsonMsg)
@@ -529,18 +524,26 @@
           console.log(' Server close connection! No data!')
           wsStatus.textContent='offline'
           wsIndicator.style.color='Red'
+          setTimeout(function (){wsConnect()},1000);
+      };
+      ws.onerror = function(evt) {
+          console.log(' Server connection error ')
+          ws.close()
       };
 
       ws.onopen = function(evt) {
+          wsStatus.textContent='online'
+          wsIndicator.style.color='green'
           console.log(' Connection ok, send subscribe msg: ' + SUBSCRIBE_CHANNELS)
           wsSend(JSON.stringify({type:"subscribe",data:SUBSCRIBE_CHANNELS}))
       };
+      return ws
     } 
 
     let wsSend = function(data) {
-          if(!ws.readyState){
+          if(ws.readyState != 1){
               setTimeout(function (){
-                  wsSend(data);
+                wsSend(data);
               },1000);
           }else{
             ws.send(data);
@@ -864,9 +867,8 @@
         // progressElem=document.getElementById('causeProgress');
         stateTime=moment(currentState.begin_time);
         secondsTimer.restart();
-        ws=wsConnect(WS_SERVER);
+        ws=wsConnect();
         firstCurrentStateInit();
-        wsEvents();
     }
     
     init()

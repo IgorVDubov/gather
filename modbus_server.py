@@ -10,28 +10,36 @@ Modbus server class based on Pymodbus Synchronous Server
 import asyncio
 import struct
 from threading import Thread
+from copy import deepcopy
 
 from pymodbus.datastore import (ModbusSequentialDataBlock, ModbusServerContext,
                                 ModbusSlaveContext)
 
 from pymodbus.device import ModbusDeviceIdentification
-from pymodbus.server.async_io import ModbusTcpServer#, _serverList
+from pymodbus.server.async_io import ModbusTcpServer, ModbusConnectedRequestHandler#, _serverList
 from pymodbus.version import version
 from pymodbus.constants import Defaults
 
+from pymodbus.register_write_message import (
+    WriteSingleRegisterRequest,
+    WriteSingleRegisterResponse,
+)
+
+from channels.channelbase import ChannelsBase
 from myexceptions import ConfigException, ModbusExchangeServerException
 from consts import FLOAT, INT, LIST, BYTE
+import bpacker
 
 #from pymodbus.transaction import ModbusRtuFramer, ModbusBinaryFramer
 # --------------------------------------------------------------------------- #
 # configure the service logging
 # --------------------------------------------------------------------------- #
-import logging
-FORMAT = ('%(asctime)-15s %(threadName)-15s'
-          ' %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
-logging.basicConfig(format=FORMAT)
-log = logging.getLogger()
-log.setLevel(logging.DEBUG)
+# import logging
+# FORMAT = ('%(asctime)-15s %(threadName)-15s'
+#           ' %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
+# logging.basicConfig(format=FORMAT)
+# log = logging.getLogger()
+# log.setLevel(logging.DEBUG)
 
 CI=1
 DI=2
@@ -44,18 +52,48 @@ def packFloatTo2WordsCDAB(f)-> list[int]:
     return [b[i+1]*256+b[i] for i in range(0,len(b),2)]
 
 
+
 class MBServer(ModbusTcpServer):
-    def __init__(self,addrMap,serverParams,**kwargs):
+    def __init__(self,addr_map,channel_base:ChannelsBase, serverParams,**kwargs):
         self.loop=kwargs.get("loop") or asyncio.get_event_loop()
-        self.addrMap:list=addrMap
+        self.addr_map:list=addr_map
+        self.channel_base=channel_base
         self.serverParams=serverParams
         # Defaults.ZeroMode=True
-        self.context:ModbusServerContext=self.addrContextInit(addrMap)
-        self.id_map:dict=self.idAddrMapDictInit(addrMap)
-        super().__init__(self.context,address=(self.serverParams['host'],self.serverParams['port']))
+        self.context:ModbusServerContext=self.addrContextInit(addr_map)
+        self.id_map:dict=self.idAddrMapDictInit(addr_map)
+        # self.id_map:dict=self.idAddrMapDictInit(self._pop_addr(addr_map))
+        super().__init__(self.context,address=(self.serverParams['host'],self.serverParams['port']), handler=ChannelsRequestHandler)
+
+    #  {'unit':0x1, 'map':{
+    #         'di':[{'id':1002, 'attr':'result', 'addr':0, 'type':LIST, 'length':8},],
+    def get_channel_attr(self, func, addr, slave_unit):
+        for unit_block in  self.addr_map:
+            if unit_block.get('unit')==slave_unit:
+                if func in [1, 5, 15]:
+                    data=unit_block.get('map').get('co')
+                elif func in [2,]:
+                    data=unit_block.get('map').get('di')
+                elif func in [3, 6, 16]:
+                    data=unit_block.get('map').get('hr')
+                elif func in [4,]:
+                    data=unit_block.get('map').get('ir')
+                for reg in data:
+                    if reg.get('addr')==addr:
+                        return (reg.get('channel'), reg.get('type'), reg.get('length', 1) )
+
+
+    def _pop_addr(self, addr_maping:dict)->dict:
+        newAddrMap=deepcopy(addr_maping)
+        bindings=dict()
+        for unit in  newAddrMap:
+            for regType,data in unit.get('map').items():
+                for reg in data:
+                    reg.pop('attr')
+        return newAddrMap
 
         
-    def idAddrMapDictInit(self,addrMap):
+    def idAddrMapDictInit(self,addr_map):
         '''
         Convert addresMap to id map
         return dict {id:(unut,adr,length,type)}
@@ -70,15 +108,15 @@ class MBServer(ModbusTcpServer):
                 }]
         '''
         id_map={}
-        for unit in addrMap:
+        for unit in addr_map:
             ci=unit['map'].get('ci',None)
             if ci:
                 for device in ci:
-                    id_map[device['id']]=(CI, unit['unit'],device['addr'],1,bool)
+                    id_map[device['channel']]=(CI, unit['unit'],device['addr'],1,bool)
             di=unit['map'].get('di',None)
             if di:
                 for device in di:
-                    id_map[device['id']]=(DI, unit['unit'],device['addr'],device['length'],BYTE)
+                    id_map[device['channel']]=(DI, unit['unit'],device['addr'],device['length'],BYTE)
             hr=unit['map'].get('hr',None)
             if hr:
                 for device in hr:
@@ -89,7 +127,7 @@ class MBServer(ModbusTcpServer):
                         valLength=1    
                     elif device['type']==LIST:
                         valLength=device.get('length',1)    
-                    id_map[device['id']]=(HR, unit['unit'],device['addr'],valLength, device['type'])
+                    id_map[device['channel']]=(HR, unit['unit'],device['addr'],valLength, device['type'])
             ir=unit['map'].get('ir',None)
             if ir:
                 for device in ir:
@@ -104,7 +142,7 @@ class MBServer(ModbusTcpServer):
             # print(id_map)
         return id_map
 
-    def addrContextInit(self,addrMap:dict):
+    def addrContextInit(self,addr_map:dict):
         '''
         MBServerAdrMap=[
             {'unit':0x1, 
@@ -120,7 +158,7 @@ class MBServer(ModbusTcpServer):
         start_addr=0x01
         slaves={}
         #context=None
-        for unit in addrMap:
+        for unit in addr_map:
             slaveContext=ModbusSlaveContext()
             ci=unit['map'].get('ci',None)
             di=unit['map'].get('di',None)
@@ -191,7 +229,7 @@ class MBServer(ModbusTcpServer):
                 irLength=1
             irDataBlock=ModbusSequentialDataBlock(start_addr,[0]*irLength)
             slaveContext.register(4,'i',irDataBlock)
-            # if len(addrMap)==1:
+            # if len(addr_map)==1:
             #     context=ModbusServerContext(slaves=slaveContext, single=True)
             # else:
             slaves[unit['unit']]=slaveContext
@@ -206,7 +244,6 @@ class MBServer(ModbusTcpServer):
     def stop(self):
         # self.server_close()
          asyncio.create_task(self.shutdown())
-        
 
     def startInThread(self):
         serverThread = Thread(target = self.start)    
@@ -239,9 +276,9 @@ class MBServer(ModbusTcpServer):
 
     def setFloat(self,unit,addr,val):
         # print('setFloat')
-        self.context[unit].setValues(4,addr,packFloatTo2WordsCDAB(val))     # уточнить метод упаковки
+        self.context[unit].setValues(4,addr,bpacker.packFloatToCDAB(val))     # уточнить метод упаковки
     
-    def setValue(self,id,val):
+    def setValue(self,channel_attr,val):
         '''
         set value by ID according to addr map
         if val=None NOT SET value!!!!!
@@ -251,7 +288,7 @@ class MBServer(ModbusTcpServer):
              float or int as float if HR type float
         '''
         try:
-            reg_type, unit,addr,length,val_type=self.id_map.get(id,None)
+            reg_type, unit,addr,length,val_type=self.id_map.get(channel_attr,None)
         except TypeError:
             raise ConfigException(f'ModBus server[setValue]: cant get mnapping for id:{id}')
         #print(f'{id=} {addr=} {length=} {val=}')
@@ -298,9 +335,45 @@ class MBServer(ModbusTcpServer):
                     else:
                         raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not list type')
 
+    def handle_func_6(self):
+        ...
 
+class  ChannelsRequestHandler(ModbusConnectedRequestHandler):
+    '''
+    Write functions with handler to send values to ChannelBase
+    '''
+    def __init__(self, server:MBServer):
+        super().__init__( server)
 
+    def execute(self, request, *addr):
+        '''
+        func 5 - write single coil
+        func 6 - write single register
+        func 15 - write multiple coils -> list[bool]
+        func 16 - write multiple registers -> list[integer]
+        '''
+        # TODO
+        # сначала выполнить execute посмотреть на валидвцию и ошибки 
+        # и потом  если ок - channel.set_channel_arg_name
 
+        channel_arg, type, length = self.server.get_channel_attr( request.function_code, request.address, request.unit_id)
+        
+        channel=self.server.channel_base.get_by_argname(channel_arg)
+        if request.function_code in [5, 6]:
+            channel.set_channel_arg_name(channel_arg, request.value)           
+        elif request.function_code ==15:
+            set_value=request.values
+            channel.set_channel_arg_name(channel_arg, request.values)            # TODO разбор типа значения и конвертация
+        elif request.function_code == 16:
+            if type==LIST:
+                set_value=request.values
+            elif type==INT:
+                set_value=request.values
+            elif type==FLOAT:
+                set_value=bpacker.unpackCDABToFloat(request.values)
+            channel.set_channel_arg_name(channel_arg, set_value)            # TODO разбор типа значения и конвертация
+
+        return super().execute(request, *addr)
 
 def updating_writer(con):
     i=1

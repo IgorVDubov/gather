@@ -3,9 +3,10 @@ from time import time
 from loguru import logger
 
 from channels import channels
+
 from myexceptions import ChannelException, ConfigException
 
-CHANNELS_EXEC_ORDER=[channels.Node,channels.Channel,channels.Programm, channels.DBQuie, channels.Message]
+CHANNELS_EXEC_ORDER=[channels.Node,channels.Channel,channels.Programm, channels.DBQuie]#, channels.Message]
 
 class ChannelsBase():
     def __init__(self):
@@ -38,6 +39,13 @@ class ChannelsBase():
         except StopIteration:
             found=None
         return found
+        
+    def get_by_argname(self, ch_arg_name:str)->channels.Channel:
+        '''
+        get Channel from str param 'ch_id.arg'
+        '''
+        ch_id, attr= channels.parse_attr_params(ch_arg_name)
+        return self.get(ch_id)
 
     def execute(self, id:int):
         channel=self.get(id)
@@ -123,6 +131,8 @@ def channel_base_init(channelsConfig, dbQuie):
                 channel=cls(**channelConfig)
                 for name, arg in args.items():
                     bindId, param= channels.parse_attr_params(arg)
+                    # if bindId == 'self':
+                    #     bindId=channel.id
                     if bindId != None:
                         channel.addArg(name)
                         bindings.append((channel, name, bindId, param))
@@ -148,17 +158,25 @@ def channel_base_init(channelsConfig, dbQuie):
     bindings=[]
     return chBase
 
-def bindChannelAttr(channelBase, id:int,attrNmae:str)->channels.Vars:
+def bindChannelAttr(channelBase, ch_id:int,attrNmae:str)->channels.Vars:
     '''
     id- channel id
     attrname:str - channel attribute mane 
     '''
-    if channel:=channelBase.get(id):
+    if channel:=channelBase.get(ch_id):
         bindVar=channels.Vars()
         bindVar.addBindVar('value',channel,attrNmae)
         return bindVar
     else:
-        raise ConfigException(f'Cant find channel {id} in channelBase')
+        raise ConfigException(f'Cant find channel {ch_id} in channelBase')
+
+def bindChannelAttrName(channelBase, attrNmae:str)->channels.Vars:
+    '''
+    attrname:str - channel_id.attribute_mane 
+    '''
+    ch_id, attr = channels.parse_attr_params(attrNmae)
+    return bindChannelAttr(channelBase, ch_id, attr)
+
 
 if __name__ == '__main__':
     nodes=[  
@@ -168,7 +186,7 @@ if __name__ == '__main__':
             {'id':4209,'moduleId':'test3','type':'AI','sourceIndexList':[0]}
             ]
     import handlers
-    prgs=[{'id':10001, 'handler':handlers.progvek, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'resultIn'}}, 'stored':{'a':0}}]
+    prgs=[{'id':10001, 'handler':handlers.progvek, 'args':{'ch1':{'id':4208,'arg':'result'},'result':{'id':4209,'arg':'result_in'}}, 'stored':{'a':0}}]
     cb=channel_base_init(nodes, prgs) 
     print(cb)
     cb.get(4208).result=44
