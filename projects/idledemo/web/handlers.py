@@ -1,6 +1,7 @@
 import json
 import os.path
 import importlib
+from datetime import datetime
 
 import tornado.web
 import tornado.websocket
@@ -163,12 +164,20 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 json_data = json.dumps(msg, default=str)
                 self.write_message(json_data)
             elif jsonData['type']=="subscribe":
+                logger.debug (f"subscription {jsonData['data']}")
+                for_send=[]
                 for arg in jsonData['data']:
                     channel_id, argument=parse_attr_params(arg)
                     channel=self.application.data.channelBase.get(channel_id)
                     new_subscription=SubscriptChannelArg(channel, argument)
                     subscription=self.application.data.subsriptions.add_subscription(new_subscription)
                     self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
+                    send_data={arg:channel.get_arg(argument)}
+                    send_data.update({'time':(datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')})
+                    for_send.append(send_data)
+                    if len(for_send):
+                        logger.debug (f"echo subscription {for_send}")
+                        self.write_message(json.dumps(for_send, default=str))
             elif jsonData.get('type')=="set":
                 if arg:=jsonData.get('arg'):
                     channel_id, argument=parse_attr_params(arg)
@@ -277,12 +286,18 @@ class MEWSHandler(tornado.websocket.WebSocketHandler):
                 json_data = json.dumps(msg, default=str)
                 self.write_message(json_data)
             elif jsonData.get('type')=="subscribe":
+                for_send=[]
                 for arg in jsonData['data']:
                     channel_id, argument=parse_attr_params(arg)
                     channel=self.application.data.channelBase.get(channel_id)
                     new_subscription=SubscriptChannelArg(channel, argument)
                     subscription=self.application.data.subsriptions.add_subscription(new_subscription)
                     self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
+                    send_data={arg:channel.get_arg(argument)}
+                    send_data.update({'time':(datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')})
+                    for_send.append(send_data)
+                    if len(for_send):
+                        self.write_message(json.dumps(for_send, default=str))
                 # print (f'in ws:{self.application.data.subsriptions}')
             elif jsonData.get('type')=="msg":
                 logger.debug (f"ws_message: {jsonData.get('data')}")
@@ -330,12 +345,18 @@ class ReportsWSHandler(tornado.websocket.WebSocketHandler):
                 self.write_message(json_data)
             elif jsonData.get('type')=="subscribe":
                 print(f'subscribe {jsonData["data"]}')
+                for_send=[]
                 for arg in jsonData['data']:
                     channel_id, argument=parse_attr_params(arg)
                     channel=self.application.data.channelBase.get(channel_id)
                     new_subscription=SubscriptChannelArg(channel, argument)
                     subscription=self.application.data.subsriptions.add_subscription(new_subscription)
                     self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
+                    send_data={arg:channel.get_arg(argument)}
+                    send_data.update({'time':(datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')})
+                    for_send.append(send_data)
+                    if len(for_send):
+                        self.write_message(json.dumps(for_send, default=str))
             elif jsonData.get('type')=="update_data":
                 if len(project_globals.states_buffer)>0:
                     logger.debug (f"update states{project_globals.states_buffer}")

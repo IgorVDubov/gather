@@ -6,12 +6,12 @@ logics=importlib.import_module('projects.'+globals.PROJECT['path']+'.logics')
 
 def r_level_timeout(vars):
     '''
-    result level with timeout
+    result_in level with timeout
     VARS:
         'channel':'4209',
         'dbChannel':None,
         'writeInit':'10001.args.writeInit',
-        'statusCh':'100.result',
+        'statusCh':'100.result_in',
         'grStand':1,
         'grWork':8,
         'dostTimeout':5,
@@ -44,9 +44,9 @@ def r_level_timeout(vars):
         vars.lengthDB=0
         vars.timeDB=timeNow
 
-    if vars.channel.result==None:       #########!!!!!!!!!!!!
-        vars.channel.result=0
-    # print (vars.channel.result)
+    if vars.channel.result_in==None:       #########!!!!!!!!!!!!
+        vars.channel.result_in=0
+    # print (vars.channel.result_in)
     if vars.channel.dost==False:
         vars.notDost+=1
     else:
@@ -62,13 +62,13 @@ def r_level_timeout(vars):
 
     vars.NAStatusBefore = vars.NAStatus
     # определяем текущий статус
-    if vars.channel.result < vars.grStand:  #откл
+    if vars.channel.result_in < vars.grStand:  #откл
         status=1
         interval=1
-    elif vars.channel.result > vars.grStand and vars.channel.result<vars.grWork:    #простой
+    elif vars.channel.result_in > vars.grStand and vars.channel.result_in<vars.grWork:    #простой
         status=2
         interval=2
-    elif vars.channel.result > vars.grWork: #работа
+    elif vars.channel.result_in > vars.grWork: #работа
         status=3
         interval=3
 

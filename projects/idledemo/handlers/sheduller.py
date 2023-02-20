@@ -5,6 +5,10 @@ from time import time
 
 TASK1_TIME='22:30'
 
+def task1(vars):
+    ...
+SHEDULLER=[('Task1',['22:30'], task1)]
+
 def day_sheduller(vars):
     '''
     execute tasks at shedulled day time
@@ -20,5 +24,6 @@ def day_sheduller(vars):
     if time1.hour==now.hour and time1.minute==now.minute and time1.second==now.second:
         print('!!!!!!!!!!!!******************!!!!!!!!!!!!!!!!!!')
         subprocess.run("./cmd/echo.cmd", shell=True)
-    
-    vars.writeInit=False
+        vars.write_init_5001=True
+        vars.write_init_5002=True
+        vars.write_counter_5001=True

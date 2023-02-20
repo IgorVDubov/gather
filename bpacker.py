@@ -9,6 +9,10 @@ def getBit(byte,position):
     return byte & 1 << position != 0
 
 
+def packL_Int_to_CDAB(lint)->list:
+    ...
+def unpack_CDAB_to_LIntTo(word_list:list)->int: #??? long integer
+    ...
 def packFloatToCDAB(f:float)->list:
     '''
     pack float to 2 words LOW HIGH \n
@@ -16,6 +20,7 @@ def packFloatToCDAB(f:float)->list:
     '''
     b=[i for i in struct.pack('<f',f)]
     return [b[i+1]*256+b[i] for i in range(0,len(b),2)]
+
 
 def unpackCDABToFloat(two_words:list,round_count:int=None)->Union[float,None]:
     '''

@@ -5,7 +5,8 @@ import globals
 handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers')
 import handlerslib
 # r_level_tout=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers.r_level_tout')
-from consts import AI, DI
+
+from consts import AI, DI, LIST
 from handlerslib.bitstoword import bits_to_word
 
 
@@ -24,7 +25,7 @@ period->float: период опроса в сек
 handler->callable: функция предобработки данных из channel_handlers 
 ''' 
 module_list=[ 
-            # {'id':'machine1','type':'ModbusTcp','ip':'127.0.0.1','port':'2000','unit':0x1, 'address':0, 'regCount':16, 'function':2, 'format':DI, 'period':0.5},
+            {'id':'machine1','type':'ModbusTcp','ip':'192.168.1.200','port':'502','unit':0x1, 'address':0, 'regCount':2, 'function':3, 'format':DI, 'period':1},
             ]    
   
 
@@ -53,23 +54,60 @@ channels_config={
                         'grWork':30,
                         'grStand':1,
                         'dostTimeout':5,
-                        'minLength':10,
+                        'tech_timeout':10,
                     }
         },
     ],
     'nodes':[  
-        {'id':4001,'moduleId':None,'type':'AI','sourceIndexList':[], 'handler':handlers.prog1,'args':{'result_in':'4001.result',
-                                                                                                        'result_link_ch':'5001.result',}},
+        {'id':4001,'moduleId':None,'type':'AI','sourceIndexList':[], 
+                        'handler':handlers.prog1,
+                        'args':{
+                            'result_in':'4001.result',
+                            'result_link_ch':'5001.result',
+                        }},
+        {'id':5003,'moduleId':None,'type':'AI','sourceIndexList':[], # счетчик
+                        },
+        {'id':5004,'moduleId':None,'type':'AI','sourceIndexList':[], # сброс счетчика
+                        },
+        {'id':5002,'moduleId':'machine1','type':'DI','sourceIndexList':[0,1], 'handler':handlers.signal_techtimeout,'args':{
+                        'channel_id':5002,
+                        'result_in':'5002.result_in',
+                        'dost':'5002.dost',
+                        'counter_in':'5003.result',
+                        'counter_reset':'5004.result',
+                        'write_init':'13001.args.write_init_5002',
+                        'write_counter':'13001.args.write_counter_5002',
+                        'status_ch_b1':'11001.args.b3',
+                        'status_ch_b2':'11001.args.b4',
+                        'dost_timeout':'1001.args.dostTimeout',
+                        'tech_timeout':'1001.args.tech_timeout',
+                        'status':0,
+                        'not_dost_counter':0,
+                        'init':True,    
+                        'saved_status':0,
+                        'saved_length':0,
+                        'saved_time':0,
+                        'double_write':False,
+                        'buffered':False,
+                        'buffer_time':0,
+                        'buffer_status':0,
+                        'dost_length':0,
+                        'NA_status_before':False,
+                        'was_write_init':False,
+                        'dbQuie':'12001',
+                        'сause':'17002.args.cause_id',
+                        'idle_handler_id':17002,
+                        }},
         {'id':5001,'moduleId':None,'type':'AI','sourceIndexList':[], 'handler':handlers.r_level_timeout,'args':{
                         'channel':'4001',
                         'dbChannel':None,
-                        'writeInit':'13001.args.writeInit',
+                        'writeInit':'13001.args.write_init_5001',
                         'statusCh_b1':'11001.args.b1',
                         'statusCh_b2':'11001.args.b2',
                         'grWork':'1001.args.grWork',
                         'grStand':'1001.args.grStand',
                         'dostTimeout':'1001.args.dostTimeout',
-                        'minLength':'1001.args.minLength',
+                        'minLength':'1001.args.tech_timeout',
                         'notDost':0,
                         'NAStatusBefore':False,
                         'currentState':0,
@@ -91,12 +129,29 @@ channels_config={
                         'b11':0,'b12':0,'b13':0,'b14':0,'b15':0,'b16':0
                         }},
         {'id':13001,  'handler':handlers.day_sheduller,
-                'args':{'writeInit':False}},
+                'args':{
+                        'write_init_5001':False,
+                        'write_init_5002':False,
+                        'write_counter_5002':False
+                        }},
+        
         {'id':17001,  'handler':handlers.idle,
                 'args':{
                     'state':'5001.args.currentState',
                     'machine_id':5001,
                     'techidle_lenhth':'5001.args.minLength',
+                    'cause_id':None,
+                    'current_cause':None,
+                    'reset_idle_flag':False,
+                    'set_cause_flag':False,
+                    'restore_idle_flag':False,
+
+                }},
+        {'id':17002,  'handler':handlers.idle,
+                'args':{
+                    'state':'5002.args.status',
+                    'machine_id':5002,
+                    'techidle_lenhth':'5002.args.tech_timeout',
                     'cause_id':None,
                     'current_cause':None,
                     'reset_idle_flag':False,
@@ -118,24 +173,26 @@ channels_config={
 # map ->dict: общее:
 #                 id->int: id объекта контроля
 #                 addr->int: адрес (смещение) первого регистра
-
+#             co - Coils initializer
 #             di - discrete_inputs чтение функцией 2
 #                 len->int: кол-во регистров
 #             hr - holding_registers чтение функцией 3
 #             ir - input_registers чтение функцией 4
 #                 type->str:      float - 2xWord CD-AB(4Byte);
 #                                 int - 1xWord (2Byte)
-                                
+
+from consts import   INT, FLOAT, LIST
                                 
 mb_server_addr_map=[
-    {'unit':0x1, 'map':{
-        # 'di':[{'id':4001, 'attr':'result', 'addr':0, 'len':16}
-        #     ],
-        'ir':[{'id':4001, 'attr':'result', 'addr':0, 'type':'int'}
-        #       ,{'id':4210,'addr':1,'type':'float'}
-        ]
-        }
-    }]
+]
+    # {'unit':0x1, 'map':{
+    #     # 'di':[{'id':4001, 'attr':'result', 'addr':0, 'len':16}
+    #     #     ],
+    #     'hr':[{'channel':'4001.result', 'addr':0, 'type':INT},
+    #           {'channel':'4001.args.v','addr':1,'type':FLOAT, 'len':2}
+    #     ]
+    #     }
+    # }]
 
 
 MBServerAdrMap=mb_server_addr_map
