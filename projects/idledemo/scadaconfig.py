@@ -25,7 +25,7 @@ period->float: период опроса в сек
 handler->callable: функция предобработки данных из channel_handlers 
 ''' 
 module_list=[ 
-            {'id':'machine1','type':'ModbusTcp','ip':'192.168.1.200','port':'502','unit':0x1, 'address':0, 'regCount':2, 'function':3, 'format':DI, 'period':1},
+            # {'id':'machine1','type':'ModbusTcp','ip':'192.168.1.200','port':'502','unit':0x1, 'address':0, 'regCount':2, 'function':3, 'format':DI, 'period':1},
             ]    
   
 
@@ -62,42 +62,42 @@ channels_config={
         {'id':4001,'moduleId':None,'type':'AI','sourceIndexList':[], 
                         'handler':handlers.prog1,
                         'args':{
-                            'result_in':'4001.result',
+                            'result_in':'4001.result_in',
                             'result_link_ch':'5001.result',
                         }},
-        {'id':5003,'moduleId':None,'type':'AI','sourceIndexList':[], # счетчик
-                        },
-        {'id':5004,'moduleId':None,'type':'AI','sourceIndexList':[], # сброс счетчика
-                        },
-        {'id':5002,'moduleId':'machine1','type':'DI','sourceIndexList':[0,1], 'handler':handlers.signal_techtimeout,'args':{
-                        'channel_id':5002,
-                        'result_in':'5002.result_in',
-                        'dost':'5002.dost',
-                        'counter_in':'5003.result',
-                        'counter_reset':'5004.result',
-                        'write_init':'13001.args.write_init_5002',
-                        'write_counter':'13001.args.write_counter_5002',
-                        'status_ch_b1':'11001.args.b3',
-                        'status_ch_b2':'11001.args.b4',
-                        'dost_timeout':'1001.args.dostTimeout',
-                        'tech_timeout':'1001.args.tech_timeout',
-                        'status':0,
-                        'not_dost_counter':0,
-                        'init':True,    
-                        'saved_status':0,
-                        'saved_length':0,
-                        'saved_time':0,
-                        'double_write':False,
-                        'buffered':False,
-                        'buffer_time':0,
-                        'buffer_status':0,
-                        'dost_length':0,
-                        'NA_status_before':False,
-                        'was_write_init':False,
-                        'dbQuie':'12001',
-                        'сause':'17002.args.cause_id',
-                        'idle_handler_id':17002,
-                        }},
+        # {'id':5003,'moduleId':None,'type':'AI','sourceIndexList':[], # счетчик
+        #                 },
+        # {'id':5004,'moduleId':None,'type':'AI','sourceIndexList':[], # сброс счетчика
+        #                 },
+        # {'id':5002,'moduleId':'machine1','type':'DI','sourceIndexList':[0,1], 'handler':handlers.signal_techtimeout,'args':{
+        #                 'channel_id':5002,
+        #                 'result_in':'5002.result_in',
+        #                 'dost':'5002.dost',
+        #                 'counter_in':'5003.result',
+        #                 'counter_reset':'5004.result',
+        #                 'write_init':'13001.args.write_init_5002',
+        #                 'write_counter':'13001.args.write_counter_5002',
+        #                 'status_ch_b1':'11001.args.b3',
+        #                 'status_ch_b2':'11001.args.b4',
+        #                 'dost_timeout':'1001.args.dostTimeout',
+        #                 'tech_timeout':'1001.args.tech_timeout',
+        #                 'status':0,
+        #                 'not_dost_counter':0,
+        #                 'init':True,    
+        #                 'saved_status':0,
+        #                 'saved_length':0,
+        #                 'saved_time':0,
+        #                 'double_write':False,
+        #                 'buffered':False,
+        #                 'buffer_time':0,
+        #                 'buffer_status':0,
+        #                 'dost_length':0,
+        #                 'NA_status_before':False,
+        #                 'was_write_init':False,
+        #                 'dbQuie':'12001',
+        #                 'сause':'17002.args.cause_id',
+        #                 'idle_handler_id':17002,
+        #                 }},
         {'id':5001,'moduleId':None,'type':'AI','sourceIndexList':[], 'handler':handlers.r_level_timeout,'args':{
                         'channel':'4001',
                         'dbChannel':None,
@@ -147,18 +147,18 @@ channels_config={
                     'restore_idle_flag':False,
 
                 }},
-        {'id':17002,  'handler':handlers.idle,
-                'args':{
-                    'state':'5002.args.status',
-                    'machine_id':5002,
-                    'techidle_lenhth':'5002.args.tech_timeout',
-                    'cause_id':None,
-                    'current_cause':None,
-                    'reset_idle_flag':False,
-                    'set_cause_flag':False,
-                    'restore_idle_flag':False,
+        # {'id':17002,  'handler':handlers.idle,
+        #         'args':{
+        #             'state':'5002.args.status',
+        #             'machine_id':5002,
+        #             'techidle_lenhth':'5002.args.tech_timeout',
+        #             'cause_id':None,
+        #             'current_cause':None,
+        #             'reset_idle_flag':False,
+        #             'set_cause_flag':False,
+        #             'restore_idle_flag':False,
 
-                }},
+        #         }},
         
     ],
     'dbquie':[

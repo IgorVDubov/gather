@@ -175,13 +175,13 @@
     };
 
     document.getElementById('off').addEventListener('click', function(){
-        channelSetRequest(EMUL_CH, 'result', 0).then(()=>{resetTime();})
+        channelSetRequest(EMUL_CH, 'result_in', 0).then(()=>{resetTime();})
     });
     document.getElementById('stand').addEventListener('click', function(){
-        channelSetRequest(EMUL_CH, 'result', 2).then(()=>{resetTime();})
+        channelSetRequest(EMUL_CH, 'result_in', 2).then(()=>{resetTime();})
     });
     document.getElementById('work').addEventListener('click', function(){
-        channelSetRequest(EMUL_CH, 'result', 33).then(()=>{resetTime();})
+        channelSetRequest(EMUL_CH, 'result_in', 33).then(()=>{resetTime();})
     });
     
     function resetTime(){
