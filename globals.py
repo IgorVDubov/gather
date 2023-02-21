@@ -37,7 +37,7 @@ host:str, port:itn  An optional (interface, port) to bind to.
 DB_TYPE=Consts.MYSQL        #тип используемой СУБД (доступные в dbclassfactory)
 MySQLServerParams={
     'host': '127.0.0.1',
-    'database': 'utrack_demo',
+    'database': 'utrack_db',
     'user': 'utrack',                       #TODO в переменные окружения!!!!!
     'password' : 'Adm_db78'
 }

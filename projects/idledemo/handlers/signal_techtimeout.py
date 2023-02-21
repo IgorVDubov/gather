@@ -1,7 +1,9 @@
 from datetime import datetime
+import importlib
 
 from consts import Consts
-
+import globals
+logics=importlib.import_module('projects.'+globals.PROJECT['path']+'.logics')
 
 def signal_techtimeout(vars):
     '''
@@ -177,10 +179,12 @@ def signal_techtimeout(vars):
         db_write_flag=False
         vars.write_init=False                    #сбрасываем флаг инициализации записи если был 1
         if vars.saved_length>10 or vars.saved_length<90000 : 
-            #vars.lengthDB=1                    #отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
-            vars.dbQuie.put({'questType':Consts.INSERT,
-            'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
-            ,'params': (vars.channel_id, vars.saved_time.strftime("%Y:%m:%d %H:%M:%S"), vars.saved_status, int(round(vars.saved_length)))
-            })
+            logics.db_put_state(vars.db_quie,
+                                {   'id':vars.channel_id, 
+                                    'project_id':vars.project_id, 
+                                    'time':vars.saved_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                    'status':vars.saved_status,
+                                    'length':int(round(vars.saved_length))
+                                    })
             print(f'Put ti dbquire id={vars.channel_id}, time={vars.saved_time.strftime("%Y:%m:%d %H:%M:%S")}, status={vars.saved_status}, length={int(vars.saved_length)}')
             

@@ -132,14 +132,21 @@ def r_level_timeout(vars):
         vars.writeInit=False                    #сбрасываем флаг инициализации записи если был 1
         if vars.lengthDB>10 or vars.lengthDB<90000 : 
             #vars.lengthDB=1                    #отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
-            vars.dbQuie.put({'questType':Consts.INSERT,
-            'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
-            ,'params': (vars.channel.id, vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), vars.statusDB, int(round(vars.lengthDB)))
-            })
-            logics.db_put_state({   'id':vars.channel.id, 
+            # vars.dbQuie.put({'type':Consts.INSERT,
+            # 'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
+            # ,'params': (vars.channel.id, vars.timeDB.strftime("%Y:%m:%d %H:%M:%S"), vars.statusDB, int(round(vars.lengthDB)))
+            # })
+            logics.db_put_state(vars.db_quie,
+                                {   'id':vars.channel.id, 
+                                    'project_id':vars.project_id, 
+                                    'time':vars.timeDB.strftime("%Y-%m-%d %H:%M:%S"),
+                                    'status':vars.statusDB,
+                                    'length':int(round(vars.lengthDB))
+                                    })
+            
+            logics.jsdb_put_state({   'id':vars.channel.id, 
                                     'time':vars.timeDB.strftime("%Y-%m-%dT%H:%M:%S"),
                                     'status':vars.statusDB,
                                     'length':int(round(vars.lengthDB))
                                     })
-            # print(f'Put ti dbquire id={vars.channel.id}, time={vars.timeDB.strftime("%Y:%m:%d %H:%M:%S")}, status={vars.statusDB}, length={int(vars.lengthDB)}')
             

@@ -99,9 +99,16 @@ class MainPool():
     async def db_requester_loop(self):
         while True:
             while not self.db_quie.empty():
-                req=self.db_quie.get_nowait()
-                # self.db_interface.execSQL(req.get('questType'),req.get('sql'),req.get('params'))
-                logger.info(f'db_quie:{req}')
+                querry=self.db_quie.get_nowait()
+                logger.info(f'db_quie:{querry}')
+                match querry:
+                    case {'type':Consts.INSERT, 'sql':sql_txt,'params':sql_params}:
+                        logger.info (f'write to bd here:{sql_txt=}, {sql_params=} ')
+                        # self.db_interface.execSQL(req.get('questType'),req.get('sql'),req.get('params'))
+                    case {'type':Consts.DBC, 'querry_func':querry_func,'params':querry_params}:
+                        logger.info(f'write to bd here:{querry_func}, {querry_params=} ')
+                        self.db_interface.exec_querry(querry_func, querry_params)
+                    case _: raise ValueError(f'invalid db_quie type:{querry}')
             await asyncio.sleep(globals.DB_PERIOD)
 
     async def calc_channel_base_loop(self): 

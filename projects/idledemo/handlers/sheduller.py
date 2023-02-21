@@ -24,6 +24,6 @@ def day_sheduller(vars):
     if time1.hour==now.hour and time1.minute==now.minute and time1.second==now.second:
         print('!!!!!!!!!!!!******************!!!!!!!!!!!!!!!!!!')
         subprocess.run("./cmd/echo.cmd", shell=True)
-        vars.write_init_5001=True
-        vars.write_init_5002=True
-        vars.write_counter_5001=True
+        # vars.write_init_5001=True
+        vars.write_init_2020=True
+        vars.write_counter_2020=True

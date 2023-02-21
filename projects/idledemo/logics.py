@@ -8,8 +8,10 @@ from channels.channelbase import ChannelsBase
 import globals
 from channels.channels import Channel
 import colors
+from consts import Consts
 
 settings=importlib.import_module('projects.'+globals.PROJECT['path']+'.settings')
+db_queries=importlib.import_module('projects.'+globals.PROJECT['path']+'.dbqueries')
 project_globals=importlib.import_module('projects.'+globals.PROJECT['path']+'.projectglobals')
 
 def convert_none_2_str(func):
@@ -63,13 +65,16 @@ def save_machines_idle():
                             'length':idle.length})
                 file.write(json.dumps(data))
 
-def db_put_state(state_rec):
-    print (f'db_put_state {state_rec}')
+def jsdb_put_state(state_rec):
     if state_rec.get('length')>0:
         project_globals.states_db.append(state_rec)
         project_globals.states_buffer.append(state_rec)
 
-    ...
+def db_put_state(db_quie, state_rec):
+    print (f'db_put_state {state_rec}')
+    if state_rec.get('length')>0:
+        db_quie.put({'type':Consts.DBC, 'querry_func':db_queries.insert_state, 'params':state_rec})
+
 def db_get_all_states(id):
     # return [rec for rec in project_globals.states_db if (rec and rec.get('id')==id)]
     return [rec for rec in project_globals.states_db ]
@@ -156,16 +161,16 @@ def current_idle_set(machine_id, state, tech_idle_length, cause=None, cause_time
     project_globals.machines_idle.update({machine_id:Idle(state, tech_idle_length, begin_time, cause, cause_time, cause_set_time)})
     save_machines_idle()
 
-def current_idle_add_cause(machine_id, cause_id, cause_set_time):
+def current_idle_add_cause(machine_id, cause_id, cause_set_time, prj_id, db_quie):
     
     if current_idle:=project_globals.machines_idle.get(machine_id):
         if current_idle.cause!=None: 
             print(f'change cause idle to {machine_id} from {current_idle.cause} to {cause_id}')
             if current_idle.cause!=0:   #если причина была сброшена через causeid=0 время причины оставляем от момента сброса
-                current_idle_store(machine_id)
+                current_idle_store(machine_id, prj_id, db_quie)
                 project_globals.machines_idle.get(machine_id).cause_time = datetime.now() 
             elif current_idle.cause==settings.TECH_IDLE_ID:
-                current_idle_store(machine_id)
+                current_idle_store(machine_id, db_quie)
                 if (datetime.now()-current_idle.cause_time).seconds > current_idle.tech_idle:
                     project_globals.machines_idle.get(machine_id).cause_time = current_idle.cause_time + datetime.timedelta(0,current_idle.tech_idle)
         else:
@@ -184,17 +189,20 @@ def current_idle_reset(machine_id):
     project_globals.machines_idle.update({machine_id:None})
     save_machines_idle()
 
-def current_idle_store(machine_id):
+def current_idle_store(machine_id, prj_id, db_quie):
     if  idle:=project_globals.machines_idle.get(machine_id):
         project_globals.machines_idle.get(machine_id).length=int(round((datetime.now()-idle.cause_time).total_seconds()))
         print(f'{colors.CGREENBG}Store machime {machine_id} Idle to DB: {settings.STATES[idle.state]}, cause: {settings.IDLE_CAUSES.get(idle.cause,0)}, length {idle.length} {colors.CEND}')
         print(idle)
         store_dict={'id':machine_id}
+        store_dict.update(project_id=prj_id)
         store_dict.update(asdict(idle))
         for key,val in store_dict.items():
             if isinstance(store_dict[key],datetime):
-                store_dict.update({key:val.strftime('%Y-%m-%dT%H:%M:%S')})
+                store_dict.update({key:val.strftime('%Y-%m-%d %H:%M:%S')})
 
         db_put_idle(store_dict)
+        print(f'{colors.CYELLOWBG}db_quie:{store_dict} {colors.CEND}')
+        db_quie.put({'type':Consts.DBC, 'querry_func':db_queries.insert_idle, 'params':store_dict})
         ... # store to DB here
 

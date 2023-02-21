@@ -132,6 +132,10 @@ class MySQLConnector(object):
         else:
             logger.error(f'Empty value list in isert querry:{sql}')
 
+    @connection
+    def exec_querry_func(self,connection, func:callable, params:dict={}):
+        return func(connection, params)
+
 
 if __name__ == '__main__':
     import globals

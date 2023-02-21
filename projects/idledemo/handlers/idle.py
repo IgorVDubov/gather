@@ -24,12 +24,12 @@ def idle(vars):
     if vars.set_cause_flag:
         print(f'set cause flag to {vars.machine_id} to {vars.cause_id}')
         vars.set_cause_flag=False
-        logics.current_idle_add_cause(vars.machine_id, vars.cause_id, datetime.now())
+        logics.current_idle_add_cause(vars.machine_id, vars.cause_id, datetime.now(), vars.project_id, vars.db_quie)
     
     if vars.restore_idle_flag:      # записываем текущий простой и начинаем новый с текущего времени (например в конце смены)
         vars.restore_idle_flag=False
         logics.current_idle_store(vars.machine_id)
-        logics.current_idle_add_cause(vars.machine_id, idle.cause_id, datetime.now())
+        logics.current_idle_add_cause(vars.machine_id, idle.cause_id, datetime.now(), vars.project_id, vars.db_quie)
     
     if vars.reset_idle_flag:        # принудительный сброс текущего простоя без записи
         vars.reset_idle_flag=False
@@ -42,7 +42,7 @@ def idle(vars):
                     #если кончился техпростой - записываем, устанавливаем как "нет причины", устанавливаем флаг обновления причины на клиенте
                     print (f'store from backend {(datetime.now()-idle.cause_time).total_seconds() >= vars.techidle_lenhth}')
                     # logics.current_idle_store(vars.machine_id)
-                    logics.current_idle_add_cause(vars.machine_id, settings.NOT_CHEKED_CAUSE, datetime.now())
+                    logics.current_idle_add_cause(vars.machine_id, settings.NOT_CHEKED_CAUSE, datetime.now(), vars.project_id, vars.db_quie)
             #else:            # простой зафиксирован и нет причины
             #    # здесь реакция если оператор не успел подтвердить простой за необходимое время
             #    if (datetime.now()-idle.begin_time).total_seconds() >=settings.CAUSE_CHECK_TIMEOUT:
@@ -57,8 +57,8 @@ def idle(vars):
             if idle.cause:      # если указана причина
                 pass
             else:   #если причина не указана
-                logics.current_idle_add_cause(vars.machine_id, settings.NOT_CHEKED_CAUSE, datetime.now())
-            logics.current_idle_store(vars.machine_id)
+                logics.current_idle_add_cause(vars.machine_id, settings.NOT_CHEKED_CAUSE, datetime.now(), vars.project_id,  vars.db_quie)
+            logics.current_idle_store(vars.machine_id, vars.project_id, vars.db_quie)
             logics.current_idle_reset(vars.machine_id)
         else:                 # работа - выход  
             pass
