@@ -10,7 +10,7 @@ def signal_techtimeout(vars):
     signals values with timeout
     VARS:
         'result_in':'5002.resultIn', -          вход от источника
-        'counter_in':'5003.result',             вход от источника счетчика
+        'counter':'5003.result',             вход от источника счетчика
         'counter_reset':'5004.result',          вход от источника сброс счетчика
         'write_init':'13001.args.writeInit',    сигнал принудительной записи
         'write_counter':'13001.args.write_counter' сигнал записи счетчика
@@ -42,7 +42,13 @@ def signal_techtimeout(vars):
     #           Запись счетчика
     if vars.write_counter:
         vars.write_counter=False
-        ...
+        logics.db_put_state(vars.db_quie,
+                                {   'id':vars.channel_id, 
+                                    'project_id':vars.project_id, 
+                                    'time':time_now,
+                                    'status':7,
+                                    'length':vars.counter
+                                    })
         #TODO здесь пишем  со статусом 7, length - счетчик, time_now         
         vars.counter_reset=True #сбрасываем счетчик в контроллере
         return
@@ -138,7 +144,7 @@ def signal_techtimeout(vars):
                             vars.buffer_time=time_now
                             vars.buffered=True
                         else:                # предыдущий отрезок был НЕ Работа
-                            vars.saved_length=time_now-vars.buffer_time
+                            vars.saved_length=(time_now-vars.buffer_time).total_seconds()
                             vars.saved_status=vars.buffer_status
                             vars.saved_time=vars.buffer_time
                             vars.buffer_status=status
@@ -151,7 +157,7 @@ def signal_techtimeout(vars):
             else:
                 if vars.saved_status==3 and vars.buffer_status==3:				# ------_----
                     vars.saved_status=vars.buffer_status
-                    vars.saved_length=vars.saved_length+(time_now-vars.buffer_time).total_seconds()
+                    vars.saved_length=vars.saved_length + (time_now-vars.buffer_time).total_seconds()
                     if vars.was_write_init :								#если писали по сигналу write_init обновляем saved_time
                         vars.saved_time=vars.buffer_time
                     vars.buffered=True

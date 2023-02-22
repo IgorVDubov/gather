@@ -25,7 +25,8 @@ period->float: период опроса в сек
 handler->callable: функция предобработки данных из channel_handlers 
 ''' 
 module_list=[ 
-            {'id':'machine1','type':'ModbusTcp','ip':'127.0.0.1','port':'511','unit':0x1, 'address':0, 'regCount':8, 'function':2, 'format':DI, 'period':1},
+            {'id':'cocos_di','type':'ModbusTcp','ip':'127.0.0.1','port':'511','unit':0x1, 'address':0, 'regCount':8, 'function':2, 'format':DI, 'period':1},
+            {'id':'cocos_ai','type':'ModbusTcp','ip':'127.0.0.1','port':'511','unit':0x1, 'address':0, 'regCount':1, 'function':4, 'format':DI, 'period':1},
             ]    
   
 
@@ -59,16 +60,23 @@ channels_config={
         },
     ],
     'nodes':[  
-        {'id':5003,'moduleId':None,'type':'AI','sourceIndexList':[], # счетчик
-                        },
-        {'id':5004,'moduleId':None,'type':'AI','sourceIndexList':[], # сброс счетчика
-                        },
-        {'id':2020,'moduleId':'machine1','type':'DI','sourceIndexList':[0,1], 'handler':handlers.signal_techtimeout,'args':{
+        {'id':2021,'moduleId':'cocos_ai','type':'AI','sourceIndexList':[0], 'handler':handlers.ai2021,'args':{     # AI
+                        'result':'self.result',
+                        'result_in':'self.result_in',
+                        # 'in_dost':'2021.dost',
+                        'in_dost':True,
+                        'counter':0,
+                        'reset_counter':False,
+                        'k':0.00010584,
+                        'min_ai':10,
+                        }
+        },
+        {'id':2020,'moduleId':'cocos_di','type':'DI','sourceIndexList':[0,1], 'handler':handlers.signal_techtimeout,'args':{
                         'channel_id':2020,
                         'result_in':'2020.result_in',
                         'dost':'2020.dost',
-                        'counter_in':'5003.result',
-                        'counter_reset':'5004.result',
+                        'counter':'2021.args.counter',
+                        'counter_reset':'2021.args.reset_counter',
                         'write_init':'13001.args.write_init_2020',
                         'write_counter':'13001.args.write_counter_2020',
                         'status_ch_b1':'11001.args.b3',
@@ -145,15 +153,17 @@ channels_config={
 from consts import   INT, FLOAT, LIST
                                 
 mb_server_addr_map=[
-]
-    # {'unit':0x1, 'map':{
-    #     # 'di':[{'id':4001, 'attr':'result', 'addr':0, 'len':16}
-    #     #     ],
-    #     'hr':[{'channel':'4001.result', 'addr':0, 'type':INT},
-    #           {'channel':'4001.args.v','addr':1,'type':FLOAT, 'len':2}
-    #     ]
-    #     }
-    # }]
+
+    {'unit':0x1, 'map':{
+        # 'di':[{'id':4001, 'attr':'result', 'addr':0, 'len':16}
+        #     ],
+        'hr':[
+            {'channel':'2020.args.status', 'addr':0, 'type':INT},
+            {'channel':'2021.args.counter', 'addr':1, 'type':FLOAT},
+            {'channel':'2021.result', 'addr':3, 'type':FLOAT},
+        ]
+        }
+    }]
 
 
 MBServerAdrMap=mb_server_addr_map

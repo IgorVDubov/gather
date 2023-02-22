@@ -83,8 +83,8 @@ def parse_attr_params(attrParam):
                 attr=other
         except ValueError:
             BindChannelId='self'
-            attr=attrParam
-            # attr=other
+            #attr=attrParam
+            attr=other
         # print(f'{attrParam=}: {BindChannelId=},{attr=}')
         if attr == None:      # channelBinding
             return BindChannelId, None

@@ -39,6 +39,7 @@ class Vars:
         s=''
         for i in range(0,len(attr)):
             if attr[i]=='.':
+                
                 result=getattr(obj,s)
                 s=''
                 obj=result
