@@ -320,7 +320,7 @@ class MBServer(ModbusTcpServer):
                         raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not list type')
                 elif val_type==FLOAT:
                     if type(val) in (int,float):
-                        self.set_func_(unit,addr,packFloatTo2WordsCDAB(val))     # уточнить метод упаковки
+                        self.set_func_3(unit,addr,packFloatTo2WordsCDAB(val))     # уточнить метод упаковки
                     else:
                         raise ModbusExchangeServerException(f'modbusServer setValue value ({val}) for id:{id} is not int or float type')
             elif reg_type==IR:
