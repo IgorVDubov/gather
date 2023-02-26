@@ -101,7 +101,7 @@ channels_config={
         {'id':5001,'moduleId':None,'type':'AI','sourceIndexList':[], 'handler':handlers.r_level_timeout,'args':{
                         'channel':'4001',
                         'dbChannel':None,
-                        'writeInit':'13001.args.write_init_5001',
+                        'writeInit':'13002.args.write_init_5001',
                         'statusCh_b1':'11001.args.b1',
                         'statusCh_b2':'11001.args.b2',
                         'grWork':'1001.args.grWork',
@@ -128,7 +128,7 @@ channels_config={
                         'b1':0,'b2':0,'b3':0,'b4':0,'b5':0,'b6':0,'b7':0,'b8':0,'b9':0,'b10':0,
                         'b11':0,'b12':0,'b13':0,'b14':0,'b15':0,'b16':0
                         }},
-        {'id':13001,  'handler':handlers.day_sheduller,
+        {'id':13001,  'handler':handlers.day_scheduler,
                 'args':{
                         'write_init_5001':False,
                         'write_init_5002':False,
@@ -163,7 +163,14 @@ channels_config={
     ],
     'dbquie':[
         {'id':12001},
-        ]
+    ],
+    'scheduler':[
+        {'id':13002,'time_list':['07:00','15:30','23:30','21:24'],
+            'handler':handlers.scheduler.task1,
+            'args':{
+                'write_init_5001':False,
+            }},
+    ],
 }
 
 

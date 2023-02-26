@@ -6,10 +6,12 @@ from time import time
 TASK1_TIME='22:30'
 
 def task1(vars):
-    ...
-SHEDULLER=[('Task1',['22:30'], task1)]
+    print ('!!!!!!!!!!in sheduller Task1!!!!!!')
+    vars.write_init_5001=True
 
-def day_sheduller(vars):
+
+
+def day_scheduler(vars):
     '''
     execute tasks at shedulled day time
     TASK1_TIME format str '24h:m:s' or '24h:m' (00 sec) 
