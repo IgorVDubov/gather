@@ -6,7 +6,14 @@ from channels import channels
 
 from myexceptions import ChannelException, ConfigException
 
-CHANNELS_EXEC_ORDER=[channels.Node,channels.Channel,channels.Programm, channels.DBQuie]#, channels.Message]
+CHANNELS_EXEC_ORDER=[
+            channels.Node,
+            channels.Channel,
+            channels.Programm, 
+            channels.DBQuie, 
+            channels.Scheduler,
+            #channels.Message,
+            ]
 
 class ChannelsBase():
     def __init__(self):
@@ -117,10 +124,12 @@ def channel_base_init(channelsConfig, dbQuie):
         elif chType==channels.DBQuie:
             cls=channels.DBQuie
             dbQuieChannel=True
-        elif chType==channels.DBconnector:
-            cls=channels.DBQuie
-        elif chType==channels.Message:
-            cls=channels.Message
+        elif chType==channels.Scheduler:
+            cls=channels.Scheduler
+        # elif chType==channels.DBconnector:
+        #     cls=channels.DBQuie
+        # elif chType==channels.Message:
+        #     cls=channels.Message
         else:
             raise ConfigException(f'no type in classes for {chType} {channelType}')
         for channelConfig in channelsConfig.get(channelType):
@@ -140,6 +149,8 @@ def channel_base_init(channelsConfig, dbQuie):
                         channel.addArg(name, param)
             else:
                 channel=cls(**channelConfig)
+            if isinstance(channel, channels.Scheduler):
+                channel.init_args()
             chBase.add(channel)
         dbQuieChannel=False
     for (channel2Bind, name, bindId, param) in bindings:
