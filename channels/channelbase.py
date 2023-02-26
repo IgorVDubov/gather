@@ -140,8 +140,6 @@ def channel_base_init(channelsConfig, dbQuie):
                 channel=cls(**channelConfig)
                 for name, arg in args.items():
                     bindId, param= channels.parse_attr_params(arg)
-                    # if bindId == 'self':
-                    #     bindId=channel.id
                     if bindId != None:
                         channel.addArg(name)
                         bindings.append((channel, name, bindId, param))

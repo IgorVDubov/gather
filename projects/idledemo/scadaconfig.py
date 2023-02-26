@@ -77,8 +77,8 @@ channels_config={
                         'dost':'2020.dost',
                         'counter':'2021.args.counter',
                         'counter_reset':'2021.args.reset_counter',
-                        'write_init':'13001.args.write_init_2020',
-                        'write_counter':'13001.args.write_counter_2020',
+                        'write_init':'13002.args.write_init_2020',
+                        'write_counter':'13002.args.write_counter_2020',
                         'status_ch_b1':'11001.args.b3',
                         'status_ch_b2':'11001.args.b4',
                         'dost_timeout':'1001.args.dostTimeout',
@@ -108,12 +108,12 @@ channels_config={
                         'b1':0,'b2':0,'b3':0,'b4':0,'b5':0,'b6':0,'b7':0,'b8':0,'b9':0,'b10':0,
                         'b11':0,'b12':0,'b13':0,'b14':0,'b15':0,'b16':0
                         }},
-        {'id':13001,  'handler':handlers.day_scheduler,
-                'args':{
-                        # 'write_init_5001':False,
-                        'write_init_2020':False,
-                        'write_counter_2020':False
-                        }},
+        # {'id':13001,  'handler':handlers.day_scheduler,
+        #         'args':{
+        #                 # 'write_init_5001':False,
+        #                 'write_init_2020':False,
+        #                 'write_counter_2020':False
+        #                 }},
         
         {'id':17002,  'handler':handlers.idle,
                 'args':{
@@ -134,10 +134,11 @@ channels_config={
         {'id':12001},
     ],
     'scheduler':[
-        {'id':13002,'time_list':['07:00','15:30','23:30','21:24'],
-            'handler':handlers.scheduler.task1,
+        {'id':13002,'time_list':['07:00','15:30','23:30','19:00'],
+            'handler':handlers.scheduler.write_init,
             'args':{
-                'write_init_5001':False,
+                'write_init_2020':False,
+                'write_counter_2020':False,
             }},
     ],
 }

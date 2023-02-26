@@ -5,9 +5,10 @@ from time import time
 
 TASK1_TIME='22:30'
 
-def task1(vars):
+def write_init(vars):
     print ('!!!!!!!!!!in sheduller Task1!!!!!!')
-    vars.write_init_5001=True
+    vars.write_init_2020=True
+    vars.write_counter_2020=True
 
 
 
