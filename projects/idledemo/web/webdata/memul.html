@@ -61,6 +61,7 @@
     const STATUS_COLORS=['lightGrye','grey','yellow', 'lightGreen']
     const STATUS_NAMES=['N/A','Откл','Простой', 'Работа']
     const EMUL_CH=4001
+    const EMUL_CH_ARG= 'result_in'
     const MACHINE_CH=5001
     const SATATUS_ARG='args.currentState'
     const SUBSCRIBE_CHANNELS=['5001.args.currentState']
@@ -175,13 +176,13 @@
     };
 
     document.getElementById('off').addEventListener('click', function(){
-        channelSetRequest(EMUL_CH, 'result_in', 0).then(()=>{resetTime();})
+        channelSetRequest(EMUL_CH, EMUL_CH_ARG, 0).then(()=>{resetTime();})
     });
     document.getElementById('stand').addEventListener('click', function(){
-        channelSetRequest(EMUL_CH, 'result_in', 2).then(()=>{resetTime();})
+        channelSetRequest(EMUL_CH, EMUL_CH_ARG, 2).then(()=>{resetTime();})
     });
     document.getElementById('work').addEventListener('click', function(){
-        channelSetRequest(EMUL_CH, 'result_in', 33).then(()=>{resetTime();})
+        channelSetRequest(EMUL_CH, EMUL_CH_ARG, 33).then(()=>{resetTime();})
     });
     
     function resetTime(){

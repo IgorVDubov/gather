@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from typing import Any, List, Type
+import schedule
 
 import consts
 from channels.vars import Vars
@@ -83,8 +84,8 @@ def parse_attr_params(attrParam):
                 attr=other
         except ValueError:
             BindChannelId='self'
-            attr=attrParam
-            # attr=other
+            #attr=attrParam
+            attr=other
         # print(f'{attrParam=}: {BindChannelId=},{attr=}')
         if attr == None:      # channelBinding
             return BindChannelId, None
@@ -280,11 +281,47 @@ class Programm(Channel):
     def __str__(self):
         return f'Programm id:{self.id}, handler:{self.handler}'+ f'\n  args:\n{self.args}' if self.args else ''
 
+class Scheduler(Channel):
+    channelType='scheduler'
+    def __init__(self, id:int, time_list, handler:callable, args:Vars=None) -> None:
+        self.id=id
+        self.handler=handler
+        self.time_list=time_list
+        self.scheduller=schedule.Scheduler()
+        
+    def init_args(self):
+        for t in self.time_list:
+            self.scheduller.every().day.at(t).do(self.handler, self.args)
+
+    def __call__(self):
+        try:
+            self.scheduller.run_pending()
+        except Exception as e:
+            raise ProgrammException(f'Exc in channel {self.id} handler:{self.handler.__name__} raise {e}')
+    
+    def toDictFull(self):
+        return self.toDict()
+
+    def toDict(self):
+        result= { 'channelType':self.channelType,
+                'id':self.id,
+                'handler':self.handler.__name__}
+        if self.args:
+            result.update({'args':self.args.toDict()})
+        return result
+    
+    def exec(self):
+        return self.__call__()
+
+    def __str__(self):
+        return f'Programm id:{self.id}, handler:{self.handler}'+ f'\n  args:\n{self.args}' if self.args else ''
+
 CHANNELS_CLASSES={  'channels':'channels.Channel',           # соответствие имени класса для корректной привязки в аргументах Vars 
                     'nodes':'channels.Node', 
                     'programms':'channels.Programm', 
                     'dbquie':'channels.DBQuie',  
-                    'dbconnector':'channels.DBConnector',
+                    'scheduler':'channels.Scheduler',
+                    # 'dbconnector':'channels.DBConnector',
                     # 'message':'channels.message',
                 } 
 

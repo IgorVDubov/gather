@@ -16,5 +16,6 @@ class Consts(Singleton):
     INSERT='insert'
     UPDATE='update'
     DELETE='delete'
+    DBC='dbc'
 
 

@@ -46,6 +46,8 @@ class DBInterface():
         if requestType==DELETE:
             return self.connection.delete(sql,params)
 
+    def exec_querry(self, querry_func:callable, params):
+        return self.connection.exec_querry_func(querry_func, params)
 
 
 if __name__ == '__main__':

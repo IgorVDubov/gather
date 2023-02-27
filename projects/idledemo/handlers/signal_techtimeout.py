@@ -1,14 +1,16 @@
 from datetime import datetime
+import importlib
 
 from consts import Consts
-
+import globals
+logics=importlib.import_module('projects.'+globals.PROJECT['path']+'.logics')
 
 def signal_techtimeout(vars):
     '''
     signals values with timeout
     VARS:
         'result_in':'5002.resultIn', -          вход от источника
-        'counter_in':'5003.result',             вход от источника счетчика
+        'counter':'5003.result',             вход от источника счетчика
         'counter_reset':'5004.result',          вход от источника сброс счетчика
         'write_init':'13001.args.writeInit',    сигнал принудительной записи
         'write_counter':'13001.args.write_counter' сигнал записи счетчика
@@ -40,7 +42,13 @@ def signal_techtimeout(vars):
     #           Запись счетчика
     if vars.write_counter:
         vars.write_counter=False
-        ...
+        logics.db_put_state(vars.db_quie,
+                                {   'id':vars.channel_id, 
+                                    'project_id':vars.project_id, 
+                                    'time':time_now,
+                                    'status':7,
+                                    'length':vars.counter
+                                    })
         #TODO здесь пишем  со статусом 7, length - счетчик, time_now         
         vars.counter_reset=True #сбрасываем счетчик в контроллере
         return
@@ -136,7 +144,7 @@ def signal_techtimeout(vars):
                             vars.buffer_time=time_now
                             vars.buffered=True
                         else:                # предыдущий отрезок был НЕ Работа
-                            vars.saved_length=time_now-vars.buffer_time
+                            vars.saved_length=(time_now-vars.buffer_time).total_seconds()
                             vars.saved_status=vars.buffer_status
                             vars.saved_time=vars.buffer_time
                             vars.buffer_status=status
@@ -149,7 +157,7 @@ def signal_techtimeout(vars):
             else:
                 if vars.saved_status==3 and vars.buffer_status==3:				# ------_----
                     vars.saved_status=vars.buffer_status
-                    vars.saved_length=vars.saved_length+(time_now-vars.buffer_time).total_seconds()
+                    vars.saved_length=vars.saved_length + (time_now-vars.buffer_time).total_seconds()
                     if vars.was_write_init :								#если писали по сигналу write_init обновляем saved_time
                         vars.saved_time=vars.buffer_time
                     vars.buffered=True
@@ -177,10 +185,12 @@ def signal_techtimeout(vars):
         db_write_flag=False
         vars.write_init=False                    #сбрасываем флаг инициализации записи если был 1
         if vars.saved_length>10 or vars.saved_length<90000 : 
-            #vars.lengthDB=1                    #отмечаем первый отрезок формируемый при старте МРВ тк нет текущей даты
-            vars.dbQuie.put({'questType':Consts.INSERT,
-            'sql':'INSERT INTO track_2 VALUES (%s, %s, %s, %s)'
-            ,'params': (vars.channel_id, vars.saved_time.strftime("%Y:%m:%d %H:%M:%S"), vars.saved_status, int(round(vars.saved_length)))
-            })
+            logics.db_put_state(vars.db_quie,
+                                {   'id':vars.channel_id, 
+                                    'project_id':vars.project_id, 
+                                    'time':vars.saved_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                    'status':vars.saved_status,
+                                    'length':int(round(vars.saved_length))
+                                    })
             print(f'Put ti dbquire id={vars.channel_id}, time={vars.saved_time.strftime("%Y:%m:%d %H:%M:%S")}, status={vars.saved_status}, length={int(vars.saved_length)}')
             

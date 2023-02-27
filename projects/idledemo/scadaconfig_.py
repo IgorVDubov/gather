@@ -25,8 +25,7 @@ period->float: период опроса в сек
 handler->callable: функция предобработки данных из channel_handlers 
 ''' 
 module_list=[ 
-            {'id':'cocos_di','type':'ModbusTcp','ip':'127.0.0.1','port':'511','unit':0x1, 'address':0, 'regCount':8, 'function':2, 'format':DI, 'period':1},
-            {'id':'cocos_ai','type':'ModbusTcp','ip':'127.0.0.1','port':'511','unit':0x1, 'address':0, 'regCount':1, 'function':4, 'format':DI, 'period':1},
+            {'id':'machine1','type':'ModbusTcp','ip':'192.168.1.200','port':'502','unit':0x1, 'address':0, 'regCount':2, 'function':3, 'format':DI, 'period':1},
             ]    
   
 
@@ -60,25 +59,24 @@ channels_config={
         },
     ],
     'nodes':[  
-        {'id':2021,'moduleId':'cocos_ai','type':'AI','sourceIndexList':[0], 'handler':handlers.ai2021,'args':{     # AI
-                        'result':'self.result',
-                        'result_in':'self.result_in',
-                        # 'in_dost':'2021.dost',
-                        'in_dost':True,
-                        'counter':0,
-                        'reset_counter':False,
-                        'k':0.00010584,
-                        'min_ai':10,
-                        }
-        },
-        {'id':2020,'moduleId':'cocos_di','type':'DI','sourceIndexList':[0,1], 'handler':handlers.signal_techtimeout,'args':{
-                        'channel_id':2020,
-                        'result_in':'2020.result_in',
-                        'dost':'2020.dost',
-                        'counter':'2021.args.counter',
-                        'counter_reset':'2021.args.reset_counter',
-                        'write_init':'13002.args.write_init_2020',
-                        'write_counter':'13002.args.write_counter_2020',
+        {'id':4001,'moduleId':None,'type':'AI','sourceIndexList':[], 
+                        'handler':handlers.prog1,
+                        'args':{
+                            'result_in':'4001.result',
+                            'result_link_ch':'5001.result',
+                        }},
+        {'id':5003,'moduleId':None,'type':'AI','sourceIndexList':[], # счетчик
+                        },
+        {'id':5004,'moduleId':None,'type':'AI','sourceIndexList':[], # сброс счетчика
+                        },
+        {'id':5002,'moduleId':'machine1','type':'DI','sourceIndexList':[0,1], 'handler':handlers.signal_techtimeout,'args':{
+                        'channel_id':5002,
+                        'result_in':'5002.result_in',
+                        'dost':'5002.dost',
+                        'counter_in':'5003.result',
+                        'counter_reset':'5004.result',
+                        'write_init':'13001.args.write_init_5002',
+                        'write_counter':'13001.args.write_counter_5002',
                         'status_ch_b1':'11001.args.b3',
                         'status_ch_b2':'11001.args.b4',
                         'dost_timeout':'1001.args.dostTimeout',
@@ -96,9 +94,33 @@ channels_config={
                         'dost_length':0,
                         'NA_status_before':False,
                         'was_write_init':False,
-                        'db_quie':'12001',
+                        'dbQuie':'12001',
                         'сause':'17002.args.cause_id',
                         'idle_handler_id':17002,
+                        'project_id':7,
+                        }},
+        {'id':5001,'moduleId':None,'type':'AI','sourceIndexList':[], 'handler':handlers.r_level_timeout,'args':{
+                        'channel':'4001',
+                        'dbChannel':None,
+                        'writeInit':'13001.args.write_init_5001',
+                        'statusCh_b1':'11001.args.b1',
+                        'statusCh_b2':'11001.args.b2',
+                        'grWork':'1001.args.grWork',
+                        'grStand':'1001.args.grStand',
+                        'dostTimeout':'1001.args.dostTimeout',
+                        'minLength':'1001.args.tech_timeout',
+                        'notDost':0,
+                        'NAStatusBefore':False,
+                        'currentState':0,
+                        'currentStateTime':0,
+                        'currentInterval':0,
+                        'buffered':False,
+                        'statusDB':0,
+                        'lengthDB':0,
+                        'timeDB':0,
+                        'init':True,
+                        'dbQuie':'12001',
+                        'idle_handler_id':17001,
                         'project_id':7,
                         }},
     ],
@@ -108,18 +130,18 @@ channels_config={
                         'b1':0,'b2':0,'b3':0,'b4':0,'b5':0,'b6':0,'b7':0,'b8':0,'b9':0,'b10':0,
                         'b11':0,'b12':0,'b13':0,'b14':0,'b15':0,'b16':0
                         }},
-        # {'id':13001,  'handler':handlers.day_scheduler,
-        #         'args':{
-        #                 # 'write_init_5001':False,
-        #                 'write_init_2020':False,
-        #                 'write_counter_2020':False
-        #                 }},
-        
-        {'id':17002,  'handler':handlers.idle,
+        {'id':13001,  'handler':handlers.day_sheduller,
                 'args':{
-                    'state':'2020.args.status',
-                    'machine_id':2020,
-                    'techidle_lenhth':'2020.args.tech_timeout',
+                        'write_init_5001':False,
+                        'write_init_5002':False,
+                        'write_counter_5002':False
+                        }},
+        
+        {'id':17001,  'handler':handlers.idle,
+                'args':{
+                    'state':'5001.args.currentState',
+                    'machine_id':5001,
+                    'techidle_lenhth':'5001.args.minLength',
                     'cause_id':None,
                     'current_cause':None,
                     'reset_idle_flag':False,
@@ -128,19 +150,23 @@ channels_config={
                     'db_quie':'12001',
                     'project_id':7,
                 }},
+        {'id':17002,  'handler':handlers.idle,
+                'args':{
+                    'state':'5002.args.status',
+                    'machine_id':5002,
+                    'techidle_lenhth':'5002.args.tech_timeout',
+                    'cause_id':None,
+                    'current_cause':None,
+                    'reset_idle_flag':False,
+                    'set_cause_flag':False,
+                    'restore_idle_flag':False,
+                    'project_id':7,
+                }},
         
     ],
     'dbquie':[
         {'id':12001},
-    ],
-    'scheduler':[
-        {'id':13002,'time_list':['07:00','15:30','23:30','19:00'],
-            'handler':handlers.scheduler.write_init,
-            'args':{
-                'write_init_2020':False,
-                'write_counter_2020':False,
-            }},
-    ],
+        ]
 }
 
 
@@ -161,17 +187,15 @@ channels_config={
 from consts import   INT, FLOAT, LIST
                                 
 mb_server_addr_map=[
-
-    {'unit':0x1, 'map':{
-        # 'di':[{'id':4001, 'attr':'result', 'addr':0, 'len':16}
-        #     ],
-        'hr':[
-            {'channel':'2020.args.status', 'addr':0, 'type':INT},
-            {'channel':'2021.args.counter', 'addr':1, 'type':FLOAT},
-            {'channel':'2021.result', 'addr':3, 'type':FLOAT},
-        ]
-        }
-    }]
+]
+    # {'unit':0x1, 'map':{
+    #     # 'di':[{'id':4001, 'attr':'result', 'addr':0, 'len':16}
+    #     #     ],
+    #     'hr':[{'channel':'4001.result', 'addr':0, 'type':INT},
+    #           {'channel':'4001.args.v','addr':1,'type':FLOAT, 'len':2}
+    #     ]
+    #     }
+    # }]
 
 
 MBServerAdrMap=mb_server_addr_map

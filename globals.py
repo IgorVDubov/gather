@@ -16,6 +16,7 @@ users=[
     {'id': 1, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div', 'pass': '123'},
     {'id': 2, 'first_name': 'Igor', 'middle_name': '', 'second_name': 'Dubov', 'login': 'div1', 'pass': '123'},
     {'id': 3, 'first_name': '5001', 'middle_name': '', 'second_name': '', 'login': 'm_5001', 'pass': 'm777'},
+    {'id': 4, 'first_name': '2020', 'middle_name': '', 'second_name': '', 'login': 'm_2020', 'pass': 'm777'},
     ]
 
 
@@ -37,7 +38,7 @@ host:str, port:itn  An optional (interface, port) to bind to.
 DB_TYPE=Consts.MYSQL        #тип используемой СУБД (доступные в dbclassfactory)
 MySQLServerParams={
     'host': '127.0.0.1',
-    'database': 'utrack_demo',
+    'database': 'utrack_db',
     'user': 'utrack',                       #TODO в переменные окружения!!!!!
     'password' : 'Adm_db78'
 }

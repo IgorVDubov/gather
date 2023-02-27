@@ -115,7 +115,7 @@ class SourcePool(object):
                 
                 delay=source.period-(time()-before)
                 if delay<=0:
-                    logger.warning(f'Not enough time for source read, source id:{source.id}')
+                    logger.warning(f'Not enough time for source read, source id:{source.id}, delay={delay}')
                 await asyncio.sleep(delay)
             except asyncio.CancelledError:
                 print(f"Got CancelledError close client connection{id(source.connection)}")
