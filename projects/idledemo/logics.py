@@ -88,8 +88,23 @@ def db_get_all_idles(id):
     # return [rec for rec in project_globals.idles_db if (rec and rec.get('id')==id)]
     return [rec for rec in project_globals.idles_db ]
 
+
 def addCause(new_cause):        #добавляем новую причину в список возможных
     settings.IDLE_CAUSES.update({max(settings.IDLE_CAUSES.keys())+1:new_cause})
+
+def check_allowed_machine(machine_id:int, remote_ip:list[str])-> bool:
+    '''
+     проверяет доступность канала станка для подключения клиента с указанного в разрешенных ip
+     если список ip  пустой - разрешаются все
+    '''
+    if machine_id in settings.ALLOWED_MACHINES.keys():
+        allowed_ip=settings.ALLOWED_MACHINES[machine_id]
+        if len(allowed_ip)==0 or remote_ip in allowed_ip:
+            return True
+        else:
+            raise ValueError(f'ip {remote_ip} not allowed for {machine_id} client')
+    else:
+        raise ValueError(f'machine {machine_id} not allowed for client from ip {remote_ip}')
 
 def get_machine_from_user(user:str)->int:
     # try:
@@ -97,7 +112,7 @@ def get_machine_from_user(user:str)->int:
     # except ValueError:
     #     raise ValueError
 
-def get_causeid_arg(machine_ch:Channel)->int:               
+def get_causeid_arg(machine_ch:Channel)->int:                                                   #TODO убрать
     return str(machine_ch.get_arg(settings.IDLE_HANDLERID_ARG)) + '.' + settings.CAUSEID_ARG
 
 def get_machine_causes(id:int)->dict[int:str]:               # TODO refact with DB

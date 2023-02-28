@@ -37,7 +37,7 @@ class BaseHandler(RequestHandlerClass):
         try:
             userId = int(tornado.escape.xhtml_escape(self.current_user))
             # user=[user for user in self.application.data.users if user['id']==userId][0]
-            if  user:=next(filter(lambda user: user['id'] == userId, self.application.data.users)):  
+            if  user:=next(filter(lambda user: user['id'] == userId, self.application.data.users), None):  
                 # logger.debug('user '+user['login']+' ok')
                 return user
             else:
@@ -58,24 +58,30 @@ class BaseHandler(RequestHandlerClass):
         return decorator    
 
 class MainHtmlHandler(BaseHandler):
-    @BaseHandler.check_user(CHECK_AUTORIZATION)
+    # @BaseHandler.check_user(CHECK_AUTORIZATION)
     def get(self):
         # print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
+        # try:
+            # machine_id=logics.get_machine_from_user(self.user.get('login'))
         try:
-            machine_id=logics.get_machine_from_user(self.user.get('login'))
-        except ValueError:
-            logger.log('ERROR', f'wrong machine id in client login {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
-            self.redirect("/login")
-       
+            machine_id=int(tornado.escape.xhtml_escape(self.request.arguments['m'][0]))
+            logics.check_allowed_machine(machine_id, self.request.remote_ip)
+        except ValueError as error:
+            logger.error(error)
+            return  
+            # logger.log('ERROR', f'wrong machine id in client login {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
+            # self.redirect("/login")
+
         self.render('index.html', 
-                    user=self.user.get('login'),
+                    user=machine_id,
+                    # user=self.user.get('login'),
                     machine=machine_id,
                     state_channel=str(machine_id)+'.'+settings.STATE_ARG,
                     tech_idle=logics.get_channel_arg(self.application.data.channelBase,machine_id,settings.TECH_IDLE_ARG),
                     causeid_arg= logics.get_causeid_arg(self.application.data.channelBase.get(machine_id)),
                     idle_couses=json.dumps(logics.get_machine_causes(machine_id), default=str),
                     current_state=logics.get_current_state(self.application.data.channelBase,machine_id),
-                    wsserv=self.application.settings['wsParams'],
+                    wsserv=self.application.settings['wsParams']+'?m='+str(machine_id),
                     server_time=logics.get_server_time(),
                     techidle_id=settings.TECH_IDLE_ID,
                     version=settings.CLIENT_VERSION,
@@ -98,29 +104,33 @@ class AdminHtmlHandler(BaseHandler):
 class ReportsHtmlHandler(BaseHandler):
     @BaseHandler.check_user(CHECK_AUTORIZATION)
     def get(self):
-        machine_id=logics.get_machine_from_user(self.user.get('login'))
+        try:
+            machine_id=logics.get_machine_from_user(self.user.get('login'))
+        except ValueError:
+            logger.log('ERROR', f'wrong machine id in clients prequest args: {self.request.arguments}  from ip:{self.request.remote_ip}.')
+            return  
         self.render('reports.html', 
                     user=self.user.get('login'), 
                     machine=machine_id,
                     wsserv=(self.application.settings['wsParams']+'_reps'),
                     idle_couses=json.dumps(logics.get_machine_causes(machine_id), default=str),
                     state_channel=str(machine_id)+'.'+settings.STATE_ARG,
-                    causeid_arg= logics.get_causeid_arg(self.application.data.channelBase.get(machine_id)),
+                    causeid_arg= str(machine_id)+'.'+settings.CAUSEID_ARG,
                     project=3,
                     version=0.1,
                     )
 
         
     
-class RequestHtmlHandler(BaseHandler):
-    @BaseHandler.check_user(CHECK_AUTORIZATION)
-    def post(self):
-        self.set_header("Content-Type", "application/json")
-        request=json.loads(self.request.body)
-        print (request)
-        if request.get('type')=='get_ch':
-            logger.log('MESSAGE',f'client {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
-            self.write(json.dumps(self.application.data.channelBase.get(request.get('id')).toDict(), default=str))
+# class RequestHtmlHandler(BaseHandler):
+#     # @BaseHandler.check_user(CHECK_AUTORIZATION)
+#     def post(self):
+#         self.set_header("Content-Type", "application/json")
+#         request=json.loads(self.request.body)
+#         print (request)
+#         if request.get('type')=='get_ch':
+#             logger.log('MESSAGE',f'client {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
+#             self.write(json.dumps(self.application.data.channelBase.get(request.get('id')).toDict(), default=str))
 
 class AdmRequestHtmlHandler(BaseHandler):
     @BaseHandler.check_user(CHECK_AUTORIZATION)
@@ -146,6 +156,12 @@ class AdmRequestHtmlHandler(BaseHandler):
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     def open(self):
+            try:
+                machine_id=int(tornado.escape.xhtml_escape(self.request.arguments['m'][0]))
+                logics.check_allowed_machine(machine_id, self.request.remote_ip)
+            except ValueError as error:
+                logger.error(error)
+                return 
             logger.info(f'Web Socket open, IP:{self.request.remote_ip} ')
             if self not in [client.client for client in self.application.data.ws_clients]:
                 self.application.data.ws_clients.append(WSClient(self))
@@ -206,15 +222,6 @@ class MEmulHtmlHandler(BaseHandler):
                     user=self.user.get('login'),
                     data=json.dumps(self.application.data.channelBase.toDict(), default=str),
                     wsserv=(self.application.settings['wsParams'])+'_me')
-class MEmul1HtmlHandler(BaseHandler):
-    @BaseHandler.check_user(CHECK_AUTORIZATION)
-    def get(self):
-        print (f'in MainHtmlHandler, project {PROJECT["name"]}, user {self.user} ')
-        
-        self.render('memul1.html', 
-                    user=self.user.get('login'),
-                    data=json.dumps(self.application.data.channelBase.toDict(), default=str),
-                    wsserv=self.application.settings['wsParams'])
 
 class MEmulRequestHtmlHandler(BaseHandler):
     @BaseHandler.check_user(CHECK_AUTORIZATION)
@@ -355,8 +362,8 @@ class ReportsWSHandler(tornado.websocket.WebSocketHandler):
                     send_data={arg:channel.get_arg(argument)}
                     send_data.update({'time':(datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')})
                     for_send.append(send_data)
-                    if len(for_send):
-                        self.write_message(json.dumps(for_send, default=str))
+                if len(for_send):
+                    self.write_message(json.dumps(for_send, default=str))
             elif jsonData.get('type')=="update_data":
                 if len(project_globals.states_buffer)>0:
                     logger.debug (f"update states{project_globals.states_buffer}")
@@ -373,9 +380,17 @@ class ReportsWSHandler(tornado.websocket.WebSocketHandler):
                     json_data = json.dumps(msg, default=str)
                     self.write_message(json_data)
             elif jsonData.get('type')=='get_ch_arg':
-                logger.debug('MESSAGE',f'client {self.user.get("login")} do get_ch_arg from ip:{self.request.remote_ip}.')
-                print(f"result: {self.application.data.channelBase.get(jsonData.get('id')).get_arg(jsonData.get('arg'))}")
-                self.write(json.dumps(self.application.data.channelBase.get(jsonData.get('id')).get_arg(jsonData.get('arg')), default=str))
+                logger.debug(f'client do get_ch_arg from ip:{self.request.remote_ip}.')
+                try:
+                    result=self.application.data.channelBase.get(jsonData.get('id')).get_arg(jsonData.get('arg'))
+                except AttributeError:
+                    result=None
+                # result = result if result != None else str(None)
+                msg=[{str(jsonData.get('id'))+'.'+jsonData.get('arg') : result}]
+                json_data = json.dumps(msg, default=str)
+                self.write_message(json_data)
+                print(f"result: {msg}")
+                # self.write(json.dumps([], default=str))
             else:
                 logger.debug('Unsupported ws message: '+message)        
  
@@ -412,13 +427,12 @@ print( 'in handlers '+globals.PATH_TO_PROJECT)
 print( 'in handlers full '+os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'js'))
 handlers=[
         (r"/", MainHtmlHandler),
-        (r"/request",RequestHtmlHandler),
+        # (r"/request",RequestHtmlHandler),
         (r"/adm",AdminHtmlHandler),
         (r"/reps",ReportsHtmlHandler),
         (r"/arequest",AdmRequestHtmlHandler),
         (r'/ws', WSHandler),
         (r"/me", MEmulHtmlHandler),
-        (r"/me1", MEmul1HtmlHandler),
         (r"/merequest",MEmulRequestHtmlHandler),
         (r"/login",LoginHandler),
         (r"/logout",LogoutHandler),

@@ -2,7 +2,8 @@ CLIENT_VERSION=0.1
 STATE_ARG='args.saved_status'
 TECH_IDLE_ARG='args.tech_timeout'
 STATE_TIME_ARG='args.saved_time'
-CAUSEID_ARG='args.cause_id'
+CAUSEID_ARG='args.cause'
+CAUSE_TIME_ARG='args.cause_time'
 IDLE_HANDLERID_ARG='args.idle_handler_id'
 IDLE_STATES=(1,2) # состояния при которых фиксируется простой
 CAUSE_CHECK_TIMEOUT=120 # таймаут указания причины простоя
@@ -14,4 +15,6 @@ STATES =['N/A', 'Откл', 'Простой', 'Работа']
 TIME_FORMAT='%Y-%m-%dT%H:%M:%S'
 
 DEFAULT_CAUSES=(1,2)
+ALLOWED_MACHINES={2020:['192.168.1.200', '127.0.0.1']} # id каналов и разрешенные ip, к которым могут подключаться клиенты контроля простоя через запрос ?m=id
 
+OPERATORS={1111:{'name':'Петров А.П.'},2222:{'name':'Попов-Петровский А.Р.'}}

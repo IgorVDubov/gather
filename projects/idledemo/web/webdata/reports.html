@@ -263,8 +263,9 @@
     const WS_SERVER = '{{ wsserv }}';
     const IDLE_COUSES={{  idle_couses  }}
     const STATE_CHANNEL='{{state_channel}}'
-    const CAUSEID_ARG1='{{ causeid_arg }}'
-    const CAUSEID_ARG='17001.args.current_cause'
+    const CAUSEID_ARG='{{ causeid_arg }}'
+    // const CAUSEID_ARG='17001.args.current_cause'
+    // const CAUSE_TIME_ARG='17001.args.current_cause'
     const SUBSCRIBE_CHANNELS=[STATE_CHANNEL, CAUSEID_ARG]
     const STATUS_LIGHT_COLORS=['#e6e6e6','#b4b4b4','#fff134','#03e003']
      //{-1:'Технологический простой', 0:'Не подтверждена',,1:"Авария", 2:"Нет сырья", 3:"Нет задания", 4:"Плановый простой", 5:'Перерыв'}
@@ -355,7 +356,7 @@
     function wsEvents(){
       ws.onmessage = function(evt) {
         let msg = JSON.parse(evt.data);
-        console.log(msg)
+        console.log('ws message:', msg)
         switch (msg.type) {
           case "first_read":
               initTables(msg.data.states, msg.data.idles)
@@ -399,8 +400,8 @@
           console.log(' Connection ok, send subscribe msg: ' )
           wsSend(JSON.stringify({type:"first_read", id:MACHINE_ID}))
           wsSend(JSON.stringify({type:"subscribe",data:SUBSCRIBE_CHANNELS}))
-          wsSend(JSON.stringify({type:"get_ch_arg",id:17001, arg:'args.current_cause'}))
-          wsSend(JSON.stringify({type:"get_ch_arg",id:5001, arg:'args.currentState'}))
+          wsSend(JSON.stringify({type:"get_ch_arg",id:MACHINE_ID, arg:'args.status'}))
+          wsSend(JSON.stringify({type:"get_ch_arg",id:MACHINE_ID, arg:'args.cause'}))
       };
     } 
 
@@ -551,13 +552,9 @@
 
 
     function initTables(states, idles){
-        console.log(states)
         let statesTable=makeTable(makeStateRow, STATES_DB_HEADERS, states)
-        
         statesContainerElem.append(statesTable)
-        console.log(idles)
         let idlesTable=makeTable(makeIdleRow, IDLES_DB_HEADERS, idles)
-        
         idlesContainerElem.append(idlesTable)
         statesTableElem=document.getElementById('statesTable')
         idlesTableElem=document.getElementById('idlesTable')
@@ -659,6 +656,7 @@
     function chartsUpdate(){
         let stateRec=new Object
         lastRec=statesDb[statesDb.length-1]
+        if (lastRec==undefined) return
         stateRec.status=currentState
         bTime=moment(lastRec.time).add(lastRec['length'], 's')
         stateRec.time=bTime.format('YYYY-MM-DDTHH:mm:ss')

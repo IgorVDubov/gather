@@ -21,6 +21,7 @@ def idle(vars):
 
     '''
     idle=logics.current_idle_get(vars.machine_id)
+    
     if vars.set_cause_flag:
         print(f'set cause flag to {vars.machine_id} to {vars.cause_id}')
         vars.set_cause_flag=False
@@ -48,8 +49,6 @@ def idle(vars):
             #    if (datetime.now()-idle.begin_time).total_seconds() >=settings.CAUSE_CHECK_TIMEOUT:
             #        ...      # нe указана причина за отведенное время
 
-
-
         else:                # появился новый простой - авто техпростой
             logics.current_idle_set(vars.machine_id, vars.state, vars.techidle_lenhth, settings.TECH_IDLE_ID , datetime.now(), datetime.now())
     else:
@@ -64,3 +63,4 @@ def idle(vars):
             pass
     if idle:
         vars.current_cause=idle.cause
+        vars.current_cause_time=idle.cause_time

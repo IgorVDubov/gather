@@ -5,53 +5,6 @@ from channels.channelbase import ChannelsBase
 from channels.channels import Channel, parse_attr_params
 
 
-class EList(list):
-    def __init__(self, *args, **kwargs):
-        self.members=dict()
-        super(EList, self).__init__(*args, **kwargs)
-    def get_by_attr(self,attr_name, attr_val):
-        return next((i for i in self if getattr(i, attr_name) == attr_val), None)
-    def exist(self, filters:dict):
-        result=False
-        result=0
-        for item in self:
-            for key, val in filters.items():
-                if getattr(item, key)== val:
-                    result+=1
-            if result==len(filters.keys()):
-                return item
-            else:
-                return None
-            
-    def append_subscription(self,member):
-        refs=self.members.get(id(member),0)
-        if not refs:
-            self.append(member)
-        self.members.update({id(member):(refs+1)})
-        return member
-    
-    def del_subscription(self,member):
-        if refs:=self.members.get(id(member),0):
-            refs-=1
-            self.members[id(member)]=refs
-            if refs<=0:
-                self.remove(member)
-                self.members.__delitem__(id(member))
-            return member
-        else:
-            return None
-    
-    def _get_by_id(self,id):
-        return next((i for i in self if id(i) == id), None)
-    
-    def _get_refs(self, member):
-        return next((refs for m_id,refs in self.members.items() if m_id == id(member)), None)
-    
-    def __repr__(self):
-        s=''
-        for _ in self:
-            s+=f'{_}'+f'({self._get_refs(_)}) '
-        return s
 
 class WSClient():
     '''
@@ -90,6 +43,59 @@ class SubscriptChannelArg():
     def __repr__(self) -> str:
         return f'{self.channel.id}.{self.argument}'
 
+class EList(list):
+    '''
+    list с уникальными элементами с счетчиком "подписок"  
+    '''
+    def __init__(self, *args, **kwargs):
+        self.members=dict()
+        super(EList, self).__init__(*args, **kwargs)
+    
+    
+    def exist(self, filters:dict):
+        result=0
+        for item in self:
+            for key, val in filters.items():
+                if getattr(item, key)== val:
+                    result+=1
+            if result==len(filters.keys()):
+                return item
+            else:
+                return None
+            
+    def append_subscription(self,member):
+        refs=self.members.get(id(member),0)
+        if not refs:
+            self.append(member)
+        self.members.update({id(member):(refs+1)})
+        return member
+    
+    def del_subscription(self,member):
+        if refs:=self.members.get(id(member),0):
+            refs-=1
+            self.members[id(member)]=refs
+            if refs<=0:
+                self.remove(member)
+                self.members.__delitem__(id(member))
+            return member
+        else:
+            return None
+    
+    def get_by_attr(self,attr_name, attr_val):
+        return next((i for i in self if getattr(i, attr_name) == attr_val), None)
+        
+    def _get_by_id(self,id):
+        return next((i for i in self if id(i) == id), None)
+    
+    def _get_refs(self, member):
+        return next((refs for m_id,refs in self.members.items() if m_id == id(member)), None)
+    
+    def __repr__(self):
+        s=''
+        for _ in self:
+            s+=f'{_}'+f'({self._get_refs(_)}) '
+        return s
+
 class ChannelSubscriptionsList(EList):
     def add_subscription(self, new_subscription):
         try:
@@ -102,6 +108,7 @@ class ChannelSubscriptionsList(EList):
             subscription=new_subscription
         self.append_subscription(subscription)
         return subscription
+    
 
 @dataclass
 class Data():

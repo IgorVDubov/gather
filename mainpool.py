@@ -133,7 +133,7 @@ class MainPool():
                 #     for wsClient in self.HTTP_server.request_callback.wsClients:
                 #         wsClient.write_message(json.dumps(self.channel_base.toDict(), default=str))
 
-                delay=globals.CHANNELBASE_CALC_PERIOD-(time()-before)
+                delay=globals.CHANNELBASE_CALC_PERIOD - (time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channel_base.channels)} channels ')
                 # print(f'in mail loop:{self.sbscrptions}')

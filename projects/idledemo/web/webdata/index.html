@@ -524,7 +524,8 @@
           console.log(' Server close connection! No data!')
           wsStatus.textContent='offline'
           wsIndicator.style.color='Red'
-          setTimeout(function (){wsConnect()},1000);
+          // setTimeout(function (){wsConnect()},1000);
+          setTimeout(function (){location.reload()},5000);
       };
       ws.onerror = function(evt) {
           console.log(' Server connection error ')
