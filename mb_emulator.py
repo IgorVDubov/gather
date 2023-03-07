@@ -17,10 +17,10 @@ if sys.platform == 'win32':
 
 import importlib
 
-import globals
+import config
 from classes.channels import Node
 
-scada_config=importlib.import_module('projects.'+globals.PROJECT['path']+'.scadaconfig')
+scada_config=importlib.import_module('projects.'+config.PROJECT['path']+'.scadaconfig')
 from exchangeserver import ModbusExchangeServer
 
 STATES={    'N/A':{'result':(None,None),'length':(20,200)},
@@ -111,10 +111,10 @@ def main():
     print ('*'+' '*12+''+'Modbus EMULATOR'+' '*11+'*')
     print ('*'+' '*38+'*')
     print ('*'*40)
-    print (f"ip:{globals.MBServerParams_E['host']}, port:{globals.MBServerParams_E['port']}")
+    print (f"ip:{config.MBServerParams_E['host']}, port:{config.MBServerParams_E['port']}")
 
     nodes = nodesInit(scada_config.ModuleList, scada_config.channelsConfig.get('nodes'))
-    MBServer = MBServerInit(globals.MBServerParams_E,scada_config.MBServerAdrMap)
+    MBServer = MBServerInit(config.MBServerParams_E,scada_config.MBServerAdrMap)
     mainLoop(nodes, MBServer)
 
 if __name__=='__main__':

@@ -17,5 +17,6 @@ class Consts(Singleton):
     UPDATE='update'
     DELETE='delete'
     DBC='dbc'
+    DATE_FORMAT_DB='%Y-%d-%m %H:%M:%S'
 
 

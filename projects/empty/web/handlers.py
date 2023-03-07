@@ -1,10 +1,10 @@
 from loguru import logger
-import globals
+import config
 import os.path
 PATH_TO_PROJECT=os.path.join(os.path.dirname(__file__),'projects',
-                            globals.PROJECT['path'])
-from globals import CHECK_AUTORIZATION
-from globals import PROJECT
+                            config.PROJECT['path'])
+from config import CHECK_AUTORIZATION
+from config import PROJECT
 
 import tornado.web
 import tornado.websocket

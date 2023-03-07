@@ -1,8 +1,8 @@
 from datetime import datetime
 import importlib
 from consts import Consts
-import globals
-logics=importlib.import_module('projects.'+globals.PROJECT['path']+'.logics')
+import config
+logics=importlib.import_module('projects.'+config.PROJECT['path']+'.logics')
 
 def r_level_timeout(vars):
     '''

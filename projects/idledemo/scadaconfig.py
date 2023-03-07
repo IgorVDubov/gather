@@ -1,8 +1,8 @@
 import importlib
 
-import globals
+import config
 
-handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers')
+handlers=importlib.import_module('projects.'+config.PROJECT['path']+'.handlers')
 import handlerslib
 # r_level_tout=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers.r_level_tout')
 
@@ -101,6 +101,7 @@ channels_config={
                         'сause_time':'17002.args.current_cause_time',
                         'idle_handler_id':17002,
                         'project_id':7,
+                        'operator_id':None,
                         }},
     ],
     'programms':[
@@ -120,6 +121,7 @@ channels_config={
                 'args':{
                     'state':'2020.args.status',
                     'machine_id':2020,
+                    'operator_id':'2020.args.operator_id',
                     'techidle_lenhth':'2020.args.tech_timeout',
                     'cause_id':None,
                     'current_cause':None,

@@ -10,7 +10,7 @@ PATH_TO_PROJECT=os.path.join(os.path.dirname(__file__),'projects',
                             PROJECT.get('path','/'))
 
 # HTTPServerParams={'host':'127.0.0.1','port':8870,'wsserver':'ws://127.0.0.1:8870/ws'}
-HTTPServerParams={'host':'192.168.1.200','port':8870,'wsserver':'ws://192.168.1.200:8870/ws'}
+http_server_params={'host':'192.168.1.200','port':8870,'wsserver':'ws://192.168.1.200:8870/ws'}
 CHECK_AUTORIZATION=True
 
 users=[
@@ -26,7 +26,7 @@ DB_PERIOD=3    #период опроса очереди сообщений дл
 
 CHANNELBASE_CALC_PERIOD=1 #период пересчета каналов в секундах (float) 
 
-MBServerParams={'host':'127.0.0.1','port':5021}
+modbus_server_params={'host':'127.0.0.1','port':5021}
 '''
 параметры Модбас сервера для внешнего доступа
 host, port->str: An optional (interface, port) to bind to.

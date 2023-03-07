@@ -5,7 +5,7 @@ from typing import List
 from datetime import datetime
 
 import channels.channels
-import globals
+import config
 from channels.channelbase import ChannelsBase
 from consts import Consts
 from exchangeserver import ExchangeServer
@@ -14,7 +14,7 @@ from mutualcls import SubscriptChannelArg
 from sourcepool import SourcePool
 
 
-class MainPool():
+class MainLoop():
     def __init__(self,  loop:asyncio.AbstractEventLoop, 
                         source_pool:SourcePool|None, 
                         channel_base:ChannelsBase,
@@ -109,7 +109,7 @@ class MainPool():
                         logger.info(f'write to bd here:{querry_func}, {querry_params=} ')
                         self.db_interface.exec_querry(querry_func, querry_params)
                     case _: raise ValueError(f'invalid db_quie type:{querry}')
-            await asyncio.sleep(globals.DB_PERIOD)
+            await asyncio.sleep(config.DB_PERIOD)
 
     async def calc_channel_base_loop(self): 
         # print ('start results Reader')
@@ -133,7 +133,7 @@ class MainPool():
                 #     for wsClient in self.HTTP_server.request_callback.wsClients:
                 #         wsClient.write_message(json.dumps(self.channel_base.toDict(), default=str))
 
-                delay=globals.CHANNELBASE_CALC_PERIOD - (time()-before)
+                delay=config.CHANNELBASE_CALC_PERIOD - (time()-before)
                 if delay<=0:
                     logger.warning(f'Not enough time for channels calc loop, {len(self.channel_base.channels)} channels ')
                 # print(f'in mail loop:{self.sbscrptions}')

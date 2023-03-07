@@ -51,9 +51,9 @@ class DBInterface():
 
 
 if __name__ == '__main__':
-    import globals
+    import config
 
-    db=DBInterface(Consts.MYSQL,globals.MySQLServerParams)
+    db=DBInterface(Consts.MYSQL,config.MySQLServerParams)
 
     result=db.execSQL(SELECT,'select * from pname')
     for rec in result:

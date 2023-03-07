@@ -5,14 +5,15 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 
 from channels.channelbase import ChannelsBase
-import globals
+import config
 from channels.channels import Channel
 import colors
 from consts import Consts
 
-settings=importlib.import_module('projects.'+globals.PROJECT['path']+'.settings')
-db_queries=importlib.import_module('projects.'+globals.PROJECT['path']+'.dbqueries')
-project_globals=importlib.import_module('projects.'+globals.PROJECT['path']+'.projectglobals')
+settings=importlib.import_module('projects.'+config.PROJECT['path']+'.settings')
+db_queries=importlib.import_module('projects.'+config.PROJECT['path']+'.dbqueries')
+project_globals=importlib.import_module('projects.'+config.PROJECT['path']+'.projectglobals')
+dc=importlib.import_module('projects.'+config.PROJECT['path']+'.dataconnector')
 
 def convert_none_2_str(func):
     '''
@@ -23,11 +24,11 @@ def convert_none_2_str(func):
         result=func(*args,**kwargs)
         if isinstance(result, dict):
             for key, val in result.items():
-                if val==None:
+                if val is None:
                     result.update({key:str(val)})
         elif isinstance(result, list):
             for val in result:
-                if val==None:
+                if val is None:
                     val=str(val)
         elif isinstance(result, type(None)):
             result=str(None)
@@ -44,6 +45,7 @@ def load_machines_idle():
                 rec={data.get('id'):Idle(data.get('state'),
                     data.get('tech_idle'),
                     datetime.strptime(data.get('begin_time'), settings.TIME_FORMAT) if data.get('begin_time') else None, 
+                    data.get('operator'),
                     data.get('cause'),
                     datetime.strptime(data.get('cause_time'), settings.TIME_FORMAT) if data.get('cause_time') else None, 
                     datetime.strptime(data.get('cause_set_time'), settings.TIME_FORMAT) if data.get('cause_set_time') else None, 
@@ -59,6 +61,7 @@ def save_machines_idle():
                             'state':idle.state,
                             'tech_idle':idle.tech_idle,
                             'begin_time':idle.begin_time.strftime(settings.TIME_FORMAT) if idle.begin_time else None,
+                            'operator':idle.operator,
                             'cause':idle.cause,
                             'cause_time':idle.cause_time.strftime(settings.TIME_FORMAT) if idle.cause_time else None,
                             'cause_set_time':idle.cause_set_time.strftime(settings.TIME_FORMAT) if idle.cause_set_time else None,
@@ -79,11 +82,17 @@ def db_get_all_states(id):
     # return [rec for rec in project_globals.states_db if (rec and rec.get('id')==id)]
     return [rec for rec in project_globals.states_db ]
 
-def db_put_idle(rec):
-    print (f'db_put_idle {rec}')
+def jsdb_put_idle(rec):
+
+    print (f'jsdb_put_idle {rec}')
     project_globals.idles_db.append(rec)
+    if operator:=get_operator_data(rec['operator']):
+        rec['operator']=operator.get('name')
+    else:
+        pass                                                #TODO обработать
     project_globals.idles_buffer.append(rec)
     ...
+
 def db_get_all_idles(id):
     # return [rec for rec in project_globals.idles_db if (rec and rec.get('id')==id)]
     return [rec for rec in project_globals.idles_db ]
@@ -97,14 +106,21 @@ def check_allowed_machine(machine_id:int, remote_ip:list[str])-> bool:
      проверяет доступность канала станка для подключения клиента с указанного в разрешенных ip
      если список ip  пустой - разрешаются все
     '''
-    if machine_id in settings.ALLOWED_MACHINES.keys():
-        allowed_ip=settings.ALLOWED_MACHINES[machine_id]
+    allowed=dc.get_allowed_machines()
+    if machine_id in allowed.keys():
+        allowed_ip=allowed[machine_id]
         if len(allowed_ip)==0 or remote_ip in allowed_ip:
             return True
         else:
             raise ValueError(f'ip {remote_ip} not allowed for {machine_id} client')
     else:
         raise ValueError(f'machine {machine_id} not allowed for client from ip {remote_ip}')
+
+def get_machine_operators(machine_id):
+    return dc.get_machine_operators(machine_id)
+
+def get_operator_data(operator_id):
+    return dc.get_operator_data(operator_id)
 
 def get_machine_from_user(user:str)->int:
     # try:
@@ -125,6 +141,7 @@ def get_causes()->dict[int:str]:               # TODO refact with DB
 def get_channel_arg(channel_base:ChannelsBase, machine_id:int, arg:str):
     result= channel_base.get(machine_id).get_arg(arg)
     return result
+
 
 @convert_none_2_str
 def get_current_state(channel_base, machine_id:int)->dict['machine':id, 'state':int, 'begin_time':str, 'couse_id':int]:
@@ -157,35 +174,38 @@ def get_current_state(channel_base, machine_id:int)->dict['machine':id, 'state':
 
     return {'machine':machine_id, 'state':state, 'begin_time':begin_time, 'cause_id':cause_id, 'cause_time':cause_time, 'cause_set_time':cause_set_time}
 
+
 @dataclass
 class Idle():
-    state:int                       # текущее состояние
-    tech_idle:int                   # техпростой, сек
-    begin_time:datetime             # начало текущего состояния
-    cause:int=None                  # причина простоя
-    cause_time:datetime=None        # начало действия причины (может быть не равно begin_time если сменв причины без смены состояния)
-    cause_set_time:datetime=None    # время установки причины
-    length:int=0                    # длительность нахождения в текущей причине простоя
+    state:int                         # текущее состояние
+    tech_idle:int                     # техпростой, сек
+    begin_time:datetime               # начало текущего состояния
+    operator:int                      # оператор id
+    cause:int                         # id причина простоя
+    cause_time:datetime               # начало действия причины (может быть не равно begin_time если сменв причины без смены состояния)
+    cause_set_time:datetime           # время установки причины
+    length:int                        # длительность нахождения в текущей причине простоя
 
 def current_idle_get(machine_id):
     return project_globals.machines_idle.get(machine_id)
 
-def current_idle_set(machine_id, state, tech_idle_length, cause=None, cause_time=None, cause_set_time=None):
+def current_idle_set(machine_id, state, tech_idle_length, operator=None, cause=None, cause_time=None, cause_set_time=None):
     print(f'set idle to {machine_id} with state {state}')
     begin_time=datetime.now() 
-    project_globals.machines_idle.update({machine_id:Idle(state, tech_idle_length, begin_time, cause, cause_time, cause_set_time)})
+    project_globals.machines_idle.update({machine_id:Idle(state, tech_idle_length, begin_time, operator, cause, cause_time, cause_set_time, None)})
     save_machines_idle()
 
-def current_idle_add_cause(machine_id, cause_id, cause_set_time, prj_id, db_quie):
+def current_idle_add_cause(machine_id, operator_id, cause_id, cause_set_time, prj_id, db_quie):
     
     if current_idle:=project_globals.machines_idle.get(machine_id):
-        if current_idle.cause!=None: 
+        project_globals.machines_idle.get(machine_id).operator=operator_id
+        if current_idle.cause is not None: 
             print(f'change cause idle to {machine_id} from {current_idle.cause} to {cause_id}')
             if current_idle.cause!=0:   #если причина была сброшена через causeid=0 время причины оставляем от момента сброса
                 current_idle_store(machine_id, prj_id, db_quie)
                 project_globals.machines_idle.get(machine_id).cause_time = datetime.now() 
             elif current_idle.cause==settings.TECH_IDLE_ID:
-                current_idle_store(machine_id, db_quie)
+                current_idle_store(machine_id, prj_id, db_quie)
                 if (datetime.now()-current_idle.cause_time).seconds > current_idle.tech_idle:
                     project_globals.machines_idle.get(machine_id).cause_time = current_idle.cause_time + datetime.timedelta(0,current_idle.tech_idle)
         else:
@@ -197,7 +217,7 @@ def current_idle_add_cause(machine_id, cause_id, cause_set_time, prj_id, db_quie
         save_machines_idle()
     else:
         print(project_globals.machines_idle)
-        raise KeyError(f'no machine {machine_id} in project globals.machines_idle')
+        raise KeyError(f'no machine {machine_id} in project_globals.machines_idle')
 
 def current_idle_reset(machine_id):
     print(f'reset idle {machine_id} ')
@@ -216,8 +236,8 @@ def current_idle_store(machine_id, prj_id, db_quie):
             if isinstance(store_dict[key],datetime):
                 store_dict.update({key:val.strftime('%Y-%m-%d %H:%M:%S')})
 
-        db_put_idle(store_dict)
         print(f'{colors.CYELLOWBG}db_quie:{store_dict} {colors.CEND}')
+        jsdb_put_idle(store_dict) #локально для демо!!! убрать
         db_quie.put({'type':Consts.DBC, 'querry_func':db_queries.insert_idle, 'params':store_dict})
         ... # store to DB here
 

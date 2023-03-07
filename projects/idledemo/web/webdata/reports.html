@@ -275,7 +275,7 @@
     const STATES_DB_HEADERS_WIDTH=[4, 8, 10, 8]
 
     const IDLES_DB_HEADERS=['ID станка', "Оператор", 'Причина', 'Начало', 'Подтверждение', 'Длительность']
-    const IDLES_DB_HEADERS_WIDTH=[4, 5, 15, 10, 10, 8]
+    const IDLES_DB_HEADERS_WIDTH=[4, 7, 15, 10, 10, 8]
 
     const dbStateTableElem=document.getElementById('dbStateTable')
     const dbCauseTableElem=document.getElementById('dbCauseTable')
@@ -592,7 +592,7 @@
     }
     function makeIdleRow(data){
         let colorElem = ' <span class="box" style="background:'+CAUSES_LIGHT_COLORS[data.cause+1]+'"></span>'
-        let dataToTable=[MACHINE_ID, '???', IDLE_COUSES[data.cause]+colorElem, data.cause_time, data.cause_set_time, data.length]
+        let dataToTable=[MACHINE_ID, data.operator, IDLE_COUSES[data.cause]+colorElem, data.cause_time, data.cause_set_time, data.length]
         // updateOnlineCause(data.cause, data.cause_time)
         // causeTime=data.cause_time
         return addRow(dataToTable, IDLES_DB_HEADERS_WIDTH)

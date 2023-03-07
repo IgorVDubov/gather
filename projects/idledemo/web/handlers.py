@@ -7,14 +7,15 @@ import tornado.web
 import tornado.websocket
 from loguru import logger
 
-import globals
-from globals import CHECK_AUTORIZATION, PROJECT
+import config
+from config import CHECK_AUTORIZATION, PROJECT
 from mutualcls import WSClient, SubscriptChannelArg
 from channels.channels import parse_attr_params
 
-logics=importlib.import_module('projects.'+globals.PROJECT['path']+'.logics')
-settings=importlib.import_module('projects.'+globals.PROJECT['path']+'.settings')
-project_globals=importlib.import_module('projects.'+globals.PROJECT['path']+'.projectglobals')
+logics=importlib.import_module('projects.'+config.PROJECT['path']+'.logics')
+dc=importlib.import_module('projects.'+config.PROJECT['path']+'.dataconnector')
+settings=importlib.import_module('projects.'+config.PROJECT['path']+'.settings')
+project_globals=importlib.import_module('projects.'+config.PROJECT['path']+'.projectglobals')
 
 RequestHandlerClass=tornado.web.RequestHandler
 StaticFileHandler=tornado.web.StaticFileHandler
@@ -64,10 +65,13 @@ class MainHtmlHandler(BaseHandler):
         # try:
             # machine_id=logics.get_machine_from_user(self.user.get('login'))
         try:
-            machine_id=int(tornado.escape.xhtml_escape(self.request.arguments['m'][0]))
+            if arg:=self.request.arguments.get('m'):
+                machine_id=int(tornado.escape.xhtml_escape(arg[0]))
+            else:
+                raise KeyError(f'No machine id at index request /?m=xxxx from ip {self.request.remote_ip}')
             logics.check_allowed_machine(machine_id, self.request.remote_ip)
-        except ValueError as error:
-            logger.error(error)
+        except (ValueError, KeyError):
+            logger.error(f'No machine id at index request /?m=xxxx from ip {self.request.remote_ip}')     #
             return  
             # logger.log('ERROR', f'wrong machine id in client login {self.user.get("login")} do get_ch from ip:{self.request.remote_ip}.')
             # self.redirect("/login")
@@ -84,8 +88,85 @@ class MainHtmlHandler(BaseHandler):
                     wsserv=self.application.settings['wsParams']+'?m='+str(machine_id),
                     server_time=logics.get_server_time(),
                     techidle_id=settings.TECH_IDLE_ID,
+                    # operators=logics.get_machine_operators(machine_id),
                     version=settings.CLIENT_VERSION,
                     )
+
+class WSHandler(tornado.websocket.WebSocketHandler):
+    def open(self):
+            try:
+                machine_id=int(tornado.escape.xhtml_escape(self.request.arguments['m'][0]))
+                logics.check_allowed_machine(machine_id, self.request.remote_ip)
+            except ValueError as error:
+                logger.error(error)
+                return 
+            logger.info(f'Web Socket open, IP:{self.request.remote_ip} ')
+            if self not in [client.client for client in self.application.data.ws_clients]:
+                self.application.data.ws_clients.append(WSClient(self))
+                logger.info(f'add, websocket IP:{self.request.remote_ip} Online {len(self.application.data.ws_clients)} clients')
+        
+    def on_message(self, message):
+        try:
+            jsonData = json.loads(message)
+            print(jsonData)
+        except json.JSONDecodeError:
+            logger.error ("json loads Error for message: {0}".format(message))
+        else:
+            if jsonData.get('type')=="curr_operator":
+                logger.info (f"ws_message: currentOperator for {jsonData.get('macine_id')} from ip:{self.request.remote_ip}")
+                msg = {'type':'curr_operator','data': dc.get_current_operator(jsonData.get('macine_id'))}
+                json_data = json.dumps(msg, default=str)
+                self.write_message(json_data)
+            elif jsonData.get('type')=="get_operator":
+                logger.info (f"ws_message: get_operator for {jsonData.get('macine_id')} from ip:{self.request.remote_ip}")
+                msg = {'type':'set_operator','data': dc.get_operator(jsonData.get('macine_id'), jsonData.get('operator_id'))}
+                json_data = json.dumps(msg, default=str)
+                self.write_message(json_data)
+            elif jsonData.get('type')=="set_operator":
+                logger.info (f"ws_message: set_operator_login for {jsonData.get('macine_id')}, operator {jsonData.get('operator_id')} from ip:{self.request.remote_ip}")
+                dc.set_operator_login(jsonData.get('macine_id'), jsonData.get('operator_id'))
+                self.application.data.channelBase.get(jsonData.get('macine_id')).set_arg('args.operator_id', jsonData.get('operator_id'))
+            elif jsonData.get('type')=="logout_operator":
+                logger.info (f"ws_message: set_operator_logout for {jsonData.get('macine_id')}, operator {jsonData.get('operator_id')} from ip:{self.request.remote_ip}")
+                dc.set_operator_logout(jsonData.get('macine_id'), jsonData.get('operator_id'))
+                msg = {'type':'curr_operator','data': dc.get_current_operator(int(jsonData.get('macine_id')))}
+                self.application.data.channelBase.get(jsonData.get('macine_id')).set_arg('args.operator_id', None)
+                json_data = json.dumps(msg, default=str)
+                self.write_message(json_data)
+            elif jsonData.get('type')=="subscribe":
+                logger.debug (f"subscription {jsonData.get('data')}")
+                for_send=[]
+                for arg in jsonData.get('data'):
+                    channel_id, argument=parse_attr_params(arg)
+                    channel=self.application.data.channelBase.get(channel_id)
+                    new_subscription=SubscriptChannelArg(channel, argument)
+                    subscription=self.application.data.subsriptions.add_subscription(new_subscription)
+                    self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
+                    send_data={arg:channel.get_arg(argument)}
+                    send_data.update({'time':(datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')})
+                    for_send.append(send_data)
+                    if len(for_send):
+                        logger.debug (f"echo subscription {for_send}")
+                        self.write_message(json.dumps(for_send, default=str))
+            elif jsonData.get('type')=="set":
+                if arg:=jsonData.get('arg'):
+                    channel_id, argument=parse_attr_params(arg)
+                    channel=self.application.data.channelBase.get(channel_id)
+                    value=jsonData.get('val')
+                    self.application.data.channelBase.get(channel_id).set_arg(argument, value)
+                    if argument==settings.CAUSEID_ARG:
+                        self.application.data.channelBase.get(channel_id).set_arg('args.set_cause_flag', True)
+                    logger.debug (f"set arg: {jsonData.get('arg')} to {value}")
+            
+            else:
+                logger.debug('Unsupported ws message: '+message)        
+ 
+    def on_close(self):
+        if client:=self.application.data.ws_clients.get_by_attr('client',self):
+            for subscr in client.subscriptions:
+                self.application.data.subsriptions.del_subscription(subscr)
+            self.application.data.ws_clients.remove(client)
+
 class AdminHtmlHandler(BaseHandler):
     @BaseHandler.check_user(CHECK_AUTORIZATION)
     def get(self):
@@ -101,24 +182,7 @@ class AdminHtmlHandler(BaseHandler):
                     idle_couses=json.dumps(logics.get_causes(), default=str),
                     version=settings.CLIENT_VERSION,
                     )
-class ReportsHtmlHandler(BaseHandler):
-    @BaseHandler.check_user(CHECK_AUTORIZATION)
-    def get(self):
-        try:
-            machine_id=logics.get_machine_from_user(self.user.get('login'))
-        except ValueError:
-            logger.log('ERROR', f'wrong machine id in clients prequest args: {self.request.arguments}  from ip:{self.request.remote_ip}.')
-            return  
-        self.render('reports.html', 
-                    user=self.user.get('login'), 
-                    machine=machine_id,
-                    wsserv=(self.application.settings['wsParams']+'_reps'),
-                    idle_couses=json.dumps(logics.get_machine_causes(machine_id), default=str),
-                    state_channel=str(machine_id)+'.'+settings.STATE_ARG,
-                    causeid_arg= str(machine_id)+'.'+settings.CAUSEID_ARG,
-                    project=3,
-                    version=0.1,
-                    )
+
 
         
     
@@ -153,65 +217,6 @@ class AdmRequestHtmlHandler(BaseHandler):
                 if cmd=='resetClient':
                     for client in self.application.data.ws_clients:
                         client.write_message(json.dumps({'cmd':'reload'}))
-
-class WSHandler(tornado.websocket.WebSocketHandler):
-    def open(self):
-            try:
-                machine_id=int(tornado.escape.xhtml_escape(self.request.arguments['m'][0]))
-                logics.check_allowed_machine(machine_id, self.request.remote_ip)
-            except ValueError as error:
-                logger.error(error)
-                return 
-            logger.info(f'Web Socket open, IP:{self.request.remote_ip} ')
-            if self not in [client.client for client in self.application.data.ws_clients]:
-                self.application.data.ws_clients.append(WSClient(self))
-                logger.info(f'add, websocket IP:{self.request.remote_ip} Online {len(self.application.data.ws_clients)} clients')
-        
-    def on_message(self, message):
-        try:
-            jsonData = json.loads(message)
-            print(jsonData)
-        except json.JSONDecodeError:
-            logger.error ("json loads Error for message: {0}".format(message))
-        else:
-            if jsonData['type']=="allStateQuerry":
-                logger.debug ("ws_message: allStateQuerry")
-                msg = {'type':'mb_data','data': None}
-                json_data = json.dumps(msg, default=str)
-                self.write_message(json_data)
-            elif jsonData['type']=="subscribe":
-                logger.debug (f"subscription {jsonData['data']}")
-                for_send=[]
-                for arg in jsonData['data']:
-                    channel_id, argument=parse_attr_params(arg)
-                    channel=self.application.data.channelBase.get(channel_id)
-                    new_subscription=SubscriptChannelArg(channel, argument)
-                    subscription=self.application.data.subsriptions.add_subscription(new_subscription)
-                    self.application.data.ws_clients.get_by_attr('client',self).subscriptions.append(subscription)
-                    send_data={arg:channel.get_arg(argument)}
-                    send_data.update({'time':(datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')})
-                    for_send.append(send_data)
-                    if len(for_send):
-                        logger.debug (f"echo subscription {for_send}")
-                        self.write_message(json.dumps(for_send, default=str))
-            elif jsonData.get('type')=="set":
-                if arg:=jsonData.get('arg'):
-                    channel_id, argument=parse_attr_params(arg)
-                    channel=self.application.data.channelBase.get(channel_id)
-                    value=jsonData.get('val')
-                    self.application.data.channelBase.get(channel_id).set_arg(argument, value)
-                    if argument==settings.CAUSEID_ARG:
-                        self.application.data.channelBase.get(channel_id).set_arg('args.set_cause_flag', True)
-                    logger.debug (f"set arg: {jsonData.get('arg')} to {value}")
-            
-            else:
-                logger.debug('Unsupported ws message: '+message)        
- 
-    def on_close(self):
-        if client:=self.application.data.ws_clients.get_by_attr('client',self):
-            for subscr in client.subscriptions:
-                self.application.data.subsriptions.del_subscription(subscr)
-            self.application.data.ws_clients.remove(client)
 
 class MEmulHtmlHandler(BaseHandler):
     @BaseHandler.check_user(CHECK_AUTORIZATION)
@@ -274,8 +279,8 @@ class MEWSHandler(tornado.websocket.WebSocketHandler):
             if self not in [client.client for client in self.application.data.ws_clients]:
                 self.application.data.ws_clients.append(WSClient(self))
                 logger.info(f'add, websocket IP:{self.request.remote_ip} Online {len(self.application.data.ws_clients)} clients')
-            #         user=[user for user in globals.users if user['id']==int(tornado.escape.xhtml_escape(self.get_secure_cookie("user")))][0]
-            #         logger.info(f'Web Socket open, IP:{self.request.remote_ip},  user:{user.get("login")}, Online {len(globals.wss)} clients')
+            #         user=[user for user in config.users if user['id']==int(tornado.escape.xhtml_escape(self.get_secure_cookie("user")))][0]
+            #         logger.info(f'Web Socket open, IP:{self.request.remote_ip},  user:{user.get("login")}, Online {len(config.wss)} clients')
             #     else:
             #         logger.log ('LOGIN',f'websocket user {tornado.escape.xhtml_escape(self.get_secure_cookie("user"))} not autirized , IP:{self.request.remote_ip}')
             #         self.close()
@@ -294,7 +299,7 @@ class MEWSHandler(tornado.websocket.WebSocketHandler):
                 self.write_message(json_data)
             elif jsonData.get('type')=="subscribe":
                 for_send=[]
-                for arg in jsonData['data']:
+                for arg in jsonData.get('data'):
                     channel_id, argument=parse_attr_params(arg)
                     channel=self.application.data.channelBase.get(channel_id)
                     new_subscription=SubscriptChannelArg(channel, argument)
@@ -318,13 +323,31 @@ class MEWSHandler(tornado.websocket.WebSocketHandler):
  
     def on_close(self):
         # if self.request.headers['User-Agent'] != 'UTHMBot':  #не логгируем запросы от бота
-        #     user=[user for user in globals.users if user['id']==int(tornado.escape.xhtml_escape(self.get_secure_cookie("user")))][0]
+        #     user=[user for user in config.users if user['id']==int(tornado.escape.xhtml_escape(self.get_secure_cookie("user")))][0]
         #     logger.info(f' User {user.get("login")} close WebSocket. Online {len(self.application.wsC_cients)-1} clients')
         if client:=self.application.data.ws_clients.get_by_attr('client',self):
             for subscr in client.subscriptions:
                 self.application.data.subsriptions.del_subscription(subscr)
             self.application.data.ws_clients.remove(client)
             
+class ReportsHtmlHandler(BaseHandler):
+    @BaseHandler.check_user(CHECK_AUTORIZATION)
+    def get(self):
+        try:
+            machine_id=logics.get_machine_from_user(self.user.get('login'))
+        except ValueError:
+            logger.log('ERROR', f'wrong machine id in clients prequest args: {self.request.arguments}  from ip:{self.request.remote_ip}.')
+            return  
+        self.render('reports.html', 
+                    user=self.user.get('login'), 
+                    machine=machine_id,
+                    wsserv=(self.application.settings['wsParams']+'_reps'),
+                    idle_couses=json.dumps(logics.get_machine_causes(machine_id), default=str),
+                    state_channel=str(machine_id)+'.'+settings.STATE_ARG,
+                    causeid_arg= str(machine_id)+'.'+settings.CAUSEID_ARG,
+                    project=3,
+                    version=0.1,
+                    )
 
 class ReportsWSHandler(tornado.websocket.WebSocketHandler):
 
@@ -351,9 +374,9 @@ class ReportsWSHandler(tornado.websocket.WebSocketHandler):
                 logger.debug (f"ws_message: first_read")
                 self.write_message(json_data)
             elif jsonData.get('type')=="subscribe":
-                print(f'subscribe {jsonData["data"]}')
+                print(f'subscribe {jsonData.get("data")}')
                 for_send=[]
-                for arg in jsonData['data']:
+                for arg in jsonData.get('data'):
                     channel_id, argument=parse_attr_params(arg)
                     channel=self.application.data.channelBase.get(channel_id)
                     new_subscription=SubscriptChannelArg(channel, argument)
@@ -423,8 +446,8 @@ class LogoutHandler(BaseHandler):
         self.clear_cookie("user")
         self.redirect("/login")
 
-print( 'in handlers '+globals.PATH_TO_PROJECT)
-print( 'in handlers full '+os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'js'))
+print( 'in handlers '+config.PATH_TO_PROJECT)
+print( 'in handlers full '+os.path.join(config.PATH_TO_PROJECT, 'web' ,'webdata', 'js'))
 handlers=[
         (r"/", MainHtmlHandler),
         # (r"/request",RequestHtmlHandler),
@@ -438,8 +461,8 @@ handlers=[
         (r"/logout",LogoutHandler),
         (r'/ws_me', MEWSHandler),
         (r'/ws_reps', ReportsWSHandler),
-        (r"/static/(.*)", StaticFileHandler, {"path": os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata')}),
-        (r'/js/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'js')}),
-        (r'/css/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'css')}),
-        (r'/images/(.*)', StaticFileHandler, {'path': os.path.join(globals.PATH_TO_PROJECT, 'web' ,'webdata', 'images')}),
+        (r"/static/(.*)", StaticFileHandler, {"path": os.path.join(config.PATH_TO_PROJECT, 'web' ,'webdata')}),
+        (r'/js/(.*)', StaticFileHandler, {'path': os.path.join(config.PATH_TO_PROJECT, 'web' ,'webdata', 'js')}),
+        (r'/css/(.*)', StaticFileHandler, {'path': os.path.join(config.PATH_TO_PROJECT, 'web' ,'webdata', 'css')}),
+        (r'/images/(.*)', StaticFileHandler, {'path': os.path.join(config.PATH_TO_PROJECT, 'web' ,'webdata', 'images')}),
         ]

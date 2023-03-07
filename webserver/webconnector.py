@@ -13,5 +13,5 @@ class TornadoInterface(WebServer):
     def ws_clients(self):
         return self.request_callback.wsClients
 
-def setHTTPServer(params, data):
-    return TornadoHTTPServerInit(params, data)
+def setHTTPServer(params, web_settings, web_handlers, data):
+    return TornadoHTTPServerInit(params, web_settings, web_handlers, data)

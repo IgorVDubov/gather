@@ -1,0 +1,1 @@
+{"id": 2020, "state": 2, "tech_idle": 10, "begin_time": "2023-03-07T09:50:16", "operator": null, "cause": 1, "cause_time": "2023-03-07T09:50:26", "cause_set_time": "2023-03-07T09:50:26", "length": 10}

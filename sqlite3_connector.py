@@ -131,9 +131,9 @@ class Sqlight3Connector(object):
 
 
 if __name__ == '__main__':
-    import globals
+    import config
 
-    db=MySQLConnector(globals.MySQLServerParams)
+    db=MySQLConnector(config.MySQLServerParams)
     result=db.test([10018])
     for rec in result:
         print(rec)

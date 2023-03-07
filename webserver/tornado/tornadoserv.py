@@ -8,11 +8,9 @@ from logger import logger
 import json
 from typing import *
 
-from globals import users as users
-import globals
+from config import users as users
+import config
 import importlib
-project_web_server=importlib.import_module('projects.'+globals.PROJECT['path']+'.web.server')
-project_web_handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.web.handlers')
 
 
                             
@@ -158,9 +156,7 @@ class Aplication(tornado.web.Application):
         super().__init__(handlers, default_host, transforms, **settings)
 
 
-def TornadoHTTPServerInit(params,data):
-    settings = project_web_server.get_config(params, globals.PATH_TO_PROJECT)
-    handlers=project_web_handlers.handlers
+def TornadoHTTPServerInit(params, settings, handlers, data):
     # handlers=[
     #     (r"/", MainHtmlHandler),
     #     (r"/login",LoginHandler),

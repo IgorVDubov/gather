@@ -1,8 +1,8 @@
 import importlib
 
-import globals
+import config
 
-handlers=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers')
+handlers=importlib.import_module('projects.'+config.PROJECT['path']+'.handlers')
 import handlerslib
 # r_level_tout=importlib.import_module('projects.'+globals.PROJECT['path']+'.handlers.r_level_tout')
 
